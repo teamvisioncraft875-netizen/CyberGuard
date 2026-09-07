@@ -6,27 +6,27 @@ CyberGuard is an AI-driven cybersecurity platform that detects phishing, deepfak
 
 ---
 
-## 🧩 Problem Statement
+## Problem Statement
 Domain: **Cybersecurity + Artificial Intelligence**
 
 Traditional rule-based security tools struggle against AI-generated phishing, deepfakes, and social engineering attacks. CyberGuard addresses this by combining AI/ML detection engines with explainable, human-readable threat analysis and response recommendations.
 
 ---
 
-## ✨ Key Features
-- 🎣 AI-powered phishing & scam message detection
-- 🎭 Deepfake & digital impersonation detection (image/audio)
-- 🔐 Login & account-takeover anomaly detection
-- ⚠️ Unified risk scoring (Safe → Low → Medium → High → Critical)
-- 🧠 Explainable AI — every alert includes a plain-English reason
-- ✅ Recommended response actions per threat
-- 📊 Real-time Command Dashboard (individual + enterprise views)
-- 📱 Mobile app with push notifications & guardian mode for at-risk users
-- 🛰️ Lightweight monitoring agent ("Guard App") for login/system telemetry
+## Key Features
+- AI-powered phishing & scam message detection
+- Deepfake & digital impersonation detection (image/audio)
+- Login & account-takeover anomaly detection
+- Unified risk scoring (Safe → Low → Medium → High → Critical)
+- Explainable AI — every alert includes a plain-English reason
+- Recommended response actions per threat
+- Real-time Command Dashboard (individual + enterprise views)
+- Mobile app with push notifications & guardian mode for at-risk users
+- Lightweight monitoring agent ("Guard App") for login/system telemetry
 
 ---
 
-## 🏗️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -39,7 +39,7 @@ Traditional rule-based security tools struggle against AI-generated phishing, de
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 cyberguard/
 ├── apps/
@@ -54,7 +54,7 @@ cyberguard/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js (v18+)
@@ -85,7 +85,7 @@ npm run dev
 
 ---
 
-## 🌿 Branching & Contribution Workflow
+## Branching & Contribution Workflow
 - `main` — production-ready, protected
 - `dev` — integration branch
 - `feature/<task-name>` — one branch per task
@@ -94,20 +94,20 @@ All changes go through a Pull Request into `dev`, reviewed and approved by our m
 
 ---
 
-## 🏷️ Versioning
+## Versioning
 This project follows [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`), versioned independently for web (`web-vX.X.X`) and mobile (`mobile-vX.X.X`).
 
 ---
 
-## 👥 Team
+## Team
 
 | Name | Role |
 |---|---|
-| [Your Name] | Backend Lead |
+| Subha | Backend Lead |
 | Subrat | AI/ML Engineer |
 | Sudhanshu | Data Engineer |
-| [Teammate 4] | Frontend (Web) |
-| [Teammate 5] | Frontend (Mobile) / Docs |
+| Ahinsa | Frontend (Web) |
+| Pritee | Frontend (Mobile) / Docs |
 
 ---
 
