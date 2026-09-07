@@ -141,3 +141,31 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Python (FastAPI service)
+__pycache__/
+*.pyc
+venv/
+.venv/
+*.egg-info/
+
+# React Native / Expo (mobile app)
+.expo/
+.expo-shared/
+*.jks
+*.p12
+*.key
+*.mobileprovision
+
+# Environment & secrets (critical — never commit these)
+.env
+.env.local
+.env.*.local
+
+# Editor/OS clutter
+.vscode/
+.DS_Store
+
+# Build outputs
+dist/
+build/
