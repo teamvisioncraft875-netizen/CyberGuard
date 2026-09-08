@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "${DATABASE_URL}"
+      ],
+      "env": {
+        "DATABASE_URL": "postgresql://postgres:postgres@localhost:5432/cyberguard"
+      },
+      "description": "Direct PostgreSQL database inspection, schema validation, and SQL query execution."
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-fetch"
+      ],
+      "description": "Lightweight HTTP inspection tool for testing local Node.js and FastAPI endpoints."
+    }
+  }
+}
