@@ -1,0 +1,30 @@
+{
+  "name": "cyberguard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CYBERGUARD - AI-Powered Scam, Fraud & Cybercrime Defense Ecosystem",
+  "workspaces": [
+    "apps/web",
+    "apps/mobile",
+    "services/backend"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:backend": "npm run dev --workspace=services/backend",
+    "dev:mobile": "npm start --workspace=apps/mobile",
+    "build:web": "npm run build --workspace=apps/web",
+    "start:backend": "npm start --workspace=services/backend"
+  },
+  "keywords": [
+    "cybersecurity",
+    "anti-phishing",
+    "fraud-detection",
+    "ai-defense",
+    "react",
+    "react-native",
+    "express",
+    "fastapi"
+  ],
+  "author": "CYBERGUARD Team",
+  "license": "MIT"
+}
