@@ -3,6 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
+from app.routers.analyze import router as analyze_router
+
 load_dotenv()
 
 app = FastAPI(
@@ -20,7 +22,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Health Check Probe
 @app.get("/health", tags=["Health"])
+@app.get("/internal/health", tags=["Health"])
 async def health_check():
     """Service liveness and readiness probe endpoint."""
     return {
@@ -28,6 +32,9 @@ async def health_check():
         "service": "cyberguard-ml-service",
         "version": "1.0.0"
     }
+
+# Wire Internal Analysis Router
+app.include_router(analyze_router, prefix="/internal")
 
 if __name__ == "__main__":
     import uvicorn
