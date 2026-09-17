@@ -576,3 +576,177 @@ Evaluates login metadata or system execution behavior against baseline patterns.
   "confidence_score": 0.91
 }
 ```
+
+---
+
+## 7. Internal Threat Analysis Engines (Node Gateway → FastAPI ML Service)
+
+All `/internal/analyze/*` endpoints enforce the unified ML detection schema:
+- **Shared Response Shape:** `{ "risk_level": "Safe"|"Low"|"Medium"|"High"|"Critical", "risk_score": 0..100, "explanation": string, "signals": object, "recommended_actions": string[], "confidence_score": 0.0..1.0 }`
+
+### 7.1 Analyze Message (`POST /internal/analyze/message`)
+- **Request Body:** `{ "text": string, "source_type": "email" | "sms" | "social" }`
+- **Response Shape (`200 OK`):**
+  ```json
+  {
+    "risk_level": "High",
+    "risk_score": 82,
+    "explanation": "Message exhibits extreme urgency cues demanding credential verification and contains an unverified typo-squatted link.",
+    "signals": {
+      "urgency_score": 0.92,
+      "credential_solicitation": true,
+      "brand_targeted": "chase",
+      "model_type": "nlp_hybrid_transformer"
+    },
+    "recommended_actions": [
+      "Do not click any embedded links",
+      "Quarantine message and flag domain to enterprise gateway"
+    ],
+    "confidence_score": 0.94
+  }
+  ```
+
+### 7.2 Analyze URL (`POST /internal/analyze/url`)
+- **Request Body:** `{ "url": string }`
+- **Response Shape (`200 OK`):**
+  ```json
+  {
+    "risk_level": "Critical",
+    "risk_score": 95,
+    "explanation": "Domain mimics PayPal brand name, was registered within the last 48 hours, and matches active phishing blacklists.",
+    "signals": {
+      "levenshtein_distance": 2,
+      "target_brand": "paypal",
+      "domain_age_days": 2,
+      "ssl_issuer_untrusted": true
+    },
+    "recommended_actions": [
+      "Block domain network-wide",
+      "Revoke active sessions for credentials entered"
+    ],
+    "confidence_score": 0.98
+  }
+  ```
+
+### 7.3 Analyze Media (`POST /internal/analyze/media`)
+- **Request Body:** `{ "file_url": string, "media_type": "image" | "audio" }`
+- **Response Shape (`200 OK`):**
+  ```json
+  {
+    "risk_level": "High",
+    "risk_score": 87,
+    "explanation": "Acoustic spectral analysis indicates synthetic voice cloning artifacts consistent with generative voice models.",
+    "signals": {
+      "synthetic_prob": 0.89,
+      "spectral_discontinuity": 0.74,
+      "model_type": "asv_spoof_detector"
+    },
+    "recommended_actions": [
+      "Require secondary verification over an authenticated channel before taking sensitive action"
+    ],
+    "confidence_score": 0.89
+  }
+  ```
+
+### 7.4 Analyze Login (`POST /internal/analyze/login`)
+- **Request Body:** `{ "user_id": string, "timestamp": string, "location": string, "device_id": string, "failed_attempts": integer }`
+- **Response Shape (`200 OK`):**
+  ```json
+  {
+    "risk_level": "High",
+    "risk_score": 85,
+    "explanation": "Multiple consecutive failed logins from an unrecognized device and geographical anomaly.",
+    "signals": {
+      "impossible_travel": true,
+      "failed_count": 4,
+      "device_known": false,
+      "isolation_forest_score": -0.76
+    },
+    "recommended_actions": [
+      "Trigger mandatory MFA verification",
+      "Temporarily lock authentication session"
+    ],
+    "confidence_score": 0.91
+  }
+  ```
+
+### 7.5 Analyze System (`POST /internal/analyze/system`)
+- **Request Body:** `{ "user_id": string, "timestamp": string, "event_type": string, "details": object }`
+- **Response Shape (`200 OK`):**
+  ```json
+  {
+    "risk_level": "Medium",
+    "risk_score": 58,
+    "explanation": "Sudden outbound traffic surge to an unknown external IP address unaccompanied by recognized application processes.",
+    "signals": {
+      "bytes_transferred": 104857600,
+      "ip_reputation_score": 45,
+      "unrecognized_process": true
+    },
+    "recommended_actions": [
+      "Inspect host process tree",
+      "Temporarily isolate endpoint connection"
+    ],
+    "confidence_score": 0.82
+  }
+  ```
+
+---
+
+## 8. Dashboard Analytics Endpoints
+
+These endpoints power the React Command Dashboard overview charts, threat distribution statistics, and MITRE ATT&CK coverage maps.
+
+### 8.1 Analytics Overview (`GET /api/v1/analytics/overview`)
+- **Auth Requirement:** Requires JWT (Admin/Enterprise scope)
+- **Response (`200 OK`):**
+  ```json
+  {
+    "total_incidents": 142,
+    "active_threats": 8,
+    "resolved_threats": 134,
+    "risk_breakdown": {
+      "Safe": 45,
+      "Low": 32,
+      "Medium": 35,
+      "High": 22,
+      "Critical": 8
+    },
+    "category_breakdown": {
+      "phishing": 54,
+      "malicious_url": 38,
+      "deepfake": 16,
+      "account_takeover": 21,
+      "system_anomaly": 13
+    }
+  }
+  ```
+
+### 8.2 Analytics Trends (`GET /api/v1/analytics/trends`)
+- **Auth Requirement:** Requires JWT
+- **Response (`200 OK`):**
+  ```json
+  [
+    { "date": "2026-09-03", "incidents": 12, "high_critical": 2 },
+    { "date": "2026-09-04", "incidents": 18, "high_critical": 5 },
+    { "date": "2026-09-05", "incidents": 9,  "high_critical": 1 },
+    { "date": "2026-09-06", "incidents": 24, "high_critical": 8 },
+    { "date": "2026-09-07", "incidents": 31, "high_critical": 7 },
+    { "date": "2026-09-08", "incidents": 19, "high_critical": 3 },
+    { "date": "2026-09-09", "incidents": 29, "high_critical": 4 }
+  ]
+  ```
+
+### 8.3 MITRE ATT&CK Breakdown (`GET /api/v1/analytics/mitre`)
+- **Auth Requirement:** Requires JWT
+- **Response (`200 OK`):**
+  ```json
+  [
+    { "technique_id": "T1566", "technique_name": "Phishing", "incident_count": 54 },
+    { "technique_id": "T1110", "technique_name": "Brute Force / Credential Stuffing", "incident_count": 21 },
+    { "technique_id": "T1204", "technique_name": "User Execution - Malicious URL", "incident_count": 38 },
+    { "technique_id": "T1585", "technique_name": "Establish Accounts / Impersonation", "incident_count": 16 },
+    { "technique_id": "T1071", "technique_name": "Application Layer Protocol Anomaly", "incident_count": 13 }
+  ]
+  ```
+
