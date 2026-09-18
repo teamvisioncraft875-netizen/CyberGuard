@@ -54,8 +54,8 @@ const authController = {
     // TODO: Query User.findByEmail(email), verify password hash with bcrypt.compare(), and return 401 if invalid
     const dummyId = 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d';
     const role = email.includes('admin') ? 'admin' : 'individual';
-    const organization_id = 'b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c';
-    const token = jwt.sign({ id: dummyId, email, role, organization_id }, JWT_SECRET, { expiresIn: '7d' });
+    const organizationId = 'b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c';
+    const token = jwt.sign({ id: dummyId, email, role, organization_id: organizationId }, JWT_SECRET, { expiresIn: '7d' });
 
     return res.status(200).json({
       token,
@@ -64,7 +64,7 @@ const authController = {
         email,
         full_name: 'Jane Doe',
         role,
-        organization_id
+        organization_id: organizationId
       }
     });
   },

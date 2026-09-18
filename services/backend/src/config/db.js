@@ -19,6 +19,10 @@ if (!process.env.SUPABASE_DB_URL) {
   }
 }
 
+const DEFAULT_POOL_MAX = 20;
+const DEFAULT_IDLE_TIMEOUT_MS = 30000;
+const DEFAULT_CONNECTION_TIMEOUT_MS = 20000;
+
 const connectionString = process.env.SUPABASE_DB_URL;
 
 // Determine SSL requirement (Supabase requires SSL in remote environments)
@@ -28,9 +32,9 @@ const sslConfig = isLocalhost || !connectionString ? false : { rejectUnauthorize
 const pool = new Pool({
   connectionString,
   ssl: sslConfig,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 20000,
+  max: DEFAULT_POOL_MAX,
+  idleTimeoutMillis: DEFAULT_IDLE_TIMEOUT_MS,
+  connectionTimeoutMillis: DEFAULT_CONNECTION_TIMEOUT_MS,
 });
 
 pool.on('error', (err) => {

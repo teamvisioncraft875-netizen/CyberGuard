@@ -1,5 +1,7 @@
 from app.schemas.analyze import UrlAnalyzeRequest, UnifiedAnalysisResponse, RiskLevel
 
+LEVENSHTEIN_DISTANCE_THRESHOLD = 2
+
 
 def analyze_url(request: UrlAnalyzeRequest) -> UnifiedAnalysisResponse:
     """
@@ -14,7 +16,7 @@ def analyze_url(request: UrlAnalyzeRequest) -> UnifiedAnalysisResponse:
         explanation="Domain mimics PayPal brand name, was registered within the last 48 hours, and matches active phishing blacklists.",
         signals={
             "url": request.url,
-            "levenshtein_distance": 2,
+            "levenshtein_distance": LEVENSHTEIN_DISTANCE_THRESHOLD,
             "target_brand": "paypal",
             "domain_age_days": 2,
             "ssl_issuer_untrusted": True

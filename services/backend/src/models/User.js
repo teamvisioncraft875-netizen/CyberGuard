@@ -1,5 +1,7 @@
 const db = require('../config/db');
 
+const ALLOWED_UPDATE_FIELDS = Object.freeze(['full_name', 'role', 'org_id']);
+
 /**
  * User Model — CRUD operations on the 'users' table
  */
@@ -46,8 +48,7 @@ const User = {
   },
 
   async update(id, fields = {}) {
-    const allowed = ['full_name', 'role', 'org_id'];
-    const keys = Object.keys(fields).filter(k => allowed.includes(k));
+    const keys = Object.keys(fields).filter(k => ALLOWED_UPDATE_FIELDS.includes(k));
     if (keys.length === 0) return null;
 
     const setClauses = keys.map((k, i) => `${k} = $${i + 2}`).join(', ');

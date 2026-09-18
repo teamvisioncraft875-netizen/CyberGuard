@@ -1,5 +1,8 @@
 from app.schemas.analyze import SystemAnalyzeRequest, UnifiedAnalysisResponse, RiskLevel
 
+DEFAULT_OUTBOUND_BYTES = 104857600
+DEFAULT_IP_REPUTATION_SCORE = 45
+
 
 def analyze_system(request: SystemAnalyzeRequest) -> UnifiedAnalysisResponse:
     """
@@ -15,8 +18,8 @@ def analyze_system(request: SystemAnalyzeRequest) -> UnifiedAnalysisResponse:
         signals={
             "user_id": request.user_id,
             "event_type": request.event_type,
-            "bytes_transferred": request.details.get("outbound_bytes", 104857600),
-            "ip_reputation_score": 45,
+            "bytes_transferred": request.details.get("outbound_bytes", DEFAULT_OUTBOUND_BYTES),
+            "ip_reputation_score": DEFAULT_IP_REPUTATION_SCORE,
             "unrecognized_process": True
         },
         recommended_actions=[

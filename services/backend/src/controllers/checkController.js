@@ -1,3 +1,6 @@
+const VALID_SOURCE_TYPES = Object.freeze(['email', 'sms', 'social']);
+const VALID_MEDIA_TYPES = Object.freeze(['image', 'audio']);
+
 /**
  * Check Controller — Handles threat detection requests for messages, URLs, and multimedia.
  * Acts as Gateway orchestrator dispatching payloads to internal FastAPI detection engines.
@@ -13,8 +16,7 @@ const checkController = {
     if (!text || typeof text !== 'string' || text.trim().length === 0) {
       return res.status(400).json({ error: 'INVALID_TEXT', message: 'Non-empty message text is required' });
     }
-    const validSources = ['email', 'sms', 'social'];
-    if (!source_type || !validSources.includes(source_type)) {
+    if (!source_type || !VALID_SOURCE_TYPES.includes(source_type)) {
       return res.status(400).json({ error: 'INVALID_SOURCE_TYPE', message: "source_type must be one of: 'email', 'sms', 'social'" });
     }
 
@@ -59,8 +61,7 @@ const checkController = {
     if (!file_url || typeof file_url !== 'string') {
       return res.status(400).json({ error: 'INVALID_FILE_URL', message: 'A valid file_url string is required' });
     }
-    const validMediaTypes = ['image', 'audio'];
-    if (!media_type || !validMediaTypes.includes(media_type)) {
+    if (!media_type || !VALID_MEDIA_TYPES.includes(media_type)) {
       return res.status(400).json({ error: 'INVALID_MEDIA_TYPE', message: "media_type must be 'image' or 'audio'" });
     }
 
