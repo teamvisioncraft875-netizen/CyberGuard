@@ -1,5 +1,7 @@
 from app.schemas.analyze import LoginAnalyzeRequest, UnifiedAnalysisResponse, RiskLevel
 
+HIGH_RISK_FAILED_ATTEMPTS_THRESHOLD = 3
+
 
 def analyze_login(request: LoginAnalyzeRequest) -> UnifiedAnalysisResponse:
     """
@@ -8,7 +10,7 @@ def analyze_login(request: LoginAnalyzeRequest) -> UnifiedAnalysisResponse:
     # TODO: Load scikit-learn Isolation Forest model, compute geo-velocity (impossible travel),
     # evaluate time-of-day entropy, and flag repeated failed attempt spikes.
 
-    is_high_risk = request.failed_attempts >= 3
+    is_high_risk = request.failed_attempts >= HIGH_RISK_FAILED_ATTEMPTS_THRESHOLD
 
     return UnifiedAnalysisResponse(
         risk_level=RiskLevel.HIGH if is_high_risk else RiskLevel.LOW,

@@ -1,3 +1,5 @@
+const VALID_INCIDENT_STATUSES = Object.freeze(['open', 'investigating', 'resolved']);
+
 /**
  * Incident Controller — Triage and investigation endpoints for Command Dashboard.
  */
@@ -46,8 +48,7 @@ const incidentController = {
     const { id } = req.params;
     const { status } = req.body;
 
-    const validStatuses = ['open', 'investigating', 'resolved'];
-    if (!status || !validStatuses.includes(status)) {
+    if (!status || !VALID_INCIDENT_STATUSES.includes(status)) {
       return res.status(400).json({
         error: 'INVALID_STATUS',
         message: "Status must be one of: 'open', 'investigating', 'resolved'"
