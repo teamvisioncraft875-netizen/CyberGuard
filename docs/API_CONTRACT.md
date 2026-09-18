@@ -108,15 +108,20 @@ Authenticate user credentials and receive a JWT session token.
 
 ---
 
-### 1.3 Get Current User Profile
+### 1.3 Get Current User Profile (`GET /api/v1/auth/me`)
 Retrieve authenticated user profile and organizational context.
 
 | Property | Specification |
 |---|---|
 | **Method** | `GET` |
-| **Path** | `/api/auth/me` |
-| **Auth Requirement** | Requires JWT |
+| **Path** | `/api/v1/auth/me` *(also available at `/api/auth/me`)* |
+| **Auth Requirement** | Requires JWT (`Authorization: Bearer <jwt_token>`) |
 | **Description** | Returns profile of the user identified by the Bearer token. |
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+```
 
 **Request Body:** None
 
@@ -133,7 +138,7 @@ Retrieve authenticated user profile and organizational context.
 ```
 
 **Errors:**
-- `401 Unauthorized`: Missing or expired token.
+- `401 Unauthorized`: Missing, expired, or invalid token (`{ "error": "UNAUTHORIZED" | "TOKEN_EXPIRED" | "INVALID_TOKEN", "message": "..." }`).
 
 ---
 
@@ -243,14 +248,14 @@ Analyze an uploaded image or audio file for synthetic manipulation, generative a
 
 These endpoints are called by the desktop sensor agent ("Guard App") to report login activity and operating system behavioral anomalies.
 
-### 3.1 Report Login Event
+### 3.1 Report Login Event (`POST /api/v1/telemetry/login-event`)
 Ingest authentication attempt telemetry from user endpoints.
 
 | Property | Specification |
 |---|---|
 | **Method** | `POST` |
-| **Path** | `/api/telemetry/login-event` |
-| **Auth Requirement** | Requires JWT |
+| **Path** | `/api/v1/telemetry/login-event` *(also available at `/api/telemetry/login-event`)* |
+| **Auth Requirement** | Requires JWT (`Authorization: Bearer <jwt_token>`) |
 | **Description** | Reports login attempt metadata to detect credential stuffing and account takeover anomalies. |
 
 **Request Body:**
@@ -275,17 +280,18 @@ Ingest authentication attempt telemetry from user endpoints.
 
 **Errors:**
 - `400 Bad Request`: Missing required telemetry fields.
+- `401 Unauthorized`: Missing or invalid bearer token.
 
 ---
 
-### 3.2 Report System Event
+### 3.2 Report System Event (`POST /api/v1/telemetry/system-event`)
 Ingest host operating system and network behavioral anomalies.
 
 | Property | Specification |
 |---|---|
 | **Method** | `POST` |
-| **Path** | `/api/telemetry/system-event` |
-| **Auth Requirement** | Requires JWT |
+| **Path** | `/api/v1/telemetry/system-event` *(also available at `/api/telemetry/system-event`)* |
+| **Auth Requirement** | Requires JWT (`Authorization: Bearer <jwt_token>`) |
 | **Description** | Ingests process spikes and abnormal outbound network connections from Guard App. |
 
 **Request Body:**
@@ -313,6 +319,7 @@ Ingest host operating system and network behavioral anomalies.
 
 **Errors:**
 - `400 Bad Request`: Malformed event payload.
+- `401 Unauthorized`: Missing or invalid bearer token.
 
 ---
 

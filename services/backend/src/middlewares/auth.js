@@ -1,43 +1,71 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'cyberguard-dev-secret-key';
+const JWT_SECRET = process.env.JWT_SECRET;
 
 /**
  * JWT Authentication Middleware
- * Reads and verifies the Bearer token from the Authorization header.
- * Attaches decoded user payload { id, email, role, organization_id } to req.user.
+ * Extracts and verifies the Bearer token from the Authorization header.
+ * Attaches decoded user payload { id, role, organization_id, email } to req.user.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @param {import('express').NextFunction} next
  */
 function auth(req, res, next) {
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers.authorization || req.headers.Authorization;
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  if (!authHeader || typeof authHeader !== 'string') {
     return res.status(401).json({
       error: 'UNAUTHORIZED',
-      message: 'Authentication token is missing or invalid'
+      message: 'Authentication token is missing'
     });
   }
 
-  const token = authHeader.split(' ')[1];
+  if (!authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({
+      error: 'UNAUTHORIZED',
+      message: "Authorization header must follow 'Bearer <token>' format"
+    });
+  }
+
+  const token = authHeader.slice(7).trim();
+
+  if (!token) {
+    return res.status(401).json({
+      error: 'UNAUTHORIZED',
+      message: 'Authentication token is missing'
+    });
+  }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
+
+    req.user = {
+      id: decoded.id,
+      role: decoded.role,
+      organization_id: decoded.organization_id || decoded.org_id || null,
+      email: decoded.email
+    };
+
     return next();
   } catch (err) {
-    // In development/testing, accept mock test tokens if JWT verification fails
-    if (process.env.NODE_ENV !== 'production' && token.startsWith('mock-')) {
-      req.user = {
-        id: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
-        email: 'analyst@enterprise.com',
-        role: token.includes('admin') ? 'admin' : 'individual',
-        organization_id: 'b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c'
-      };
-      return next();
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        error: 'TOKEN_EXPIRED',
+        message: 'Authentication token has expired'
+      });
+    }
+
+    if (err.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        error: 'INVALID_TOKEN',
+        message: 'Authentication token is invalid'
+      });
     }
 
     return res.status(401).json({
-      error: 'INVALID_TOKEN',
-      message: 'Token verification failed or expired'
+      error: 'UNAUTHORIZED',
+      message: 'Token verification failed'
     });
   }
 }
