@@ -7,21 +7,17 @@ const Incident = {
   async create({
     user_id = null,
     organization_id = null,
-    org_id = null,
     threat_type = null,
-    threat_scenario = null,
     source_type = 'email',
     risk_level = null,
-    risk_tier = null,
-    risk_score = 0.85,
+    risk_score = 0,
     explanation = '',
     status = 'open',
     mitre_technique = null
   }, client = null) {
     const dbClient = client || db;
-    const resolvedOrgId = organization_id || org_id || null;
-    const resolvedThreatType = (threat_type || threat_scenario || 'phishing').toLowerCase();
-    const resolvedRiskLevel = (risk_level || risk_tier || 'high').toLowerCase();
+    const resolvedThreatType = (threat_type || 'phishing').toLowerCase();
+    const resolvedRiskLevel = (risk_level || 'high').toLowerCase();
     const validSourceTypes = ['email', 'sms', 'url', 'image', 'audio', 'video', 'login', 'system'];
     const resolvedSourceType = validSourceTypes.includes(source_type?.toLowerCase()) ? source_type.toLowerCase() : 'email';
 
@@ -34,7 +30,7 @@ const Incident = {
     `;
     const res = await dbClient.query(text, [
       user_id,
-      resolvedOrgId,
+      organization_id,
       resolvedThreatType,
       resolvedSourceType,
       resolvedRiskLevel,
