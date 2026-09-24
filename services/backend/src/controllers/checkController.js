@@ -1,8 +1,10 @@
 const config = require('../config');
 const { transaction } = require('../config/db');
+const { getIO } = require('../config/socket');
 const Incident = require('../models/Incident');
 const DetectionSignal = require('../models/DetectionSignal');
 const RecommendedAction = require('../models/RecommendedAction');
+const GuardianLink = require('../models/GuardianLink');
 
 const VALID_SOURCE_TYPES = Object.freeze(['email', 'sms', 'social']);
 const VALID_MEDIA_TYPES = Object.freeze(['image', 'audio']);
@@ -93,6 +95,7 @@ function extractDetectionSignals(signals, incidentId) {
 
 /**
  * Persists an incident, its detection signals, and recommended actions within an atomic transaction.
+ * Emits real-time WebSocket notifications upon successful commit.
  */
 async function persistDetectionIncident({
   user,
@@ -107,9 +110,10 @@ async function persistDetectionIncident({
     ? mlResult.risk_score
     : (FALLBACK_SCORES[riskLevel] ?? 50);
 
-  return await transaction(async (client) => {
-    // 1. Insert into incidents
-    const incident = await Incident.create({
+  // 1. Transaction persistence (atomic all-or-nothing)
+  const incident = await transaction(async (client) => {
+    // Insert into incidents
+    const newIncident = await Incident.create({
       user_id: user.id,
       organization_id: user.organization_id || null,
       threat_type: threatType,
@@ -120,15 +124,15 @@ async function persistDetectionIncident({
       status: 'open'
     }, client);
 
-    // 2. Insert into detection_signals
-    const signalsToInsert = extractDetectionSignals(mlResult.signals, incident.id);
+    // Insert into detection_signals
+    const signalsToInsert = extractDetectionSignals(mlResult.signals, newIncident.id);
     if (signalsToInsert.length > 0) {
       await DetectionSignal.createMany(signalsToInsert, client);
     }
 
-    // 3. Insert into recommended_actions
+    // Insert into recommended_actions
     const actionsToInsert = recommendedActions.map((action) => ({
-      incident_id: incident.id,
+      incident_id: newIncident.id,
       action_type: typeof action === 'string' ? action : (action.action_type || action.action_text || String(action)),
       action_status: 'pending'
     }));
@@ -136,8 +140,49 @@ async function persistDetectionIncident({
       await RecommendedAction.createMany(actionsToInsert, client);
     }
 
-    return incident;
+    return newIncident;
   });
+
+  // 2. Real-time WebSocket emission (executed AFTER transaction commit)
+  try {
+    const io = getIO();
+    if (io) {
+      const incidentPayload = {
+        id: incident.id,
+        threat_type: incident.threat_type,
+        source_type: incident.source_type,
+        risk_level: incident.risk_level,
+        risk_score: typeof incident.risk_score === 'number' ? incident.risk_score : Number(incident.risk_score),
+        explanation: incident.explanation,
+        status: incident.status,
+        created_at: incident.created_at,
+        recommended_actions: recommendedActions,
+        signals: mlResult.signals || {}
+      };
+
+      // Emit to the user's private room
+      io.to(`user:${incident.user_id}`).emit('incident:new', incidentPayload);
+
+      // Emit to the organization room if incident is tenant-scoped
+      if (incident.organization_id) {
+        io.to(`org:${incident.organization_id}`).emit('incident:new', incidentPayload);
+      }
+
+      // Emit to active guardians linked to this dependent user
+      const guardianLinks = await GuardianLink.findByDependentId(incident.user_id);
+      if (Array.isArray(guardianLinks)) {
+        for (const link of guardianLinks) {
+          if (link.guardian_user_id) {
+            io.to(`guardian:${link.guardian_user_id}`).emit('incident:new', incidentPayload);
+          }
+        }
+      }
+    }
+  } catch (wsErr) {
+    console.error('[WebSocket Notification Error]', wsErr.message);
+  }
+
+  return incident;
 }
 
 /**
