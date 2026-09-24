@@ -18,12 +18,16 @@ const User = {
 
   async findById(id) {
     const text = `
-      SELECT id, org_id, email, full_name, role, created_at, updated_at
+      SELECT *
       FROM users
       WHERE id = $1;
     `;
     const res = await db.query(text, [id]);
-    return res.rows[0] || null;
+    const user = res.rows[0];
+    if (user) {
+      user.organization_id = user.organization_id || user.org_id || null;
+    }
+    return user || null;
   },
 
   async findByEmail(email) {

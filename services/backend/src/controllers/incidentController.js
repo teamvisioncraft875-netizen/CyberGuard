@@ -1,3 +1,5 @@
+const Incident = require('../models/Incident');
+
 const VALID_INCIDENT_STATUSES = Object.freeze(['open', 'investigating', 'resolved']);
 
 /**
@@ -8,37 +10,25 @@ const incidentController = {
    * GET /api/v1/incidents
    */
   async listIncidents(req, res) {
-    const { risk_level, category, status, organization_id } = req.query;
+    const { risk_level, category, status } = req.query;
 
-    // RBAC check: Non-admin users cannot query cross-tenant org data
-    if (organization_id && req.user && req.user.role !== 'admin') {
-      return res.status(403).json({
-        error: 'FORBIDDEN',
-        message: 'Non-admin users cannot query organization-wide incidents'
-      });
+    // Strict tenant isolation:
+    // Non-admin (individual / employee) is forced to their own user_id.
+    // Admin is forced to their own organization_id (ignoring any client-supplied organization_id).
+    const filter = { risk_level, category, status };
+    if (req.user?.role === 'admin') {
+      filter.organization_id = req.user.organization_id;
+    } else {
+      filter.user_id = req.user?.id;
     }
 
-    // TODO: Query PostgreSQL via Incident.findAll({ risk_level, category, status, organization_id })
-    return res.status(200).json([
-      {
-        id: 'inc_f72a19b4-3c81-49e0-81f3-241b2c1a89d2',
-        type: 'phishing',
-        risk_level: 'High',
-        explanation: 'High Risk: Message demands immediate credential verification under threat of suspension.',
-        recommended_action: 'Quarantine email and block sender domain.',
-        status: 'open',
-        timestamp: '2026-09-09T08:10:00Z'
-      },
-      {
-        id: 'inc_b12c84e1-2f73-42a9-91a0-384c2f1a91e4',
-        type: 'malicious_url',
-        risk_level: 'Critical',
-        explanation: 'Critical Risk: Domain flagged on active malware blacklists.',
-        recommended_action: 'Block domain network-wide.',
-        status: 'investigating',
-        timestamp: '2026-09-09T07:45:00Z'
-      }
-    ]);
+    try {
+      const incidents = await Incident.findAll(filter);
+      return res.status(200).json(incidents);
+    } catch (err) {
+      console.error('[incidentController.listIncidents error]', err.message);
+      return res.status(500).json({ error: 'DB_ERROR', message: 'Failed to retrieve incidents' });
+    }
   },
 
   /**
@@ -55,14 +45,28 @@ const incidentController = {
       });
     }
 
-    // TODO: Invoke Incident.updateStatus(id, status, req.user?.id) and broadcast triage update via WebSocket
+    // Force organization scope: admin can only update incidents within their own organization
+    const orgId = req.user?.organization_id || null;
 
-    return res.status(200).json({
-      id,
-      status,
-      resolved_by: req.user?.id || 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
-      updated_at: new Date().toISOString()
-    });
+    try {
+      const updated = await Incident.updateStatus(id, status, req.user?.id, orgId);
+      if (!updated) {
+        return res.status(404).json({
+          error: 'NOT_FOUND',
+          message: 'Incident not found or does not belong to your organization'
+        });
+      }
+
+      return res.status(200).json({
+        id: updated.id,
+        status: updated.status,
+        resolved_by: updated.resolved_by || req.user?.id,
+        updated_at: updated.resolved_at || updated.updated_at || new Date().toISOString()
+      });
+    } catch (err) {
+      console.error('[incidentController.updateIncidentStatus error]', err.message);
+      return res.status(500).json({ error: 'DB_ERROR', message: 'Failed to update incident status' });
+    }
   }
 };
 

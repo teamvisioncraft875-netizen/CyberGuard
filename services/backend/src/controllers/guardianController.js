@@ -1,3 +1,6 @@
+const GuardianLink = require('../models/GuardianLink');
+const db = require('../config/db');
+
 /**
  * Guardian Controller — Supports Guardian Mode for family and dependent protection.
  */
@@ -22,36 +25,80 @@ const guardianController = {
       });
     }
 
-    // TODO: Verify existence of dependent user, insert link via GuardianLink.create(), and send mobile confirmation notification
+    // Reject unless req.user.id matches either guardian_user_id or dependent_user_id
+    if (req.user?.id !== guardian_user_id && req.user?.id !== dependent_user_id) {
+      return res.status(403).json({
+        error: 'FORBIDDEN',
+        message: 'You can only link your own account as either guardian or dependent'
+      });
+    }
 
-    return res.status(201).json({
-      link_id: 'lnk_3821f92a',
-      status: 'active',
-      guardian_user_id,
-      dependent_user_id,
-      created_at: new Date().toISOString()
-    });
+    try {
+      const link = await GuardianLink.create({
+        guardian_user_id,
+        dependent_user_id,
+        status: 'active'
+      });
+
+      return res.status(201).json({
+        link_id: link?.link_id || link?.id || 'lnk_' + Date.now(),
+        status: link?.status || 'active',
+        guardian_user_id: link?.guardian_user_id || guardian_user_id,
+        dependent_user_id: link?.dependent_user_id || dependent_user_id,
+        created_at: link?.created_at || new Date().toISOString()
+      });
+    } catch (err) {
+      console.error('[guardianController.linkDependent error]', err.message);
+      return res.status(500).json({ error: 'DB_ERROR', message: 'Failed to create guardian link' });
+    }
   },
 
   /**
    * GET /api/v1/guardian/alerts
    */
   async getDependentAlerts(req, res) {
-    // TODO: Retrieve active dependents via GuardianLink.findByGuardianId(req.user.id)
-    // and query high/critical incidents matching those dependent IDs
+    try {
+      // 1. Retrieve active dependents via GuardianLink.findByGuardianId(req.user.id)
+      const activeLinks = await GuardianLink.findByGuardianId(req.user?.id);
+      const dependentIds = (activeLinks || []).map(l => l.dependent_user_id);
 
-    return res.status(200).json([
-      {
-        alert_id: 'alt_847192',
-        dependent_user_id: 'c9d8e7f6-a5b4-3c2d-1e0f-9a8b7c6d5e4f',
-        dependent_name: 'Grandpa Joe',
-        risk_level: 'Critical',
-        threat_type: 'phishing',
-        explanation: 'Critical Risk: Urgent SMS claiming bank card suspension with fraudulent verification link.',
-        recommended_action: 'Contact Grandpa Joe immediately to ensure no card details were entered.',
-        timestamp: '2026-09-09T08:15:00Z'
+      if (dependentIds.length === 0) {
+        return res.status(200).json([]);
       }
-    ]);
+
+      // 2. Query high/critical incidents scoped with WHERE user_id = ANY(dependentIds) AND risk_level IN ('high', 'critical')
+      const text = `
+        SELECT i.id AS alert_id,
+               i.user_id AS dependent_user_id,
+               u.email AS dependent_email,
+               split_part(u.email, '@', 1) AS dependent_name,
+               i.risk_level,
+               i.threat_type,
+               i.explanation,
+               i.created_at AS timestamp
+        FROM incidents i
+        JOIN users u ON u.id = i.user_id
+        WHERE i.user_id = ANY($1::uuid[]) AND i.risk_level IN ('high', 'critical')
+        ORDER BY i.created_at DESC;
+      `;
+      const result = await db.query(text, [dependentIds]);
+
+      const alerts = result.rows.map(row => ({
+        alert_id: row.alert_id,
+        dependent_user_id: row.dependent_user_id,
+        dependent_name: row.dependent_name || row.dependent_email || 'Dependent',
+        risk_level: row.risk_level ? row.risk_level.charAt(0).toUpperCase() + row.risk_level.slice(1) : 'High',
+        threat_type: row.threat_type,
+        explanation: row.explanation,
+        recommended_action: 'Review threat details and contact dependent immediately.',
+        timestamp: row.timestamp
+      }));
+
+      return res.status(200).json(alerts);
+    } catch (err) {
+      console.error('[guardianController.getDependentAlerts error]', err.message);
+      return res.status(500).json({ error: 'DB_ERROR', message: 'Failed to retrieve dependent alerts' });
+    }
   }
 };
 
