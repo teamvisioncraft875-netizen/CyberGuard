@@ -19,6 +19,7 @@ def analyze_url(request: UrlAnalyzeRequest) -> UnifiedAnalysisResponse:
             "levenshtein_distance": LEVENSHTEIN_DISTANCE_THRESHOLD,
             "target_brand": "paypal",
             "domain_age_days": 2,
+            "ssl_valid": False,
             "ssl_issuer_untrusted": True
         },
         recommended_actions=[
