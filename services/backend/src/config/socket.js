@@ -13,6 +13,7 @@ let ioInstance = null;
  */
 function initSocket(server) {
   const io = new Server(server, {
+    // TODO: Restrict origin to actual frontend/mobile app origins before production deployment; intentionally open for local development only.
     cors: {
       origin: '*',
       methods: ['GET', 'POST']
