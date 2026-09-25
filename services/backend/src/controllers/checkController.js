@@ -5,6 +5,7 @@ const Incident = require('../models/Incident');
 const DetectionSignal = require('../models/DetectionSignal');
 const RecommendedAction = require('../models/RecommendedAction');
 const GuardianLink = require('../models/GuardianLink');
+const MitreMapping = require('../models/MitreMapping');
 
 const VALID_SOURCE_TYPES = Object.freeze(['email', 'sms', 'social']);
 const VALID_MEDIA_TYPES = Object.freeze(['image', 'audio']);
@@ -99,6 +100,14 @@ async function persistDetectionIncident({
       risk_score: riskScore,
       explanation: mlResult.explanation || '',
       status: 'open'
+    }, client);
+
+    // Insert into mitre_mappings
+    const mitreTechnique = MitreMapping.getTechniqueForThreat(threatType);
+    await MitreMapping.create({
+      incident_id: newIncident.id,
+      technique_id: mitreTechnique.technique_id,
+      technique_name: mitreTechnique.technique_name
     }, client);
 
     // Insert into detection_signals

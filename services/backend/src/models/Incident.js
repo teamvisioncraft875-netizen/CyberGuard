@@ -12,8 +12,7 @@ const Incident = {
     risk_level = null,
     risk_score = 0,
     explanation = '',
-    status = 'open',
-    mitre_technique = null
+    status = 'open'
   }, client = null) {
     const dbClient = client || db;
     const resolvedThreatType = (threat_type || 'phishing').toLowerCase();
@@ -39,15 +38,7 @@ const Incident = {
       status
     ]);
 
-    const created = res.rows[0];
-    if (mitre_technique && created?.id) {
-      await dbClient.query(
-        `INSERT INTO mitre_mappings (incident_id, technique_id, technique_name) VALUES ($1, $2, $3)`,
-        [created.id, mitre_technique.id || mitre_technique.technique_id || 'T1566', mitre_technique.name || mitre_technique.technique_name || 'Phishing']
-      ).catch(() => {});
-    }
-
-    return created;
+    return res.rows[0];
   },
 
   async findById(id) {
