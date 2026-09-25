@@ -168,3 +168,11 @@ venv/
 # Build outputs
 dist/
 build/
+
+# Large Datasets & Raw Captures (CTU-13 / PCAP / NetFlow)
+*.binetflow
+*.binetflow.txt
+*.pcap
+*.pcapng
+*.csv.gz
+*.tar.gz
