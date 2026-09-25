@@ -20,6 +20,7 @@ def analyze_media(request: MediaAnalyzeRequest) -> UnifiedAnalysisResponse:
         "file_url": request.file_url,
         "media_type": request.media_type.value,
         "synthetic_prob": 0.89,
+        "spectral_anomaly_score": 0.74 if is_audio else 0.81,
         "spectral_discontinuity": 0.74 if is_audio else 0.81,
         "model_type": "asv_spoof_detector" if is_audio else "vit_deepfake_classifier"
     }

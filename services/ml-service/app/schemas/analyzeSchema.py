@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union
 from pydantic import BaseModel, Field
 
 
@@ -57,6 +57,6 @@ class UnifiedAnalysisResponse(BaseModel):
     risk_level: RiskLevel = Field(..., description="5-tier calibrated risk level")
     risk_score: int = Field(..., ge=0, le=100, description="Normalized risk score between 0 and 100")
     explanation: str = Field(..., description="Plain-English explanation of why this was flagged")
-    signals: Dict[str, Any] = Field(default_factory=dict, description="Key extracted indicators and model features")
+    signals: Union[Dict[str, Any], List[Dict[str, Any]]] = Field(default_factory=dict, description="Key extracted indicators and model features")
     recommended_actions: List[str] = Field(default_factory=list, description="Prescriptive remediation steps")
     confidence_score: float = Field(..., ge=0.0, le=1.0, description="Statistical confidence score between 0.0 and 1.0")

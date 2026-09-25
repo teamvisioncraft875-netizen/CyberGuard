@@ -13,8 +13,11 @@ const incidentRoutes = require('./routes/incidentRoutes');
 const guardianRoutes = require('./routes/guardianRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 
+const { initSocket } = require('./config/socket');
+
 const app = express();
 const server = http.createServer(app);
+const io = initSocket(server);
 
 const PORT = config.PORT || process.env.PORT || 5000;
 
@@ -73,4 +76,4 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
-module.exports = { app, server };
+module.exports = { app, server, io };

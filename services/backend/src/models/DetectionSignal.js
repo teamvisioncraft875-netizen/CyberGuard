@@ -4,19 +4,31 @@ const db = require('../config/db');
  * DetectionSignal Model — CRUD operations on the 'detection_signals' table
  */
 const DetectionSignal = {
-  async create({ incident_id, signal_name, signal_value, weight = 1.0 }) {
+  async create({ incident_id, signal_name, signal_value, weight = null }, client = null) {
+    const dbClient = client || db;
     const text = `
-      INSERT INTO detection_signals (incident_id, signal_name, signal_value, weight, created_at)
-      VALUES ($1, $2, $3, $4, NOW())
+      INSERT INTO detection_signals (incident_id, signal_name, signal_value, weight)
+      VALUES ($1, $2, $3, $4)
       RETURNING *;
     `;
-    const res = await db.query(text, [
+    const res = await dbClient.query(text, [
       incident_id,
       signal_name,
-      JSON.stringify(signal_value),
+      signal_value !== undefined && signal_value !== null ? String(signal_value) : null,
       weight
     ]);
     return res.rows[0];
+  },
+
+  async createMany(signals = [], client = null) {
+    if (!signals || signals.length === 0) return [];
+    const dbClient = client || db;
+    const inserted = [];
+    for (const signal of signals) {
+      const res = await DetectionSignal.create(signal, dbClient);
+      inserted.push(res);
+    }
+    return inserted;
   },
 
   async findByIncidentId(incident_id) {

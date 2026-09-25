@@ -7,20 +7,17 @@ const Incident = {
   async create({
     user_id = null,
     organization_id = null,
-    org_id = null,
     threat_type = null,
-    threat_scenario = null,
     source_type = 'email',
     risk_level = null,
-    risk_tier = null,
-    risk_score = 0.85,
+    risk_score = 0,
     explanation = '',
     status = 'open',
     mitre_technique = null
-  }) {
-    const resolvedOrgId = organization_id || org_id || null;
-    const resolvedThreatType = (threat_type || threat_scenario || 'phishing').toLowerCase();
-    const resolvedRiskLevel = (risk_level || risk_tier || 'high').toLowerCase();
+  }, client = null) {
+    const dbClient = client || db;
+    const resolvedThreatType = (threat_type || 'phishing').toLowerCase();
+    const resolvedRiskLevel = (risk_level || 'high').toLowerCase();
     const validSourceTypes = ['email', 'sms', 'url', 'image', 'audio', 'video', 'login', 'system'];
     const resolvedSourceType = validSourceTypes.includes(source_type?.toLowerCase()) ? source_type.toLowerCase() : 'email';
 
@@ -31,9 +28,9 @@ const Incident = {
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
       RETURNING *;
     `;
-    const res = await db.query(text, [
+    const res = await dbClient.query(text, [
       user_id,
-      resolvedOrgId,
+      organization_id,
       resolvedThreatType,
       resolvedSourceType,
       resolvedRiskLevel,
@@ -44,7 +41,7 @@ const Incident = {
 
     const created = res.rows[0];
     if (mitre_technique && created?.id) {
-      await db.query(
+      await dbClient.query(
         `INSERT INTO mitre_mappings (incident_id, technique_id, technique_name) VALUES ($1, $2, $3)`,
         [created.id, mitre_technique.id || mitre_technique.technique_id || 'T1566', mitre_technique.name || mitre_technique.technique_name || 'Phishing']
       ).catch(() => {});
