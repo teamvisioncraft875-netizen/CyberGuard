@@ -44,7 +44,7 @@ const Incident = {
       await dbClient.query(
         `INSERT INTO mitre_mappings (incident_id, technique_id, technique_name) VALUES ($1, $2, $3)`,
         [created.id, mitre_technique.id || mitre_technique.technique_id || 'T1566', mitre_technique.name || mitre_technique.technique_name || 'Phishing']
-      ).catch(() => {});
+      );
     }
 
     return created;
