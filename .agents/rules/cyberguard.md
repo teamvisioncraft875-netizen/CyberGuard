@@ -86,3 +86,13 @@ All detection engines and analysis endpoints must return the standard threat pay
   - Verify if standard libraries or already-installed packages can solve the problem.
   - Explicitly document the dependency and its rationale in the Pull Request description.
 - Keep installation times fast and container images lightweight for hackathon evaluation.
+
+---
+
+## 8. Mentor Mandate — Test-Driven Development (TDD) & Automated Test Verification
+
+- **Write Test Cases First (TDD):** For any new feature, endpoint, or detection engine, write automated test cases defining expected behavior, edge cases, and failure modes before or alongside production code.
+- **Run & Pass All Tests:** Never consider a task completed until automated tests (`pytest`, `npm test`) execute and pass with 100% green status.
+- **Proof in PRs:** Every Pull Request description must include the test execution results or screenshot as proof for the reviewer/mentor to verify functionality.
+- **Follow Workflow:** Refer to `docs/DEVELOPMENT_WORKFLOW_AND_TDD.md` for standard step-by-step instructions.
+

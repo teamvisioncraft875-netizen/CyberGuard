@@ -56,6 +56,15 @@ Ensure the PR body contains:
 ### Summary of Changes
 - Briefly describe the feature or bugfix implemented.
 
+### TDD & Automated Test Verification (Required by Mentor)
+- [ ] Automated test cases written before / alongside implementation
+- [ ] All test suites passing locally (`pytest`, `npm test`, etc.)
+
+**Test Execution Output / Proof:**
+```text
+(Paste terminal test execution output here, e.g. pytest 8 passed)
+```
+
 ### Affected Components
 - [ ] Web Frontend (`apps/web`)
 - [ ] Mobile App (`apps/mobile`)
@@ -74,4 +83,5 @@ Ensure the PR body contains:
 
 ### How to Test
 1. Step-by-step instructions for the reviewer to verify functionality.
+
 ```
