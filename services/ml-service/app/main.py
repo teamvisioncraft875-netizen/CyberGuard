@@ -22,19 +22,41 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Health Check Probe
+# Health & Readiness Probe
 @app.get("/health", tags=["Health"])
 @app.get("/internal/health", tags=["Health"])
+@app.get("/health/readiness", tags=["Health"])
 async def health_check():
     """Service liveness and readiness probe endpoint."""
+    from app.services.system_engine import _MODEL_PATH, _ANOMALY_PATH
+
+    url_engine_ready = True
+    preprocessor_ready = True
+    network_supervised_ready = _MODEL_PATH.exists()
+    network_anomaly_ready = _ANOMALY_PATH.exists()
+    all_ready = (
+        url_engine_ready
+        and preprocessor_ready
+        and network_supervised_ready
+        and network_anomaly_ready
+    )
+
     return {
-        "status": "ok",
+        "status": "ok" if all_ready else "degraded",
         "service": "cyberguard-ml-service",
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "readiness": {
+            "url_engine_available": url_engine_ready,
+            "network_supervised_available": network_supervised_ready,
+            "network_anomaly_available": network_anomaly_ready,
+            "checkpoints_readable": network_supervised_ready and network_anomaly_ready,
+            "preprocessing_available": preprocessor_ready,
+        },
     }
 
-# Wire Internal Analysis Router
+# Wire Analysis Routers (internal and API v1)
 app.include_router(analyze_router, prefix="/internal")
+app.include_router(analyze_router, prefix="/api/v1")
 
 if __name__ == "__main__":
     import uvicorn
