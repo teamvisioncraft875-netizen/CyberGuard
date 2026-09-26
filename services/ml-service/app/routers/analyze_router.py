@@ -1,12 +1,11 @@
 from fastapi import APIRouter, status
-# pyrefly: ignore [missing-import]
 from app.schemas.analyze import (
     MessageAnalyzeRequest,
     UrlAnalyzeRequest,
     MediaAnalyzeRequest,
     LoginAnalyzeRequest,
     SystemAnalyzeRequest,
-    UnifiedAnalysisResponse
+    UnifiedAnalysisResponse,
 )
 from app.services.message_engine import analyze_message
 from app.services.url_engine import analyze_url

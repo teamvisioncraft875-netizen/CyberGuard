@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from app.routers.analyze import router as analyze_router
+from app.routers.analyze_router import router as analyze_router
 
 load_dotenv()
 
