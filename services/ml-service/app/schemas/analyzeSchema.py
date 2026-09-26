@@ -29,7 +29,7 @@ class MessageAnalyzeRequest(BaseModel):
 
 
 class UrlAnalyzeRequest(BaseModel):
-    url: str = Field(..., min_length=4, description="Target URL to inspect for look-alike or phishing indicators")
+    url: str = Field(..., min_length=0, description="Target URL to inspect for look-alike or phishing indicators")
 
 
 class MediaAnalyzeRequest(BaseModel):

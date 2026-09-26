@@ -7,6 +7,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
+    "test": "node test_phase5_e2e_and_security.js",
+    "test:phase5": "node test_phase5_e2e_and_security.js",
     "test:e2e": "node test_e2e_pipeline.js"
   },
   "dependencies": {

@@ -2,8 +2,8 @@ process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'cyberguard-super-secure-secret-key-32chars!';
 
 const jwt = require('jsonwebtoken');
-const { app } = require('c:/Users/subha/Downloads/CyberGuard/services/backend/src/index');
-const { query, pool } = require('c:/Users/subha/Downloads/CyberGuard/services/backend/src/config/db');
+const { app } = require('./src/index');
+const { query, pool } = require('./src/config/db');
 
 function createToken(user) {
   return jwt.sign(

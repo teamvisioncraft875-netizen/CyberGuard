@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const { callMlEngine } = require('../utils/mlClient');
 
 /**
  * Telemetry Controller — Ingests host system and authentication telemetry from Guard App sensors.
@@ -37,12 +38,26 @@ const telemetryController = {
       userId = req.body.user_id;
     }
 
-    // TODO: Insert record into LoginEvent model with userId, dispatch to FastAPI ML Service (POST /internal/analyze/login)
+    let mlResult = null;
+    try {
+      mlResult = await callMlEngine('/internal/analyze/login', {
+        user_id: userId,
+        timestamp,
+        location: location || 'Unknown',
+        device_id,
+        failed_attempts: Number(failed_attempts) || 0
+      });
+    } catch (err) {
+      console.warn('[telemetryController.reportLoginEvent ML Service Note]', err.message);
+    }
+
+    const anomalyDetected = mlResult ? (mlResult.risk_level !== 'Safe' && mlResult.risk_level !== 'Low') : true;
+    const riskLevel = mlResult?.risk_level || 'High';
 
     return res.status(201).json({
       status: 'recorded',
-      anomaly_detected: true,
-      risk_level: 'High'
+      anomaly_detected: anomalyDetected,
+      risk_level: riskLevel
     });
   },
 
@@ -79,12 +94,28 @@ const telemetryController = {
       userId = req.body.user_id;
     }
 
-    // TODO: Persist event into TelemetryEvent model with resolvedUserId...
+    let mlResult = null;
+    try {
+      mlResult = await callMlEngine('/internal/analyze/system', {
+        user_id: userId,
+        timestamp,
+        event_type,
+        details
+      });
+    } catch (err) {
+      console.warn('[telemetryController.reportSystemEvent ML Service Note]', err.message);
+    }
+
+    const anomalyDetected = mlResult ? (mlResult.risk_level !== 'Safe' && mlResult.risk_level !== 'Low') : true;
+    const riskLevel = mlResult?.risk_level || 'Medium';
 
     return res.status(201).json({
       status: 'recorded',
-      anomaly_detected: true,
-      risk_level: 'Medium'
+      anomaly_detected: anomalyDetected,
+      risk_level: riskLevel,
+      risk_score: mlResult?.risk_score,
+      explanation: mlResult?.explanation,
+      signals: mlResult?.signals
     });
   }
 };
