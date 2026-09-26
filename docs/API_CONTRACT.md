@@ -487,19 +487,61 @@ Update an incident's triage lifecycle state.
 
 ---
 
-## 5. Guardian Linking (Mobile)
+## 5. Actions (Triage Operations)
+
+Endpoints used to mark incident-recommended actions as taken or dismissed during threat remediation workflows.
+
+### 5.1 Update Action Status (`PATCH /api/v1/actions/:id`)
+Update the execution status of a recommended remediation action.
+
+| Property | Specification |
+|---|---|
+| **Method** | `PATCH` |
+| **Path** | `/api/v1/actions/:id` *(also available at `/api/actions/:id`)* |
+| **Auth Requirement** | Requires JWT (`Authorization: Bearer <jwt_token>`) |
+| **Description** | Updates a recommended action status to `taken` or `dismissed`. Scoped to the authenticated user's incidents (for individuals/employees) or organization incidents (for admins). Returns 404 for cross-tenant access. |
+
+**Path Parameters:**
+- `id` *(required, UUID)*: Primary key UUID of the recommended action.
+
+**Request Body:**
+```json
+{
+  "action_status": "taken" // Enum: "taken" | "dismissed"
+}
+```
+
+**Response (`200 OK`):**
+```json
+{
+  "id": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+  "incident_id": "f72a19b4-3c81-49e0-81f3-241b2c1a89d2",
+  "action_type": "Quarantine email and block sender domain.",
+  "action_status": "taken",
+  "created_at": "2026-09-09T08:10:00Z"
+}
+```
+
+**Errors:**
+- `400 Bad Request`: `action_status` missing or not equal to `"taken"` or `"dismissed"` (`{ "error": "INVALID_STATUS", "message": "action_status must be either 'taken' or 'dismissed'" }`).
+- `401 Unauthorized`: Missing or invalid bearer token.
+- `404 Not Found`: Action ID does not exist, is invalid, or belongs to an incident not accessible to the user (`{ "error": "NOT_FOUND", "message": "Recommended action not found" }`).
+
+---
+
+## 6. Guardian Linking (Mobile)
 
 Endpoints supporting "Guardian Mode", enabling users to link accounts with family members or dependents to supervise security alerts.
 
-### 5.1 Link Dependent Account
-Establish a guardian-dependent relationship.
+### 6.1 Link Dependent Account
+Initiate a guardian-dependent relationship. Creates a pending link awaiting confirmation from the dependent.
 
 | Property | Specification |
 |---|---|
 | **Method** | `POST` |
-| **Path** | `/api/guardian/link` |
+| **Path** | `/api/v1/guardian/link` |
 | **Auth Requirement** | Requires JWT |
-| **Description** | Links a guardian user account to a dependent user account. |
+| **Description** | Initiates a link request between a guardian account and a dependent account. The authenticated user must be either the guardian or the dependent. Link is initialized with status `pending`. |
 
 **Request Body:**
 ```json
@@ -513,6 +555,35 @@ Establish a guardian-dependent relationship.
 ```json
 {
   "link_id": "lnk_3821f92a",
+  "status": "pending",
+  "guardian_user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+  "dependent_user_id": "c9d8e7f6-a5b4-3c2d-1e0f-9a8b7c6d5e4f",
+  "created_at": "2026-09-09T08:25:00Z"
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Missing IDs (`INVALID_PAYLOAD`) or self-linking (`INVALID_LINK`).
+- `403 Forbidden`: Authenticated user is neither the guardian nor the dependent (`FORBIDDEN`).
+
+---
+
+### 6.2 Accept Guardian Link
+Accept a pending guardian link request.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/guardian/link/:id/accept` |
+| **Auth Requirement** | Requires JWT |
+| **Description** | Confirms and activates a pending guardian link. Only the designated dependent user (`dependent_user_id`) can accept. Transitions status to `active`. |
+
+**Request Body:** None
+
+**Response (`200 OK`):**
+```json
+{
+  "link_id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
   "status": "active",
   "guardian_user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
   "dependent_user_id": "c9d8e7f6-a5b4-3c2d-1e0f-9a8b7c6d5e4f",
@@ -521,20 +592,49 @@ Establish a guardian-dependent relationship.
 ```
 
 **Errors:**
-- `400 Bad Request`: Linking user to themselves or duplicate link.
-- `404 Not Found`: Dependent user ID not found.
+- `400 Bad Request`: Link is not in `pending` status (`INVALID_STATUS`).
+- `404 Not Found`: Link does not exist or caller is not the designated dependent (`NOT_FOUND`).
 
 ---
 
-### 5.2 Get Dependent Alerts
-Retrieve high-priority security alerts across all linked dependents.
+### 6.3 Decline Guardian Link
+Decline a pending guardian link request.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/guardian/link/:id/decline` |
+| **Auth Requirement** | Requires JWT |
+| **Description** | Declines a pending guardian link. Only the designated dependent user (`dependent_user_id`) can decline. Transitions status to `revoked`. |
+
+**Request Body:** None
+
+**Response (`200 OK`):**
+```json
+{
+  "link_id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
+  "status": "revoked",
+  "guardian_user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+  "dependent_user_id": "c9d8e7f6-a5b4-3c2d-1e0f-9a8b7c6d5e4f",
+  "created_at": "2026-09-09T08:25:00Z"
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Link is not in `pending` status (`INVALID_STATUS`).
+- `404 Not Found`: Link does not exist or caller is not the designated dependent (`NOT_FOUND`).
+
+---
+
+### 6.4 Get Dependent Alerts
+Retrieve high-priority security alerts across all active linked dependents.
 
 | Property | Specification |
 |---|---|
 | **Method** | `GET` |
-| **Path** | `/api/guardian/alerts` |
+| **Path** | `/api/v1/guardian/alerts` |
 | **Auth Requirement** | Requires JWT |
-| **Description** | Returns alert feed for all dependents linked to the requesting guardian. |
+| **Description** | Returns alert feed for all active (`status = 'active'`) dependents linked to the requesting guardian. |
 
 **Request Body:** None
 
@@ -559,7 +659,7 @@ Retrieve high-priority security alerts across all linked dependents.
 
 ---
 
-## 6. Internal Detection Services (Node.js Gateway → FastAPI ML Service)
+## 7. Internal Detection Services (Node.js Gateway → FastAPI ML Service)
 
 > **RESTRICTED:** Internal private network only. Never exposed directly to the public web or client applications.
 
@@ -568,7 +668,7 @@ All internal FastAPI detection endpoints receive engine-specific payloads and **
 
 ---
 
-### 6.1 Detect Phishing
+### 7.1 Detect Phishing
 Evaluates text and metadata for social engineering and phishing indicators.
 
 | Property | Specification |
@@ -598,7 +698,7 @@ Evaluates text and metadata for social engineering and phishing indicators.
 
 ---
 
-### 6.2 Detect Deepfake
+### 7.2 Detect Deepfake
 Evaluates media for generative AI artifacts, facial inconsistencies, or synthetic voice cloning.
 
 | Property | Specification |
@@ -628,7 +728,7 @@ Evaluates media for generative AI artifacts, facial inconsistencies, or syntheti
 
 ---
 
-### 6.3 Detect Anomaly
+### 7.3 Detect Anomaly
 Evaluates login metadata or system execution behavior against baseline patterns.
 
 | Property | Specification |
@@ -664,12 +764,12 @@ Evaluates login metadata or system execution behavior against baseline patterns.
 
 ---
 
-## 7. Internal Threat Analysis Engines (Node Gateway → FastAPI ML Service)
+## 8. Internal Threat Analysis Engines (Node Gateway → FastAPI ML Service)
 
 All `/internal/analyze/*` endpoints enforce the unified ML detection schema:
 - **Shared Response Shape:** `{ "risk_level": "Safe"|"Low"|"Medium"|"High"|"Critical", "risk_score": 0..100, "explanation": string, "signals": object, "recommended_actions": string[], "confidence_score": 0.0..1.0 }`
 
-### 7.1 Analyze Message (`POST /internal/analyze/message`)
+### 8.1 Analyze Message (`POST /internal/analyze/message`)
 - **Request Body:** `{ "text": string, "source_type": "email" | "sms" | "social" }`
 - **Response Shape (`200 OK`):**
   ```json
@@ -691,7 +791,7 @@ All `/internal/analyze/*` endpoints enforce the unified ML detection schema:
   }
   ```
 
-### 7.2 Analyze URL (`POST /internal/analyze/url`)
+### 8.2 Analyze URL (`POST /internal/analyze/url`)
 - **Request Body:** `{ "url": string }`
 - **Response Shape (`200 OK`):**
   ```json
@@ -713,7 +813,7 @@ All `/internal/analyze/*` endpoints enforce the unified ML detection schema:
   }
   ```
 
-### 7.3 Analyze Media (`POST /internal/analyze/media`)
+### 8.3 Analyze Media (`POST /internal/analyze/media`)
 - **Request Body:** `{ "file_url": string, "media_type": "image" | "audio" }`
 - **Response Shape (`200 OK`):**
   ```json
@@ -733,7 +833,7 @@ All `/internal/analyze/*` endpoints enforce the unified ML detection schema:
   }
   ```
 
-### 7.4 Analyze Login (`POST /internal/analyze/login`)
+### 8.4 Analyze Login (`POST /internal/analyze/login`)
 - **Request Body:** `{ "user_id": string, "timestamp": string, "location": string, "device_id": string, "failed_attempts": integer }`
 - **Response Shape (`200 OK`):**
   ```json
@@ -755,7 +855,7 @@ All `/internal/analyze/*` endpoints enforce the unified ML detection schema:
   }
   ```
 
-### 7.5 Analyze System (`POST /internal/analyze/system`)
+### 8.5 Analyze System (`POST /internal/analyze/system`)
 - **Request Body:** `{ "user_id": string, "timestamp": string, "event_type": string, "details": object }`
 - **Response Shape (`200 OK`):**
   ```json
@@ -778,11 +878,11 @@ All `/internal/analyze/*` endpoints enforce the unified ML detection schema:
 
 ---
 
-## 8. Dashboard Analytics Endpoints
+## 9. Dashboard Analytics Endpoints
 
 These endpoints power the React Command Dashboard overview charts, threat distribution statistics, and MITRE ATT&CK coverage maps.
 
-### 8.1 Analytics Overview (`GET /api/v1/analytics/overview`)
+### 9.1 Analytics Overview (`GET /api/v1/analytics/overview`)
 - **Auth Requirement:** Requires JWT (Admin/Enterprise scope)
 - **Response (`200 OK`):**
   ```json
@@ -807,7 +907,7 @@ These endpoints power the React Command Dashboard overview charts, threat distri
   }
   ```
 
-### 8.2 Analytics Trends (`GET /api/v1/analytics/trends`)
+### 9.2 Analytics Trends (`GET /api/v1/analytics/trends`)
 - **Auth Requirement:** Requires JWT
 - **Response (`200 OK`):**
   ```json
@@ -822,7 +922,7 @@ These endpoints power the React Command Dashboard overview charts, threat distri
   ]
   ```
 
-### 8.3 MITRE ATT&CK Breakdown (`GET /api/v1/analytics/mitre`)
+### 9.3 MITRE ATT&CK Breakdown (`GET /api/v1/analytics/mitre`)
 - **Auth Requirement:** Requires JWT
 - **Response (`200 OK`):**
   ```json

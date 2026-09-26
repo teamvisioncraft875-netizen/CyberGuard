@@ -377,6 +377,18 @@ async function runTenantIsolationVerification() {
     testLinkIds.push(linkRes.link_id);
     console.log('✔ 3b PASS: Caller-involved guardian link created with 201');
 
+    // Admin A (the dependent) accepts the pending guardian link
+    const res3bAccept = await fetch(`${baseUrl}/guardian/link/${linkRes.link_id}/accept`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${tokenAdminA}`
+      }
+    });
+    if (res3bAccept.status !== 200) {
+      throw new Error(`3b FAIL: Dependent failed to accept link: ${res3bAccept.status}`);
+    }
+    console.log('✔ 3b PASS: Dependent accepted guardian link with 200');
+
     // 3c. Employee A queries dependent alerts:
     // Admin A has incident incA2 (critical, deepfake).
     // Employee A should see incA2, but NOT incA1 (own incident, not dependent's) and NOT incB1 (Tenant B).
