@@ -42,6 +42,17 @@ const RecommendedAction = {
     return res.rows;
   },
 
+  async findByIncidentIds(incident_ids) {
+    if (!incident_ids || incident_ids.length === 0) return [];
+    const text = `
+      SELECT * FROM recommended_actions
+      WHERE incident_id = ANY($1::uuid[])
+      ORDER BY created_at ASC;
+    `;
+    const res = await db.query(text, [incident_ids]);
+    return res.rows;
+  },
+
   async updateStatus(id, action_status) {
     const text = `
       UPDATE recommended_actions

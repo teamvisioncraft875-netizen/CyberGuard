@@ -47,7 +47,60 @@ const Incident = {
     return res.rows[0] || null;
   },
 
-  async findAll({ user_id = null, organization_id = null, risk_level, category, status, limit = 50, offset = 0 } = {}) {
+  async findByIdAndScope(id, { user_id = null, organization_id = null } = {}) {
+    const conditions = ['id = $1'];
+    const values = [id];
+
+    if (organization_id) {
+      values.push(organization_id);
+      conditions.push(`organization_id = $${values.length}`);
+    } else if (user_id) {
+      values.push(user_id);
+      conditions.push(`user_id = $${values.length}`);
+    }
+
+    const text = `
+      SELECT * FROM incidents
+      WHERE ${conditions.join(' AND ')};
+    `;
+    const res = await db.query(text, values);
+    return res.rows[0] || null;
+  },
+
+  async count({ user_id = null, organization_id = null, risk_level, category, threat_type, status } = {}) {
+    const conditions = [];
+    const values = [];
+
+    if (user_id) {
+      values.push(user_id);
+      conditions.push(`user_id = $${values.length}`);
+    }
+    if (organization_id) {
+      values.push(organization_id);
+      conditions.push(`organization_id = $${values.length}`);
+    }
+
+    if (risk_level) {
+      values.push(risk_level.toLowerCase());
+      conditions.push(`risk_level = $${values.length}`);
+    }
+    const resolvedThreat = category || threat_type;
+    if (resolvedThreat) {
+      values.push(resolvedThreat.toLowerCase());
+      conditions.push(`threat_type = $${values.length}`);
+    }
+    if (status) {
+      values.push(status.toLowerCase());
+      conditions.push(`status = $${values.length}`);
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+    const text = `SELECT COUNT(*)::int AS count FROM incidents ${whereClause};`;
+    const res = await db.query(text, values);
+    return res.rows[0]?.count || 0;
+  },
+
+  async findAll({ user_id = null, organization_id = null, risk_level, category, threat_type, status, limit = 50, offset = 0 } = {}) {
     const conditions = [];
     const values = [];
 
@@ -65,8 +118,9 @@ const Incident = {
       values.push(risk_level.toLowerCase());
       conditions.push(`risk_level = $${values.length}`);
     }
-    if (category) {
-      values.push(category.toLowerCase());
+    const resolvedThreat = category || threat_type;
+    if (resolvedThreat) {
+      values.push(resolvedThreat.toLowerCase());
       conditions.push(`threat_type = $${values.length}`);
     }
     if (status) {

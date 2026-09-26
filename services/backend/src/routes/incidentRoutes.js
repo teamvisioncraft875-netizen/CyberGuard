@@ -7,6 +7,7 @@ const router = express.Router();
 
 // Incident triage and management (Requires JWT)
 router.get('/', auth, incidentController.listIncidents);
+router.get('/:id', auth, incidentController.getIncidentById);
 router.patch('/:id', auth, roleCheck(['admin']), incidentController.updateIncidentStatus);
 
 module.exports = router;

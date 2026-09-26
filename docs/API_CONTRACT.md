@@ -328,51 +328,129 @@ Ingest host operating system and network behavioral anomalies.
 Endpoints used by the React Command Dashboard to query, filter, and triage incidents.
 
 ### 4.1 List Incidents
-Retrieve incident history with optional filtering.
+Retrieve incident history with pagination and optional filtering. Scoped strictly to the authenticated user's records (for individuals/employees) or organization records (for admins).
 
 | Property | Specification |
 |---|---|
 | **Method** | `GET` |
-| **Path** | `/api/incidents` |
-| **Auth Requirement** | Requires JWT (Admin-only for `organization_id` or org-wide query) |
-| **Description** | Returns array of incidents filtered by risk level, category, status, or organization. |
+| **Path** | `/api/v1/incidents` *(also available at `/api/incidents`)* |
+| **Auth Requirement** | Requires JWT (`Authorization: Bearer <jwt_token>`) |
+| **Description** | Returns paginated array of incidents with batch-joined recommended actions, MITRE mappings, and a top-level total count. |
 
 **Query Parameters:**
+- `limit` *(optional, integer)*: Number of records per page (default: `25`, max: `100`).
+- `offset` *(optional, integer)*: Number of records to skip (default: `0`).
 - `risk_level` *(optional)*: Filter by `Safe` \| `Low` \| `Medium` \| `High` \| `Critical`
-- `category` *(optional)*: Filter by `phishing` \| `deepfake` \| `impersonation` \| `account_takeover` \| `malicious_url` \| `system_anomaly`
+- `category` / `threat_type` *(optional)*: Filter by `phishing` \| `deepfake` \| `impersonation` \| `account_takeover` \| `malicious_url` \| `system_anomaly`
 - `status` *(optional)*: Filter by `open` \| `investigating` \| `resolved`
-- `organization_id` *(optional, Admin-only)*: UUID of organization to filter
 
 **Response (`200 OK`):**
 ```json
-[
-  {
-    "id": "inc_f72a19b4-3c81-49e0-81f3-241b2c1a89d2",
-    "type": "phishing",
-    "risk_level": "High",
-    "explanation": "High Risk: Message demands immediate credential verification under threat of suspension.",
-    "recommended_action": "Quarantine email and block sender domain.",
-    "status": "open",
-    "timestamp": "2026-09-09T08:10:00Z"
-  },
-  {
-    "id": "inc_b12c84e1-2f73-42a9-91a0-384c2f1a91e4",
-    "type": "malicious_url",
-    "risk_level": "Critical",
-    "explanation": "Critical Risk: Domain flagged on active malware blacklists.",
-    "recommended_action": "Block domain network-wide.",
-    "status": "investigating",
-    "timestamp": "2026-09-09T07:45:00Z"
-  }
-]
+{
+  "total": 42,
+  "limit": 25,
+  "offset": 0,
+  "data": [
+    {
+      "id": "f72a19b4-3c81-49e0-81f3-241b2c1a89d2",
+      "threat_type": "phishing",
+      "source_type": "email",
+      "risk_level": "high",
+      "risk_score": 82,
+      "explanation": "High Risk: Message demands immediate credential verification under threat of suspension.",
+      "status": "open",
+      "created_at": "2026-09-09T08:10:00Z",
+      "recommended_actions": [
+        {
+          "id": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+          "action_type": "Quarantine email and block sender domain.",
+          "action_status": "pending",
+          "created_at": "2026-09-09T08:10:00Z"
+        }
+      ],
+      "mitre_mappings": [
+        {
+          "id": "2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e",
+          "technique_id": "T1566",
+          "technique_name": "Phishing"
+        }
+      ]
+    }
+  ]
+}
 ```
 
 **Errors:**
-- `403 Forbidden`: Non-admin user querying `organization_id` or cross-tenant data.
+- `401 Unauthorized`: Missing or invalid bearer token.
 
 ---
 
-### 4.2 Update Incident Status
+### 4.2 Get Incident Details
+Retrieve complete details, technical detection signals, and forensic evidence for a specific incident.
+
+| Property | Specification |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/api/v1/incidents/:id` *(also available at `/api/incidents/:id`)* |
+| **Auth Requirement** | Requires JWT (`Authorization: Bearer <jwt_token>`) |
+| **Description** | Returns full incident record with `detection_signals` and `evidence` arrays. Tenant-isolated (returns 404 for cross-tenant access to prevent resource discovery). |
+
+**Path Parameters:**
+- `id` *(required, UUID)*: Primary key UUID of the incident.
+
+**Response (`200 OK`):**
+```json
+{
+  "id": "f72a19b4-3c81-49e0-81f3-241b2c1a89d2",
+  "user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+  "organization_id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
+  "threat_type": "phishing",
+  "source_type": "email",
+  "risk_level": "high",
+  "risk_score": 82,
+  "explanation": "High Risk: Message demands immediate credential verification under threat of suspension.",
+  "status": "open",
+  "resolved_by": null,
+  "resolved_at": null,
+  "created_at": "2026-09-09T08:10:00Z",
+  "recommended_actions": [
+    {
+      "id": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+      "action_type": "Quarantine email and block sender domain.",
+      "action_status": "pending",
+      "created_at": "2026-09-09T08:10:00Z"
+    }
+  ],
+  "mitre_mappings": [
+    {
+      "id": "2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e",
+      "technique_id": "T1566",
+      "technique_name": "Phishing"
+    }
+  ],
+  "detection_signals": [
+    {
+      "signal_name": "urgency_score",
+      "signal_value": "0.92",
+      "weight": 0.8
+    },
+    {
+      "signal_name": "credential_solicitation",
+      "signal_value": "true",
+      "weight": 0.9
+    }
+  ],
+  "evidence": []
+}
+```
+
+**Errors:**
+- `401 Unauthorized`: Missing or invalid bearer token.
+- `404 Not Found`: Incident ID does not exist, is invalid, or belongs to another tenant/user (`{ "error": "NOT_FOUND", "message": "Incident not found" }`).
+
+---
+
+### 4.3 Update Incident Status
 Update an incident's triage lifecycle state.
 
 | Property | Specification |
