@@ -10,7 +10,6 @@ import math
 import re
 from typing import Dict, Any, List, Optional
 from urllib.parse import urlparse
-import pandas as pd
 import numpy as np
 
 
@@ -199,8 +198,13 @@ class URLPreprocessor:
     def __init__(self, feature_columns: Optional[List[str]] = None):
         self.feature_columns = feature_columns or URL_FEATURE_COLUMNS
 
-    def transform(self, df: pd.DataFrame, url_column: str = "url") -> pd.DataFrame:
+    def transform(self, df: Any, url_column: str = "url") -> Any:
         """Transforms a DataFrame containing a URL column into numerical features."""
+        try:
+            import pandas as pd
+        except ImportError:
+            raise RuntimeError("pandas is required for URLPreprocessor.transform")
+
         if df.empty or url_column not in df.columns:
             return pd.DataFrame(columns=self.feature_columns, dtype=np.float64)
 
