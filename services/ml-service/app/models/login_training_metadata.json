@@ -1,0 +1,85 @@
+{
+  "model_type": "IsolationForest",
+  "training_timestamp": "2026-09-27T03:44:43.997271+00:00",
+  "random_seed": 42,
+  "feature_names": [
+    "failed_attempts_count",
+    "successful_attempts_count",
+    "total_attempts",
+    "attempt_frequency_hz",
+    "unique_usernames_count",
+    "unique_usernames_ratio",
+    "password_entropy",
+    "unique_password_count",
+    "password_reuse_ratio",
+    "session_duration",
+    "login_hour",
+    "login_hour_sin",
+    "login_hour_cos",
+    "day_of_week",
+    "proto_ssh",
+    "proto_telnet",
+    "proto_other",
+    "has_client_version",
+    "has_hassh",
+    "success_after_failure"
+  ],
+  "feature_count": 20,
+  "training_row_count": 451038,
+  "validation_row_count": 0,
+  "held_out_test_row_count": 29238,
+  "training_sensors": [
+    "139_162_38_249",
+    "172_233_11_134",
+    "172_234_123_193",
+    "172_234_178_211",
+    "20_39_206_37",
+    "40_126_227_168",
+    "45_79_13_34",
+    "4_222_19_165",
+    "74_226_238_175"
+  ],
+  "held_out_sensor": "172_234_228_9",
+  "hyperparameters": {
+    "n_estimators": 100,
+    "contamination": 0.04,
+    "max_samples": "auto",
+    "random_state": 42
+  },
+  "supervised_audit": {
+    "supervised_model": "HistGradientBoostingClassifier",
+    "status": "NOT_TRAINED",
+    "reason": "A defensible supervised target is unavailable in the current Cowrie dataset.",
+    "explanation": "Cowrie honeypot logs capture unfiltered adversary probing without enterprise employee ground truth. In accordance with Phase B rules, no artificial binary labels were fabricated."
+  },
+  "held_out_evaluation": {
+    "test_rows": 29238,
+    "test_sensor": "172_234_228_9",
+    "raw_decision_mean": 0.041176948035873406,
+    "raw_decision_std": 0.053327435516977884,
+    "anomaly_score_mean": 0.2720577926993186,
+    "anomaly_score_median": 0.25143411627805634,
+    "anomaly_score_p95": 0.5466553410021499,
+    "anomaly_score_p99": 0.8709084438672333,
+    "outliers_flagged": 2904,
+    "inliers_flagged": 26334,
+    "outlier_rate": 0.09932279909706546,
+    "classification_metrics": "N/A \u2014 ground truth unavailable"
+  },
+  "inference_latency": {
+    "mean_ms": 19.50713229997018,
+    "median_ms": 18.578200000774814,
+    "p95_ms": 24.52445000053558,
+    "p99_ms": 25.943717999289216
+  },
+  "thresholds": {
+    "score_normal_bound": 0.15,
+    "score_anomaly_bound": -0.25
+  },
+  "normalization_strategy": "piecewise_linear_bounded",
+  "limitations": [
+    "Dataset originates from public Cowrie honeypots and lacks genuine enterprise employee traffic.",
+    "A defensible supervised target is unavailable; HistGradientBoosting was deliberately not trained.",
+    "Isolation Forest anomaly scores are statistical outlier metrics, not attack probabilities P(attack)."
+  ]
+}
