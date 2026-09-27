@@ -69,6 +69,16 @@ const MitreMapping = {
     return res.rows;
   },
 
+  async findByIncidentIds(incident_ids) {
+    if (!incident_ids || incident_ids.length === 0) return [];
+    const text = `
+      SELECT * FROM mitre_mappings
+      WHERE incident_id = ANY($1::uuid[]);
+    `;
+    const res = await db.query(text, [incident_ids]);
+    return res.rows;
+  },
+
   async getTechniqueAggregates({ user_id = null, organization_id = null, limit = 10 } = {}) {
     const conditions = [];
     const values = [];

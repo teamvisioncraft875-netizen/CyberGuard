@@ -4,16 +4,26 @@ const db = require('../config/db');
  * GuardianLink Model — CRUD operations on the 'guardian_links' table
  */
 const GuardianLink = {
-  async create({ guardian_user_id, dependent_user_id, status = 'active' }) {
+  async create({ guardian_user_id, dependent_user_id, status = 'pending' }) {
     const text = `
       INSERT INTO guardian_links (guardian_user_id, dependent_user_id, status, created_at)
       VALUES ($1, $2, $3, NOW())
       ON CONFLICT (guardian_user_id, dependent_user_id) DO UPDATE
       SET status = EXCLUDED.status
-      RETURNING id as link_id, guardian_user_id, dependent_user_id, status, created_at;
+      RETURNING id as link_id, id, guardian_user_id, dependent_user_id, status, created_at;
     `;
     const res = await db.query(text, [guardian_user_id, dependent_user_id, status]);
     return res.rows[0];
+  },
+
+  async findById(id) {
+    const text = `
+      SELECT id as link_id, id, guardian_user_id, dependent_user_id, status, created_at
+      FROM guardian_links
+      WHERE id = $1;
+    `;
+    const res = await db.query(text, [id]);
+    return res.rows[0] || null;
   },
 
   async findByGuardianId(guardian_user_id) {
@@ -45,7 +55,7 @@ const GuardianLink = {
       UPDATE guardian_links
       SET status = $2
       WHERE id = $1
-      RETURNING id as link_id, guardian_user_id, dependent_user_id, status;
+      RETURNING id as link_id, id, guardian_user_id, dependent_user_id, status, created_at;
     `;
     const res = await db.query(text, [link_id, status]);
     return res.rows[0] || null;

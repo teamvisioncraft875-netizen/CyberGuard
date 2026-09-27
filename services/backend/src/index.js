@@ -12,6 +12,7 @@ const telemetryRoutes = require('./routes/telemetryRoutes');
 const incidentRoutes = require('./routes/incidentRoutes');
 const guardianRoutes = require('./routes/guardianRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const actionRoutes = require('./routes/actionRoutes');
 
 const { initSocket } = require('./config/socket');
 
@@ -47,6 +48,7 @@ v1Router.use('/telemetry', telemetryRoutes);
 v1Router.use('/incidents', incidentRoutes);
 v1Router.use('/guardian', guardianRoutes);
 v1Router.use('/analytics', analyticsRoutes);
+v1Router.use('/actions', actionRoutes);
 
 // Mount versioned and root API routers
 app.use('/api/v1', v1Router);

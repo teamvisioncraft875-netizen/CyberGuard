@@ -42,12 +42,45 @@ const RecommendedAction = {
     return res.rows;
   },
 
+  async findByIncidentIds(incident_ids) {
+    if (!incident_ids || incident_ids.length === 0) return [];
+    const text = `
+      SELECT * FROM recommended_actions
+      WHERE incident_id = ANY($1::uuid[])
+      ORDER BY created_at ASC;
+    `;
+    const res = await db.query(text, [incident_ids]);
+    return res.rows;
+  },
+
+  async findByIdAndScope(id, { user_id = null, organization_id = null } = {}) {
+    const conditions = ['ra.id = $1'];
+    const values = [id];
+
+    if (organization_id) {
+      values.push(organization_id);
+      conditions.push(`i.organization_id = $${values.length}`);
+    } else if (user_id) {
+      values.push(user_id);
+      conditions.push(`i.user_id = $${values.length}`);
+    }
+
+    const text = `
+      SELECT ra.id, ra.incident_id, ra.action_type, ra.action_status, ra.created_at
+      FROM recommended_actions ra
+      JOIN incidents i ON i.id = ra.incident_id
+      WHERE ${conditions.join(' AND ')};
+    `;
+    const res = await db.query(text, values);
+    return res.rows[0] || null;
+  },
+
   async updateStatus(id, action_status) {
     const text = `
       UPDATE recommended_actions
       SET action_status = $2::action_status
       WHERE id = $1
-      RETURNING *;
+      RETURNING id, incident_id, action_type, action_status, created_at;
     `;
     const res = await db.query(text, [id, action_status.toLowerCase()]);
     return res.rows[0] || null;
