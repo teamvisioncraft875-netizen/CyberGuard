@@ -1,0 +1,27 @@
+{
+  "feature_names": [
+    "failed_attempts_count",
+    "successful_attempts_count",
+    "total_attempts",
+    "attempt_frequency_hz",
+    "unique_usernames_count",
+    "unique_usernames_ratio",
+    "password_entropy",
+    "unique_password_count",
+    "password_reuse_ratio",
+    "session_duration",
+    "login_hour",
+    "login_hour_sin",
+    "login_hour_cos",
+    "day_of_week",
+    "proto_ssh",
+    "proto_telnet",
+    "proto_other",
+    "has_client_version",
+    "has_hassh",
+    "success_after_failure"
+  ],
+  "feature_count": 20,
+  "score_normal_bound": 0.15,
+  "score_anomaly_bound": -0.25
+}

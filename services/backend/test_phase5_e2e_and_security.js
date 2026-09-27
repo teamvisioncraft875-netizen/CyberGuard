@@ -11,6 +11,8 @@ process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'cyberguard-test-jwt-secret-key-32chars!';
 const REAL_ML_PORT = process.env.ML_PORT || '8000';
 
+const { spawn } = require('child_process');
+const path = require('path');
 const jwt = require('jsonwebtoken');
 const { app } = require('./src/index');
 
@@ -27,8 +29,33 @@ async function runPhase5TestSuite() {
   let validToken;
   let expiredToken;
   let forgedToken;
+  let spawnedMlProcess = null;
 
   try {
+    // Check if ML Service is running, auto-spawn if not
+    try {
+      const ping = await fetch(`http://127.0.0.1:${REAL_ML_PORT}/health`, { signal: AbortSignal.timeout(1000) });
+      if (!ping.ok) throw new Error('not ok');
+      console.log(`[ML Service] Responding at http://127.0.0.1:${REAL_ML_PORT}`);
+    } catch (_) {
+      console.log(`[ML Service] Not answering on port ${REAL_ML_PORT}. Spawning Python FastAPI engine...`);
+      const mlDir = path.resolve(__dirname, '../ml-service');
+      spawnedMlProcess = spawn('uvicorn', ['app.main:app', '--host', '127.0.0.1', '--port', String(REAL_ML_PORT)], {
+        cwd: mlDir,
+        stdio: 'ignore',
+        shell: true
+      });
+      for (let i = 0; i < 25; i++) {
+        await new Promise((r) => setTimeout(r, 500));
+        try {
+          const ping = await fetch(`http://127.0.0.1:${REAL_ML_PORT}/health`, { signal: AbortSignal.timeout(500) });
+          if (ping.ok) {
+            console.log(`[ML Service] Process spawned successfully and responding at http://127.0.0.1:${REAL_ML_PORT}`);
+            break;
+          }
+        } catch (_) {}
+      }
+    }
     // 1. Start Express on ephemeral port
     await new Promise((resolve) => {
       server = app.listen(0, () => {
@@ -218,6 +245,10 @@ async function runPhase5TestSuite() {
     if (server) {
       server.close();
       console.log('[Server] Gateway stopped.');
+    }
+    if (spawnedMlProcess) {
+      console.log('[ML Service] Terminating spawned Python process...');
+      spawnedMlProcess.kill();
     }
   }
 }
