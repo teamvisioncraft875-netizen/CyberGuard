@@ -420,9 +420,9 @@ async function runTenantIsolationVerification() {
     const overviewB = await res4aB.json();
 
     console.log(`4a. Admin A total incidents: ${overviewA.total_incidents}, Admin B total incidents: ${overviewB.total_incidents}`);
-    // In Org A we have incA1 and incA2 = 2 incidents
+    // Org A total includes 2 seeded incidents + 2 incidents auto-created by the login anomaly engine from Step 2's telemetry events.
     // In Org B we have incB1 = 1 incident
-    if (overviewA.total_incidents !== 2 || overviewB.total_incidents !== 1) {
+    if (overviewA.total_incidents !== 4 || overviewB.total_incidents !== 1) {
       throw new Error(`4a FAIL: Overview tenant scoping failed: Org A has ${overviewA.total_incidents}, Org B has ${overviewB.total_incidents}`);
     }
     console.log('✔ 4a PASS: Analytics overview accurately scoped by organization');
@@ -441,7 +441,7 @@ async function runTenantIsolationVerification() {
     const totalTrendsIncidentsB = trendsB.reduce((sum, t) => sum + t.incidents, 0);
 
     console.log(`4b. Trends total incidents: Org A = ${totalTrendsIncidentsA}, Org B = ${totalTrendsIncidentsB}`);
-    if (totalTrendsIncidentsA !== 2 || totalTrendsIncidentsB !== 1) {
+    if (totalTrendsIncidentsA !== 4 || totalTrendsIncidentsB !== 1) {
       throw new Error(`4b FAIL: Analytics trends tenant scoping failed`);
     }
     console.log('✔ 4b PASS: Analytics trends accurately scoped by organization');
