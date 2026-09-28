@@ -14,6 +14,8 @@ const guardianRoutes = require('./routes/guardianRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const actionRoutes = require('./routes/actionRoutes');
 
+const { checkLimiter, generalLimiter } = require('./middlewares/rateLimiter');
+
 const { initSocket } = require('./config/socket');
 
 const app = express();
@@ -26,7 +28,7 @@ const PORT = config.PORT || process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Service Health Check
+// Service Health & Readiness Checks (unthrottled monitoring endpoints)
 const healthHandler = (req, res) => {
   res.status(200).json({
     status: 'ok',
@@ -37,18 +39,21 @@ const healthHandler = (req, res) => {
 };
 
 app.get('/health', healthHandler);
+app.get('/health/readiness', healthHandler);
 app.get('/api/health', healthHandler);
+app.get('/api/health/readiness', healthHandler);
 app.get('/api/v1/health', healthHandler);
+app.get('/api/v1/health/readiness', healthHandler);
 
 // API v1 Router
 const v1Router = express.Router();
 v1Router.use('/auth', authRoutes);
-v1Router.use('/check', checkRoutes);
-v1Router.use('/telemetry', telemetryRoutes);
-v1Router.use('/incidents', incidentRoutes);
-v1Router.use('/guardian', guardianRoutes);
-v1Router.use('/analytics', analyticsRoutes);
-v1Router.use('/actions', actionRoutes);
+v1Router.use('/check', checkLimiter, checkRoutes);
+v1Router.use('/telemetry', generalLimiter, telemetryRoutes);
+v1Router.use('/incidents', generalLimiter, incidentRoutes);
+v1Router.use('/guardian', generalLimiter, guardianRoutes);
+v1Router.use('/analytics', generalLimiter, analyticsRoutes);
+v1Router.use('/actions', generalLimiter, actionRoutes);
 
 // Mount versioned and root API routers
 app.use('/api/v1', v1Router);
