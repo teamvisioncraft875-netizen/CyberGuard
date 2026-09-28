@@ -146,22 +146,24 @@ async function runTenantIsolationVerification() {
     const res1a = await fetch(`${baseUrl}/incidents`, {
       headers: { Authorization: `Bearer ${tokenEmpA}` }
     });
-    const listEmpA = await res1a.json();
-    console.log(`1a. Employee A list count: ${listEmpA.length}`);
-    if (listEmpA.length !== 1 || listEmpA[0].id !== incA1.id) {
-      throw new Error(`1a FAIL: Employee A saw unauthorized incidents: ${JSON.stringify(listEmpA)}`);
+    const bodyEmpA = await res1a.json();
+    const listEmpA = Array.isArray(bodyEmpA) ? bodyEmpA : (bodyEmpA.incidents || bodyEmpA.data || []);
+    console.log(`1a. Employee A list count: ${listEmpA.length}, total: ${bodyEmpA.total}`);
+    if (listEmpA.length !== 1 || listEmpA[0].id !== incA1.id || bodyEmpA.total !== 1) {
+      throw new Error(`1a FAIL: Employee A saw unauthorized incidents: ${JSON.stringify(bodyEmpA)}`);
     }
-    console.log('✔ 1a PASS: Non-admin query forced to WHERE user_id = req.user.id');
+    console.log('✔ 1a PASS: Non-admin query forced to WHERE user_id = req.user.id with total count');
 
     // 1b. Admin A lists incidents with malicious org query param: ?organization_id=${orgB.id}
     // Must IGNORE orgB.id and force WHERE organization_id = orgA.id
     const res1b = await fetch(`${baseUrl}/incidents?organization_id=${orgB.id}`, {
       headers: { Authorization: `Bearer ${tokenAdminA}` }
     });
-    const listAdminA = await res1b.json();
-    console.log(`1b. Admin A list count: ${listAdminA.length}`);
+    const bodyAdminA = await res1b.json();
+    const listAdminA = Array.isArray(bodyAdminA) ? bodyAdminA : (bodyAdminA.incidents || bodyAdminA.data || []);
+    console.log(`1b. Admin A list count: ${listAdminA.length}, total: ${bodyAdminA.total}`);
     const adminAIds = listAdminA.map(i => i.id);
-    if (!adminAIds.includes(incA1.id) || !adminAIds.includes(incA2.id) || adminAIds.includes(incB1.id)) {
+    if (!adminAIds.includes(incA1.id) || !adminAIds.includes(incA2.id) || adminAIds.includes(incB1.id) || bodyAdminA.total !== 2) {
       throw new Error(`1b FAIL: Admin A saw cross-tenant incidents or missed org incidents: ${JSON.stringify(adminAIds)}`);
     }
     console.log('✔ 1b PASS: Admin query forced to WHERE organization_id = req.user.organization_id (client query param ignored)');
@@ -201,6 +203,49 @@ async function runTenantIsolationVerification() {
       throw new Error(`1d FAIL: Valid org incident update failed: ${JSON.stringify(updateRes)}`);
     }
     console.log('✔ 1d PASS: Admin update succeeded for own organization incident');
+
+    // 1e. Non-admin (Employee A) fetches own incident A1 via GET /incidents/:id -> 200
+    const res1e = await fetch(`${baseUrl}/incidents/${incA1.id}`, {
+      headers: { Authorization: `Bearer ${tokenEmpA}` }
+    });
+    const detailEmpA = await res1e.json();
+    if (res1e.status !== 200 || detailEmpA.id !== incA1.id || !Array.isArray(detailEmpA.detection_signals) || !Array.isArray(detailEmpA.evidence)) {
+      throw new Error(`1e FAIL: Non-admin fetch of own incident failed: ${JSON.stringify(detailEmpA)}`);
+    }
+    console.log('✔ 1e PASS: Non-admin fetched own incident with detection_signals and evidence arrays');
+
+    // 1f. Non-admin (Employee A) attempts to fetch Org B incident B1 via GET /incidents/:id -> 404 (not 403)
+    const res1f = await fetch(`${baseUrl}/incidents/${incB1.id}`, {
+      headers: { Authorization: `Bearer ${tokenEmpA}` }
+    });
+    if (res1f.status !== 404) {
+      throw new Error(`1f FAIL: Cross-tenant GET by non-admin should return 404, got ${res1f.status}`);
+    }
+    console.log('✔ 1f PASS: Non-admin fetch of cross-tenant incident returned 404 (not 403)');
+
+    // 1g. Admin A attempts to fetch Org B incident B1 via GET /incidents/:id -> 404 (not 403)
+    const res1g = await fetch(`${baseUrl}/incidents/${incB1.id}`, {
+      headers: { Authorization: `Bearer ${tokenAdminA}` }
+    });
+    if (res1g.status !== 404) {
+      throw new Error(`1g FAIL: Cross-org GET by admin should return 404, got ${res1g.status}`);
+    }
+    console.log('✔ 1g PASS: Admin fetch of cross-tenant incident returned 404 (not 403)');
+
+    // 1h. Non-existent ID or invalid UUID returns 404
+    const res1h = await fetch(`${baseUrl}/incidents/00000000-0000-0000-0000-000000000000`, {
+      headers: { Authorization: `Bearer ${tokenEmpA}` }
+    });
+    if (res1h.status !== 404) {
+      throw new Error(`1h FAIL: Non-existent incident should return 404, got ${res1h.status}`);
+    }
+    const res1h_invalid = await fetch(`${baseUrl}/incidents/invalid-uuid-format`, {
+      headers: { Authorization: `Bearer ${tokenEmpA}` }
+    });
+    if (res1h_invalid.status !== 404) {
+      throw new Error(`1h FAIL: Invalid UUID should return 404, got ${res1h_invalid.status}`);
+    }
+    console.log('✔ 1h PASS: Non-existent and invalid UUID returned 404');
 
     // ==========================================
     // TEST 2: Telemetry Scoping & Target Verification
@@ -331,6 +376,18 @@ async function runTenantIsolationVerification() {
     }
     testLinkIds.push(linkRes.link_id);
     console.log('✔ 3b PASS: Caller-involved guardian link created with 201');
+
+    // Admin A (the dependent) accepts the pending guardian link
+    const res3bAccept = await fetch(`${baseUrl}/guardian/link/${linkRes.link_id}/accept`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${tokenAdminA}`
+      }
+    });
+    if (res3bAccept.status !== 200) {
+      throw new Error(`3b FAIL: Dependent failed to accept link: ${res3bAccept.status}`);
+    }
+    console.log('✔ 3b PASS: Dependent accepted guardian link with 200');
 
     // 3c. Employee A queries dependent alerts:
     // Admin A has incident incA2 (critical, deepfake).

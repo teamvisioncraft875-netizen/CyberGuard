@@ -1,5 +1,10 @@
 const User = require('../models/User');
+const LoginEvent = require('../models/LoginEvent');
+const TelemetryEvent = require('../models/TelemetryEvent');
 const { callMlEngine } = require('../utils/mlClient');
+const { persistDetectionIncident } = require('../services/incidentService');
+
+const ANOMALOUS_RISK_TIERS = new Set(['medium', 'high', 'critical']);
 
 const VALID_RISK_LEVELS = new Set(['Safe', 'Low', 'Medium', 'High', 'Critical']);
 
@@ -24,6 +29,7 @@ function isValidLoginMlResult(result) {
 
 /**
  * Telemetry Controller — Ingests host system and authentication telemetry from Guard App sensors.
+ * Persists raw telemetry records to PostgreSQL and spawns incident records for anomalous events.
  */
 const telemetryController = {
   /**
@@ -85,6 +91,7 @@ const telemetryController = {
 
     // Non-admin always forced to req.user.id, ignoring any client user_id in req.body
     let userId = req.user?.id;
+    let userOrgId = req.user?.organization_id || null;
 
     // If admin, verify the target user_id belongs to req.user.organization_id before accepting it
     if (req.user?.role === 'admin' && req.body.user_id) {
@@ -98,11 +105,12 @@ const telemetryController = {
             message: 'Target user does not belong to your organization'
           });
         }
+        userOrgId = targetOrg;
       }
       userId = req.body.user_id;
     }
 
-    let mlResult;
+    let mlResult = null;
     try {
       mlResult = await callMlEngine('/internal/analyze/login', {
         user_id: userId,
@@ -112,33 +120,83 @@ const telemetryController = {
         failed_attempts: numFailed
       });
     } catch (err) {
-      console.error('[telemetryController.reportLoginEvent ML Service Error]', err.message);
-      return res.status(502).json({
-        error: 'DETECTION_ENGINE_UNAVAILABLE',
-        message: 'Detection engine unavailable'
-      });
+      console.warn('[telemetryController.reportLoginEvent ML Service Note]', err.message);
     }
 
-    // Validate response from ML engine (Fail-closed on malformed or corrupted inference)
-    if (!isValidLoginMlResult(mlResult)) {
-      console.error('[telemetryController.reportLoginEvent Malformed ML Response]');
-      return res.status(502).json({
-        error: 'DETECTION_ENGINE_UNAVAILABLE',
-        message: 'Detection engine returned invalid or malformed response'
-      });
+    // Validate response from ML engine if present
+    if (mlResult && !isValidLoginMlResult(mlResult)) {
+      console.warn('[telemetryController.reportLoginEvent Malformed ML Response, falling back]');
+      mlResult = null;
     }
 
-    const anomalyDetected = mlResult.risk_level !== 'Safe' && mlResult.risk_level !== 'Low';
+    // 1. Insert raw row into login_events regardless of risk level
+    try {
+      await LoginEvent.create({
+        user_id: userId,
+        device_id: sanitizedDeviceId,
+        device_fingerprint: sanitizedDeviceId,
+        ip_address: req.body.ip_address || req.ip || null,
+        location: sanitizedLocation,
+        success: numFailed === 0,
+        failed_attempt_count: numFailed
+      });
+    } catch (dbErr) {
+      console.warn('[telemetryController.reportLoginEvent DB Note]', dbErr.message);
+    }
 
-    return res.status(201).json({
+    const anomalyDetected = mlResult ? (mlResult.risk_level !== 'Safe' && mlResult.risk_level !== 'Low') : true;
+    const riskLevel = mlResult?.risk_level || 'High';
+    const riskLevelLower = (mlResult?.risk_level || '').toLowerCase();
+    const isAnomalous = ANOMALOUS_RISK_TIERS.has(riskLevelLower);
+
+    // 2. If anomaly detected (medium/high/critical), persist incident with MITRE mapping and alerts
+    let incident = null;
+    if (mlResult && isAnomalous) {
+      const recommendedActions = Array.isArray(mlResult.recommended_actions) && mlResult.recommended_actions.length > 0
+        ? mlResult.recommended_actions
+        : (mlResult.recommended_action
+            ? [mlResult.recommended_action]
+            : ['Terminate active sessions and force password reset for compromised user account.', 'Enforce multi-factor authentication (MFA).']);
+
+      try {
+        incident = await persistDetectionIncident({
+          user: {
+            id: userId,
+            organization_id: userOrgId
+          },
+          threatType: 'account_takeover',
+          sourceType: 'login',
+          mlResult,
+          recommendedActions
+        });
+      } catch (incErr) {
+        console.warn('[telemetryController.reportLoginEvent Incident Note]', incErr.message);
+      }
+    }
+
+    // 3. Response shape
+    const responsePayload = {
       status: 'recorded',
       anomaly_detected: anomalyDetected,
-      risk_level: mlResult.risk_level,
-      risk_score: mlResult.risk_score,
-      explanation: mlResult.explanation,
-      recommended_actions: mlResult.recommended_actions,
-      signals: mlResult.signals
-    });
+      risk_level: riskLevel
+    };
+    if (mlResult?.risk_score !== undefined) {
+      responsePayload.risk_score = mlResult.risk_score;
+    }
+    if (mlResult?.explanation) {
+      responsePayload.explanation = mlResult.explanation;
+    }
+    if (mlResult?.recommended_actions) {
+      responsePayload.recommended_actions = mlResult.recommended_actions;
+    }
+    if (mlResult?.signals) {
+      responsePayload.signals = mlResult.signals;
+    }
+    if (incident?.id) {
+      responsePayload.incident_id = incident.id;
+    }
+
+    return res.status(201).json(responsePayload);
   },
 
   /**
@@ -157,6 +215,7 @@ const telemetryController = {
 
     // Non-admin always forced to req.user.id, ignoring any client user_id in req.body
     let userId = req.user?.id;
+    let userOrgId = req.user?.organization_id || null;
 
     // If admin, verify the target user_id belongs to req.user.organization_id before accepting it
     if (req.user?.role === 'admin' && req.body.user_id) {
@@ -170,6 +229,7 @@ const telemetryController = {
             message: 'Target user does not belong to your organization'
           });
         }
+        userOrgId = targetOrg;
       }
       userId = req.body.user_id;
     }
@@ -186,17 +246,62 @@ const telemetryController = {
       console.warn('[telemetryController.reportSystemEvent ML Service Note]', err.message);
     }
 
+    // 1. Insert raw row into telemetry_events regardless of risk level
+    try {
+      await TelemetryEvent.create({
+        user_id: userId,
+        device_id: req.body.device_id || null,
+        event_type,
+        payload: details
+      });
+    } catch (dbErr) {
+      console.warn('[telemetryController.reportSystemEvent DB Note]', dbErr.message);
+    }
+
     const anomalyDetected = mlResult ? (mlResult.risk_level !== 'Safe' && mlResult.risk_level !== 'Low') : true;
     const riskLevel = mlResult?.risk_level || 'Medium';
+    const riskLevelLower = (mlResult?.risk_level || '').toLowerCase();
+    const isAnomalous = ANOMALOUS_RISK_TIERS.has(riskLevelLower);
 
-    return res.status(201).json({
+    // 2. If anomaly detected (medium/high/critical), persist incident with MITRE mapping and alerts
+    let incident = null;
+    if (mlResult && isAnomalous) {
+      const recommendedActions = Array.isArray(mlResult.recommended_actions) && mlResult.recommended_actions.length > 0
+        ? mlResult.recommended_actions
+        : (mlResult.recommended_action
+            ? [mlResult.recommended_action]
+            : ['Investigate anomalous host activity and isolate network interface if unauthorized traffic persists.']);
+
+      try {
+        incident = await persistDetectionIncident({
+          user: {
+            id: userId,
+            organization_id: userOrgId
+          },
+          threatType: 'technical_threat',
+          sourceType: 'system',
+          mlResult,
+          recommendedActions
+        });
+      } catch (incErr) {
+        console.warn('[telemetryController.reportSystemEvent Incident Note]', incErr.message);
+      }
+    }
+
+    // 3. Response shape
+    const responsePayload = {
       status: 'recorded',
       anomaly_detected: anomalyDetected,
       risk_level: riskLevel,
       risk_score: mlResult?.risk_score,
       explanation: mlResult?.explanation,
       signals: mlResult?.signals
-    });
+    };
+    if (incident?.id) {
+      responsePayload.incident_id = incident.id;
+    }
+
+    return res.status(201).json(responsePayload);
   }
 };
 

@@ -1,6 +1,8 @@
 const GuardianLink = require('../models/GuardianLink');
 const db = require('../config/db');
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 /**
  * Guardian Controller — Supports Guardian Mode for family and dependent protection.
  */
@@ -37,12 +39,12 @@ const guardianController = {
       const link = await GuardianLink.create({
         guardian_user_id,
         dependent_user_id,
-        status: 'active'
+        status: 'pending'
       });
 
       return res.status(201).json({
         link_id: link?.link_id || link?.id || 'lnk_' + Date.now(),
-        status: link?.status || 'active',
+        status: link?.status || 'pending',
         guardian_user_id: link?.guardian_user_id || guardian_user_id,
         dependent_user_id: link?.dependent_user_id || dependent_user_id,
         created_at: link?.created_at || new Date().toISOString()
@@ -51,6 +53,105 @@ const guardianController = {
       console.error('[guardianController.linkDependent error]', err.message);
       return res.status(500).json({ error: 'DB_ERROR', message: 'Failed to create guardian link' });
     }
+  },
+
+  /**
+   * POST /api/v1/guardian/link/:id/accept
+   */
+  async acceptGuardianLink(req, res) {
+    const { id } = req.params;
+
+    if (!id || !UUID_REGEX.test(id)) {
+      return res.status(404).json({
+        error: 'NOT_FOUND',
+        message: 'Guardian link not found'
+      });
+    }
+
+    try {
+      const link = await GuardianLink.findById(id);
+
+      // Dependent verification: only dependent_user_id on this link can accept
+      if (!link || link.dependent_user_id !== req.user?.id) {
+        return res.status(404).json({
+          error: 'NOT_FOUND',
+          message: 'Guardian link not found'
+        });
+      }
+
+      // Check current link status
+      if (link.status !== 'pending') {
+        return res.status(400).json({
+          error: 'INVALID_STATUS',
+          message: `Cannot accept guardian link with status '${link.status}'`
+        });
+      }
+
+      const updated = await GuardianLink.updateStatus(id, 'active');
+      return res.status(200).json({
+        link_id: updated?.link_id || updated?.id || id,
+        status: updated?.status || 'active',
+        guardian_user_id: updated?.guardian_user_id || link.guardian_user_id,
+        dependent_user_id: updated?.dependent_user_id || link.dependent_user_id,
+        created_at: updated?.created_at || link.created_at
+      });
+    } catch (err) {
+      console.error('[guardianController.acceptGuardianLink error]', err.message);
+      return res.status(500).json({ error: 'DB_ERROR', message: 'Failed to accept guardian link' });
+    }
+  },
+
+  /**
+   * POST /api/v1/guardian/link/:id/decline
+   */
+  async declineGuardianLink(req, res) {
+    const { id } = req.params;
+
+    if (!id || !UUID_REGEX.test(id)) {
+      return res.status(404).json({
+        error: 'NOT_FOUND',
+        message: 'Guardian link not found'
+      });
+    }
+
+    try {
+      const link = await GuardianLink.findById(id);
+
+      // Dependent verification: only dependent_user_id on this link can decline
+      if (!link || link.dependent_user_id !== req.user?.id) {
+        return res.status(404).json({
+          error: 'NOT_FOUND',
+          message: 'Guardian link not found'
+        });
+      }
+
+      // Check current link status
+      if (link.status !== 'pending') {
+        return res.status(400).json({
+          error: 'INVALID_STATUS',
+          message: `Cannot decline guardian link with status '${link.status}'`
+        });
+      }
+
+      const updated = await GuardianLink.updateStatus(id, 'revoked');
+      return res.status(200).json({
+        link_id: updated?.link_id || updated?.id || id,
+        status: updated?.status || 'revoked',
+        guardian_user_id: updated?.guardian_user_id || link.guardian_user_id,
+        dependent_user_id: updated?.dependent_user_id || link.dependent_user_id,
+        created_at: updated?.created_at || link.created_at
+      });
+    } catch (err) {
+      console.error('[guardianController.declineGuardianLink error]', err.message);
+      return res.status(500).json({ error: 'DB_ERROR', message: 'Failed to decline guardian link' });
+    }
+  },
+
+  /**
+   * Alias for declineGuardianLink
+   */
+  revokeGuardianLink(req, res) {
+    return guardianController.declineGuardianLink(req, res);
   },
 
   /**
