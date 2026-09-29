@@ -62,7 +62,7 @@ const checkController = {
 
     return res.status(200).json({
       id: incident.id,
-      risk_level: mlResult.risk_level,
+      risk_level: (mlResult.risk_level || 'low').toLowerCase(),
       explanation: mlResult.explanation,
       recommended_actions: recommendedActions,
       signals: mlResult.signals || {}
@@ -120,7 +120,7 @@ const checkController = {
 
     return res.status(200).json({
       id: incident.id,
-      risk_level: mlResult.risk_level,
+      risk_level: (mlResult.risk_level || 'low').toLowerCase(),
       explanation: mlResult.explanation,
       recommended_actions: recommendedActions,
       signals: mlResult.signals || {}
@@ -185,7 +185,7 @@ const checkController = {
 
     return res.status(200).json({
       id: incident.id,
-      risk_level: mlResult.risk_level,
+      risk_level: (mlResult.risk_level || 'low').toLowerCase(),
       risk_score: mlResult.risk_score,
       explanation: mlResult.explanation,
       recommended_actions: recommendedActions,

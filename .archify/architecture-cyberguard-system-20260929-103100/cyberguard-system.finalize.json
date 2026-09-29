@@ -1,0 +1,1577 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "startedAt": "2026-09-29T05:10:17.877Z",
+  "specification": {
+    "path": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\candidate.json",
+    "sha256": "c6996fb08867fb27b520c53e50745d6eab6efcbd896ceef23f3336679e549096",
+    "bytes": 13780
+  },
+  "artifact": {
+    "path": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.html",
+    "sha256": "d6445c21c76632fa86e8a66ca6c9cee1e41c3beec3910f67c3de5ae6de805c4f",
+    "bytes": 812511
+  },
+  "stages": {
+    "validate": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": null,
+      "execution": "embedded-in-deliver",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\subha\\Downloads\\archify-tool\\archify\\bin\\archify.mjs",
+        "deliver",
+        "architecture",
+        "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\candidate.json",
+        "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.html",
+        "--quality",
+        "showcase",
+        "--repo-root",
+        "C:\\Users\\subha\\Downloads\\CyberGuard",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": true,
+        "command": "validate",
+        "specification": {
+          "sha256": "c6996fb08867fb27b520c53e50745d6eab6efcbd896ceef23f3336679e549096",
+          "bytes": 13780
+        },
+        "validation": {
+          "checksPassed": 9,
+          "checkCount": 9,
+          "compositionProfile": "showcase",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 0
+        }
+      }
+    },
+    "deliver": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 1677,
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\subha\\Downloads\\archify-tool\\archify\\bin\\archify.mjs",
+        "deliver",
+        "architecture",
+        "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\candidate.json",
+        "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.html",
+        "--quality",
+        "showcase",
+        "--repo-root",
+        "C:\\Users\\subha\\Downloads\\CyberGuard",
+        "--json"
+      ],
+      "receipt": {
+        "schemaVersion": 1,
+        "receiptId": "a37328bd-7620-4c24-8142-8dab6b4b2289",
+        "ok": true,
+        "command": "deliver",
+        "type": "architecture",
+        "input": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\candidate.json",
+        "output": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.html",
+        "specification": {
+          "sha256": "c6996fb08867fb27b520c53e50745d6eab6efcbd896ceef23f3336679e549096",
+          "bytes": 13780
+        },
+        "artifact": {
+          "sha256": "d6445c21c76632fa86e8a66ca6c9cee1e41c3beec3910f67c3de5ae6de805c4f",
+          "bytes": 812511
+        },
+        "validation": {
+          "checksPassed": 9,
+          "checkCount": 9,
+          "compositionProfile": "showcase",
+          "compositionStatus": "pass",
+          "errors": 0,
+          "warnings": 0
+        },
+        "evidence": {
+          "verified": true,
+          "repository": "https://github.com/teamvisioncraft875-netizen/CyberGuard",
+          "revision": "9bb7148091db897f36bf6a0575761ec09165775d",
+          "references": 15
+        },
+        "update": {
+          "status": "unavailable",
+          "installedVersion": null,
+          "availableVersion": null,
+          "releaseNotes": null,
+          "checkedAt": null,
+          "source": null,
+          "noticeRequired": false,
+          "noticeText": null,
+          "reason": "disabled"
+        }
+      }
+    },
+    "check": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 294,
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\subha\\Downloads\\archify-tool\\archify\\bin\\archify.mjs",
+        "check",
+        "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.html",
+        "--require-provenance"
+      ],
+      "receipt": {
+        "ok": true,
+        "file": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.html",
+        "artifact": {
+          "sha256": "d6445c21c76632fa86e8a66ca6c9cee1e41c3beec3910f67c3de5ae6de805c4f",
+          "bytes": 812511
+        },
+        "checks": [
+          {
+            "name": "single_svg",
+            "ok": true,
+            "details": [
+              "found 1 <svg> block(s)"
+            ]
+          },
+          {
+            "name": "finite_svg",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "orthogonal_arrows",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "label_route_clearance",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "relationship_crossings",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "relationship_corridors",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "container_border_runs",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "route_rhythm",
+            "ok": true,
+            "details": []
+          },
+          {
+            "name": "legend_clearance",
+            "ok": true,
+            "details": []
+          }
+        ],
+        "composition": {
+          "schemaVersion": 1,
+          "profile": "showcase",
+          "status": "pass",
+          "summary": {
+            "errors": 0,
+            "warnings": 0
+          },
+          "metrics": {
+            "properCrossings": 0,
+            "resolvedCrossovers": 18,
+            "ambiguousCorridors": 0,
+            "arrowheadCollisions": 0,
+            "containerBorderRuns": 0,
+            "labelRouteClearanceIssues": 0,
+            "labelCanvasOverflowIssues": 0,
+            "minLabelRouteClearance": 5,
+            "desktopReadabilityIssues": 0,
+            "viewportHeightIssues": 0,
+            "minProjectedNodeTextPx": 6.83248730964467,
+            "maxBends": 4,
+            "routesOverSuggestedBends": 9,
+            "maxStretch": 1.278,
+            "routesOverSuggestedStretch": 0,
+            "minSegmentPx": 24,
+            "minInteriorSegmentPx": 51,
+            "shortSegmentCount": 0,
+            "shortEndpointSegmentCount": 0,
+            "shortInteriorSegmentCount": 0,
+            "microSegmentCount": 0
+          },
+          "suggestedLimits": {
+            "bendsPerRelationship": 2,
+            "stretch": 1.35,
+            "segmentPx": 16,
+            "microSegmentPx": 8
+          },
+          "routeReview": {
+            "crossings": [
+              {
+                "left": {
+                  "id": "conn-mobile-gw",
+                  "from": "client_mobile",
+                  "to": "api_gw",
+                  "label": "HTTPS / REST",
+                  "collectionIndex": 1,
+                  "artifactIndex": 2
+                },
+                "right": {
+                  "id": "conn-sensor-gw",
+                  "from": "sensor_guard",
+                  "to": "api_gw",
+                  "label": "telemetry stream",
+                  "collectionIndex": 2,
+                  "artifactIndex": 3
+                },
+                "point": [
+                  286,
+                  297.99999999999994
+                ],
+                "sharedNode": "api_gw"
+              },
+              {
+                "left": {
+                  "id": "conn-sensor-gw",
+                  "from": "sensor_guard",
+                  "to": "api_gw",
+                  "label": "telemetry stream",
+                  "collectionIndex": 2,
+                  "artifactIndex": 3
+                },
+                "right": {
+                  "id": "conn-ws-mobile",
+                  "from": "realtime_ws",
+                  "to": "client_mobile",
+                  "label": "push &amp; Guardian alerts",
+                  "collectionIndex": 22,
+                  "artifactIndex": 23
+                },
+                "point": [
+                  259,
+                  377
+                ]
+              },
+              {
+                "left": {
+                  "id": "conn-gw-mgmt",
+                  "from": "api_gw",
+                  "to": "ctrl_mgmt",
+                  "label": "resource routing",
+                  "collectionIndex": 6,
+                  "artifactIndex": 7
+                },
+                "right": {
+                  "id": "conn-svc-ws",
+                  "from": "svc_incident",
+                  "to": "realtime_ws",
+                  "label": "incident:new event",
+                  "collectionIndex": 20,
+                  "artifactIndex": 21
+                },
+                "point": [
+                  546,
+                  377
+                ]
+              },
+              {
+                "left": {
+                  "id": "conn-check-svc",
+                  "from": "ctrl_check",
+                  "to": "svc_incident",
+                  "label": "persist triage",
+                  "collectionIndex": 8,
+                  "artifactIndex": 9
+                },
+                "right": {
+                  "id": "conn-svc-mitre",
+                  "from": "svc_incident",
+                  "to": "ext_mitre",
+                  "label": "ATT&amp;CK taxonomy",
+                  "collectionIndex": 15,
+                  "artifactIndex": 16
+                },
+                "point": [
+                  657,
+                  326
+                ],
+                "sharedNode": "svc_incident"
+              },
+              {
+                "left": {
+                  "id": "conn-mlgw-anomaly",
+                  "from": "ml_gw",
+                  "to": "eng_anomaly",
+                  "label": "dispatch telemetry",
+                  "collectionIndex": 11,
+                  "artifactIndex": 12
+                },
+                "right": {
+                  "id": "conn-mlgw-media",
+                  "from": "ml_gw",
+                  "to": "eng_media",
+                  "label": "dispatch media",
+                  "collectionIndex": 12,
+                  "artifactIndex": 13
+                },
+                "point": [
+                  1064,
+                  298
+                ],
+                "sharedNode": "ml_gw"
+              },
+              {
+                "left": {
+                  "id": "conn-mlgw-media",
+                  "from": "ml_gw",
+                  "to": "eng_media",
+                  "label": "dispatch media",
+                  "collectionIndex": 12,
+                  "artifactIndex": 13
+                },
+                "right": {
+                  "id": "conn-svc-mitre",
+                  "from": "svc_incident",
+                  "to": "ext_mitre",
+                  "label": "ATT&amp;CK taxonomy",
+                  "collectionIndex": 15,
+                  "artifactIndex": 16
+                },
+                "point": [
+                  1064,
+                  326
+                ]
+              },
+              {
+                "left": {
+                  "id": "conn-mlgw-media",
+                  "from": "ml_gw",
+                  "to": "eng_media",
+                  "label": "dispatch media",
+                  "collectionIndex": 12,
+                  "artifactIndex": 13
+                },
+                "right": {
+                  "id": "conn-anomaly-db",
+                  "from": "eng_anomaly",
+                  "to": "db_postgres",
+                  "label": "read login history",
+                  "collectionIndex": 19,
+                  "artifactIndex": 20
+                },
+                "point": [
+                  1064,
+                  347
+                ]
+              },
+              {
+                "left": {
+                  "id": "conn-svc-mitre",
+                  "from": "svc_incident",
+                  "to": "ext_mitre",
+                  "label": "ATT&amp;CK taxonomy",
+                  "collectionIndex": 15,
+                  "artifactIndex": 16
+                },
+                "right": {
+                  "id": "conn-anomaly-db",
+                  "from": "eng_anomaly",
+                  "to": "db_postgres",
+                  "label": "read login history",
+                  "collectionIndex": 19,
+                  "artifactIndex": 20
+                },
+                "point": [
+                  1200,
+                  326
+                ]
+              },
+              {
+                "left": {
+                  "id": "conn-svc-fcm",
+                  "from": "svc_incident",
+                  "to": "ext_fcm",
+                  "label": "push dispatch",
+                  "collectionIndex": 16,
+                  "artifactIndex": 17
+                },
+                "right": {
+                  "id": "conn-anomaly-db",
+                  "from": "eng_anomaly",
+                  "to": "db_postgres",
+                  "label": "read login history",
+                  "collectionIndex": 19,
+                  "artifactIndex": 20
+                },
+                "point": [
+                  1020,
+                  377
+                ]
+              },
+              {
+                "left": {
+                  "id": "conn-svc-fcm",
+                  "from": "svc_incident",
+                  "to": "ext_fcm",
+                  "label": "push dispatch",
+                  "collectionIndex": 16,
+                  "artifactIndex": 17
+                },
+                "right": {
+                  "id": "conn-media-store",
+                  "from": "eng_media",
+                  "to": "store_media",
+                  "label": "fetch media bytes",
+                  "collectionIndex": 24,
+                  "artifactIndex": 25
+                },
+                "point": [
+                  1200,
+                  507
+                ]
+              },
+              {
+                "left": {
+                  "id": "conn-svc-db",
+                  "from": "svc_incident",
+                  "to": "db_postgres",
+                  "label": "atomic 4-table Tx",
+                  "collectionIndex": 17,
+                  "artifactIndex": 18
+                },
+                "right": {
+                  "id": "conn-media-store",
+                  "from": "eng_media",
+                  "to": "store_media",
+                  "label": "fetch media bytes",
+                  "collectionIndex": 24,
+                  "artifactIndex": 25
+                },
+                "point": [
+                  830.6999999999998,
+                  581
+                ]
+              },
+              {
+                "left": {
+                  "id": "conn-svc-db",
+                  "from": "svc_incident",
+                  "to": "db_postgres",
+                  "label": "atomic 4-table Tx",
+                  "collectionIndex": 17,
+                  "artifactIndex": 18
+                },
+                "right": {
+                  "id": "conn-db-rls",
+                  "from": "db_postgres",
+                  "to": "db_rls",
+                  "label": "tenant RLS policy",
+                  "collectionIndex": 25,
+                  "artifactIndex": 26
+                },
+                "point": [
+                  830.6999999999998,
+                  606
+                ],
+                "sharedNode": "db_postgres"
+              },
+              {
+                "left": {
+                  "id": "conn-mgmt-db",
+                  "from": "ctrl_mgmt",
+                  "to": "db_postgres",
+                  "label": "scoped queries",
+                  "collectionIndex": 18,
+                  "artifactIndex": 19
+                },
+                "right": {
+                  "id": "conn-media-store",
+                  "from": "eng_media",
+                  "to": "store_media",
+                  "label": "fetch media bytes",
+                  "collectionIndex": 24,
+                  "artifactIndex": 25
+                },
+                "point": [
+                  805,
+                  581
+                ]
+              },
+              {
+                "left": {
+                  "id": "conn-mgmt-db",
+                  "from": "ctrl_mgmt",
+                  "to": "db_postgres",
+                  "label": "scoped queries",
+                  "collectionIndex": 18,
+                  "artifactIndex": 19
+                },
+                "right": {
+                  "id": "conn-db-rls",
+                  "from": "db_postgres",
+                  "to": "db_rls",
+                  "label": "tenant RLS policy",
+                  "collectionIndex": 25,
+                  "artifactIndex": 26
+                },
+                "point": [
+                  805,
+                  606
+                ],
+                "sharedNode": "db_postgres"
+              },
+              {
+                "left": {
+                  "id": "conn-anomaly-db",
+                  "from": "eng_anomaly",
+                  "to": "db_postgres",
+                  "label": "read login history",
+                  "collectionIndex": 19,
+                  "artifactIndex": 20
+                },
+                "right": {
+                  "id": "conn-media-store",
+                  "from": "eng_media",
+                  "to": "store_media",
+                  "label": "fetch media bytes",
+                  "collectionIndex": 24,
+                  "artifactIndex": 25
+                },
+                "point": [
+                  1020,
+                  581
+                ]
+              },
+              {
+                "left": {
+                  "id": "conn-svc-ws",
+                  "from": "svc_incident",
+                  "to": "realtime_ws",
+                  "label": "incident:new event",
+                  "collectionIndex": 20,
+                  "artifactIndex": 21
+                },
+                "right": {
+                  "id": "conn-check-store",
+                  "from": "ctrl_check",
+                  "to": "store_media",
+                  "label": "upload media",
+                  "collectionIndex": 23,
+                  "artifactIndex": 24
+                },
+                "point": [
+                  545,
+                  377
+                ]
+              },
+              {
+                "left": {
+                  "id": "conn-ws-web",
+                  "from": "realtime_ws",
+                  "to": "client_web",
+                  "label": "live incident stream",
+                  "collectionIndex": 21,
+                  "artifactIndex": 22
+                },
+                "right": {
+                  "id": "conn-ws-mobile",
+                  "from": "realtime_ws",
+                  "to": "client_mobile",
+                  "label": "push &amp; Guardian alerts",
+                  "collectionIndex": 22,
+                  "artifactIndex": 23
+                },
+                "point": [
+                  380.9,
+                  456
+                ],
+                "sharedNode": "realtime_ws"
+              },
+              {
+                "left": {
+                  "id": "conn-check-store",
+                  "from": "ctrl_check",
+                  "to": "store_media",
+                  "label": "upload media",
+                  "collectionIndex": 23,
+                  "artifactIndex": 24
+                },
+                "right": {
+                  "id": "conn-media-store",
+                  "from": "eng_media",
+                  "to": "store_media",
+                  "label": "fetch media bytes",
+                  "collectionIndex": 24,
+                  "artifactIndex": 25
+                },
+                "point": [
+                  545,
+                  581
+                ],
+                "sharedNode": "store_media"
+              }
+            ],
+            "crowdedSides": [
+              {
+                "node": "api_gw",
+                "label": "Express API Gateway",
+                "side": "left",
+                "relationships": 3,
+                "sidePx": 54,
+                "neededPx": 60
+              },
+              {
+                "node": "ml_gw",
+                "label": "FastAPI Engine",
+                "side": "right",
+                "relationships": 3,
+                "sidePx": 54,
+                "neededPx": 60
+              },
+              {
+                "node": "svc_incident",
+                "label": "Incident Service",
+                "side": "right",
+                "relationships": 3,
+                "sidePx": 54,
+                "neededPx": 60
+              },
+              {
+                "node": "db_postgres",
+                "label": "PostgreSQL (Supabase)",
+                "side": "left",
+                "relationships": 3,
+                "sidePx": 56,
+                "neededPx": 60
+              }
+            ],
+            "detours": [
+              {
+                "relationship": {
+                  "id": "conn-mobile-gw",
+                  "from": "client_mobile",
+                  "to": "api_gw",
+                  "label": "HTTPS / REST",
+                  "collectionIndex": 1,
+                  "artifactIndex": 2
+                },
+                "bends": 3,
+                "stretch": 1.25
+              },
+              {
+                "relationship": {
+                  "id": "conn-gw-mgmt",
+                  "from": "api_gw",
+                  "to": "ctrl_mgmt",
+                  "label": "resource routing",
+                  "collectionIndex": 6,
+                  "artifactIndex": 7
+                },
+                "bends": 3,
+                "stretch": 1
+              },
+              {
+                "relationship": {
+                  "id": "conn-svc-mitre",
+                  "from": "svc_incident",
+                  "to": "ext_mitre",
+                  "label": "ATT&amp;CK taxonomy",
+                  "collectionIndex": 15,
+                  "artifactIndex": 16
+                },
+                "bends": 3,
+                "stretch": 1.065,
+                "directCorridorBlockers": [
+                  {
+                    "id": "eng_media",
+                    "label": "Deepfake &amp; Audio",
+                    "box": [
+                      1120,
+                      350,
+                      160,
+                      54
+                    ]
+                  }
+                ]
+              },
+              {
+                "relationship": {
+                  "id": "conn-svc-db",
+                  "from": "svc_incident",
+                  "to": "db_postgres",
+                  "label": "atomic 4-table Tx",
+                  "collectionIndex": 17,
+                  "artifactIndex": 18
+                },
+                "bends": 3,
+                "stretch": 1
+              },
+              {
+                "relationship": {
+                  "id": "conn-ws-web",
+                  "from": "realtime_ws",
+                  "to": "client_web",
+                  "label": "live incident stream",
+                  "collectionIndex": 21,
+                  "artifactIndex": 22
+                },
+                "bends": 4,
+                "stretch": 1.278
+              },
+              {
+                "relationship": {
+                  "id": "conn-ws-mobile",
+                  "from": "realtime_ws",
+                  "to": "client_mobile",
+                  "label": "push &amp; Guardian alerts",
+                  "collectionIndex": 22,
+                  "artifactIndex": 23
+                },
+                "bends": 4,
+                "stretch": 1
+              },
+              {
+                "relationship": {
+                  "id": "conn-check-store",
+                  "from": "ctrl_check",
+                  "to": "store_media",
+                  "label": "upload media",
+                  "collectionIndex": 23,
+                  "artifactIndex": 24
+                },
+                "bends": 4,
+                "stretch": 1
+              },
+              {
+                "relationship": {
+                  "id": "conn-media-store",
+                  "from": "eng_media",
+                  "to": "store_media",
+                  "label": "fetch media bytes",
+                  "collectionIndex": 24,
+                  "artifactIndex": 25
+                },
+                "bends": 3,
+                "stretch": 1
+              },
+              {
+                "relationship": {
+                  "id": "conn-db-rls",
+                  "from": "db_postgres",
+                  "to": "db_rls",
+                  "label": "tenant RLS policy",
+                  "collectionIndex": 25,
+                  "artifactIndex": 26
+                },
+                "bends": 3,
+                "stretch": 1.175
+              }
+            ]
+          },
+          "leadingSpace": {
+            "measured": true,
+            "emptyTopPx": 64,
+            "emptyTopRatio": 0.083,
+            "occupiedTop": 64,
+            "viewBoxTop": 0,
+            "canvasHeight": 774,
+            "typicalNodeHeight": 54,
+            "reviewSuggested": false
+          },
+          "desktopReadability": {
+            "budgetBasis": "recognized-declared-wide",
+            "readerContract": "declared-wide-v1",
+            "availableDiagramWidth": 1346,
+            "actualBudgetPx": 1346,
+            "actualReaderWidth": 1376,
+            "desiredReaderWidth": 1507.5,
+            "viewportCap": 1376,
+            "limit": "viewport-cap",
+            "requestedTargetPx": 7.5,
+            "requestedTargetMet": false,
+            "hardFloorPx": 6,
+            "hardFloorMet": true,
+            "minimumOwner": {
+              "kind": "edge",
+              "id": "conn-web-gw",
+              "from": "client_web",
+              "to": "api_gw"
+            },
+            "minimumSourceTextPx": 8,
+            "minimumProjectedTextPx": 6.83248730964467,
+            "semanticTextCount": 76
+          },
+          "issues": []
+        },
+        "provenance": "current",
+        "deliveryReceiptId": "a37328bd-7620-4c24-8142-8dab6b4b2289"
+      }
+    },
+    "browser-check": {
+      "status": "pass",
+      "exitCode": 0,
+      "durationMs": 2267,
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "C:\\Users\\subha\\Downloads\\archify-tool\\archify\\bin\\archify.mjs",
+        "browser-check",
+        "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.html",
+        "--json",
+        "--require-provenance"
+      ],
+      "execution": "in-process",
+      "receipt": {
+        "schemaVersion": 1,
+        "ok": true,
+        "command": "browser-check",
+        "evidenceKind": "automated-browser",
+        "status": "pass",
+        "visualReview": "not-requested",
+        "provenance": "current",
+        "deliveryReceiptId": "a37328bd-7620-4c24-8142-8dab6b4b2289",
+        "artifact": {
+          "path": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.html",
+          "sha256": "d6445c21c76632fa86e8a66ca6c9cee1e41c3beec3910f67c3de5ae6de805c4f",
+          "bytes": 812511
+        },
+        "state": {
+          "detail": "read",
+          "motion": "still"
+        },
+        "chrome": {
+          "status": "available",
+          "executable": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+        },
+        "diagnostics": [],
+        "containment": {
+          "status": "pass",
+          "policy": "fit-or-reader-declared-readable-vertical-scroll",
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "theme": "light",
+              "innerWidth": 1440,
+              "innerHeight": 900,
+              "scrollWidth": 1440,
+              "scrollHeight": 900,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1376,
+              "diagramWidth": 1346,
+              "pageComposition": {
+                "bodyPaddingPx": 12,
+                "headerPx": 78,
+                "diagramChromePx": 78,
+                "svgPx": 661,
+                "cardsPx": 0,
+                "viewBoxHeight": 774
+              },
+              "viewBoxWidth": 1576,
+              "minimumProjectedNodeTextPx": 6.83248730964467,
+              "minimumProjectedNonEdgeTextPx": 7.686548223350254,
+              "minimumProjectedEdgeTextPx": 6.83248730964467,
+              "minimumProjectedNodeText": "HTTPS / REST",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "conn-web-gw",
+                "from": "client_web",
+                "to": "api_gw"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "theme": "light",
+              "innerWidth": 1600,
+              "innerHeight": 1000,
+              "scrollWidth": 1600,
+              "scrollHeight": 1000,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1536,
+              "diagramWidth": 1506,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 740,
+                "cardsPx": 0,
+                "viewBoxHeight": 774
+              },
+              "viewBoxWidth": 1576,
+              "minimumProjectedNodeTextPx": 7.644670050761421,
+              "minimumProjectedNonEdgeTextPx": 8.600253807106599,
+              "minimumProjectedEdgeTextPx": 7.644670050761421,
+              "minimumProjectedNodeText": "HTTPS / REST",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "conn-web-gw",
+                "from": "client_web",
+                "to": "api_gw"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "theme": "light",
+              "innerWidth": 1920,
+              "innerHeight": 1080,
+              "scrollWidth": 1920,
+              "scrollHeight": 1080,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1729,
+              "diagramWidth": 1699,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 834,
+                "cardsPx": 0,
+                "viewBoxHeight": 774
+              },
+              "viewBoxWidth": 1576,
+              "minimumProjectedNodeTextPx": 8,
+              "minimumProjectedNonEdgeTextPx": 9,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "HTTPS / REST",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "conn-web-gw",
+                "from": "client_web",
+                "to": "api_gw"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "theme": "light",
+              "innerWidth": 2048,
+              "innerHeight": 1320,
+              "scrollWidth": 2048,
+              "scrollHeight": 1320,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1920,
+              "diagramWidth": 1870,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 94,
+                "diagramChromePx": 94,
+                "svgPx": 918,
+                "cardsPx": 0,
+                "viewBoxHeight": 774
+              },
+              "viewBoxWidth": 1576,
+              "minimumProjectedNodeTextPx": 8,
+              "minimumProjectedNonEdgeTextPx": 9,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "HTTPS / REST",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "conn-web-gw",
+                "from": "client_web",
+                "to": "api_gw"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            }
+          ]
+        },
+        "themeStates": {
+          "status": "pass",
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "requestedTheme": "light",
+              "resolvedTheme": "light",
+              "ok": true
+            },
+            {
+              "width": 1440,
+              "height": 900,
+              "requestedTheme": "dark",
+              "resolvedTheme": "dark",
+              "ok": true
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "requestedTheme": "dark",
+              "resolvedTheme": "dark",
+              "ok": true
+            }
+          ]
+        },
+        "readability": {
+          "status": "pass",
+          "minimumProjectedNodeTextPx": 6,
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "theme": "light",
+              "innerWidth": 1440,
+              "innerHeight": 900,
+              "scrollWidth": 1440,
+              "scrollHeight": 900,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1376,
+              "diagramWidth": 1346,
+              "pageComposition": {
+                "bodyPaddingPx": 12,
+                "headerPx": 78,
+                "diagramChromePx": 78,
+                "svgPx": 661,
+                "cardsPx": 0,
+                "viewBoxHeight": 774
+              },
+              "viewBoxWidth": 1576,
+              "minimumProjectedNodeTextPx": 6.83248730964467,
+              "minimumProjectedNonEdgeTextPx": 7.686548223350254,
+              "minimumProjectedEdgeTextPx": 6.83248730964467,
+              "minimumProjectedNodeText": "HTTPS / REST",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "conn-web-gw",
+                "from": "client_web",
+                "to": "api_gw"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "theme": "light",
+              "innerWidth": 1600,
+              "innerHeight": 1000,
+              "scrollWidth": 1600,
+              "scrollHeight": 1000,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1536,
+              "diagramWidth": 1506,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 740,
+                "cardsPx": 0,
+                "viewBoxHeight": 774
+              },
+              "viewBoxWidth": 1576,
+              "minimumProjectedNodeTextPx": 7.644670050761421,
+              "minimumProjectedNonEdgeTextPx": 8.600253807106599,
+              "minimumProjectedEdgeTextPx": 7.644670050761421,
+              "minimumProjectedNodeText": "HTTPS / REST",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "conn-web-gw",
+                "from": "client_web",
+                "to": "api_gw"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "theme": "light",
+              "innerWidth": 1920,
+              "innerHeight": 1080,
+              "scrollWidth": 1920,
+              "scrollHeight": 1080,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1729,
+              "diagramWidth": 1699,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 834,
+                "cardsPx": 0,
+                "viewBoxHeight": 774
+              },
+              "viewBoxWidth": 1576,
+              "minimumProjectedNodeTextPx": 8,
+              "minimumProjectedNonEdgeTextPx": 9,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "HTTPS / REST",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "conn-web-gw",
+                "from": "client_web",
+                "to": "api_gw"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "theme": "light",
+              "innerWidth": 2048,
+              "innerHeight": 1320,
+              "scrollWidth": 2048,
+              "scrollHeight": 1320,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1920,
+              "diagramWidth": 1870,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 94,
+                "diagramChromePx": 94,
+                "svgPx": 918,
+                "cardsPx": 0,
+                "viewBoxHeight": 774
+              },
+              "viewBoxWidth": 1576,
+              "minimumProjectedNodeTextPx": 8,
+              "minimumProjectedNonEdgeTextPx": 9,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "HTTPS / REST",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "conn-web-gw",
+                "from": "client_web",
+                "to": "api_gw"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            }
+          ]
+        },
+        "viewerChrome": {
+          "status": "pass",
+          "viewports": [
+            {
+              "width": 1440,
+              "height": 900,
+              "theme": "light",
+              "innerWidth": 1440,
+              "innerHeight": 900,
+              "scrollWidth": 1440,
+              "scrollHeight": 900,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1376,
+              "diagramWidth": 1346,
+              "pageComposition": {
+                "bodyPaddingPx": 12,
+                "headerPx": 78,
+                "diagramChromePx": 78,
+                "svgPx": 661,
+                "cardsPx": 0,
+                "viewBoxHeight": 774
+              },
+              "viewBoxWidth": 1576,
+              "minimumProjectedNodeTextPx": 6.83248730964467,
+              "minimumProjectedNonEdgeTextPx": 7.686548223350254,
+              "minimumProjectedEdgeTextPx": 6.83248730964467,
+              "minimumProjectedNodeText": "HTTPS / REST",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "conn-web-gw",
+                "from": "client_web",
+                "to": "api_gw"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1600,
+              "height": 1000,
+              "theme": "light",
+              "innerWidth": 1600,
+              "innerHeight": 1000,
+              "scrollWidth": 1600,
+              "scrollHeight": 1000,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1536,
+              "diagramWidth": 1506,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 740,
+                "cardsPx": 0,
+                "viewBoxHeight": 774
+              },
+              "viewBoxWidth": 1576,
+              "minimumProjectedNodeTextPx": 7.644670050761421,
+              "minimumProjectedNonEdgeTextPx": 8.600253807106599,
+              "minimumProjectedEdgeTextPx": 7.644670050761421,
+              "minimumProjectedNodeText": "HTTPS / REST",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "conn-web-gw",
+                "from": "client_web",
+                "to": "api_gw"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 1920,
+              "height": 1080,
+              "theme": "light",
+              "innerWidth": 1920,
+              "innerHeight": 1080,
+              "scrollWidth": 1920,
+              "scrollHeight": 1080,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1729,
+              "diagramWidth": 1699,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 86,
+                "diagramChromePx": 84,
+                "svgPx": 834,
+                "cardsPx": 0,
+                "viewBoxHeight": 774
+              },
+              "viewBoxWidth": 1576,
+              "minimumProjectedNodeTextPx": 8,
+              "minimumProjectedNonEdgeTextPx": 9,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "HTTPS / REST",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "conn-web-gw",
+                "from": "client_web",
+                "to": "api_gw"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 54,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            },
+            {
+              "width": 2048,
+              "height": 1320,
+              "theme": "light",
+              "innerWidth": 2048,
+              "innerHeight": 1320,
+              "scrollWidth": 2048,
+              "scrollHeight": 1320,
+              "overflowX": false,
+              "overflowY": false,
+              "verticalScrollAccepted": false,
+              "overflowDisposition": "contained",
+              "readerLayout": "adaptive",
+              "readerOverflow": null,
+              "readerFit": "intrinsic-height",
+              "ok": true,
+              "readerWidth": 1920,
+              "diagramWidth": 1870,
+              "pageComposition": {
+                "bodyPaddingPx": 64,
+                "headerPx": 94,
+                "diagramChromePx": 94,
+                "svgPx": 918,
+                "cardsPx": 0,
+                "viewBoxHeight": 774
+              },
+              "viewBoxWidth": 1576,
+              "minimumProjectedNodeTextPx": 8,
+              "minimumProjectedNonEdgeTextPx": 9,
+              "minimumProjectedEdgeTextPx": 8,
+              "minimumProjectedNodeText": "HTTPS / REST",
+              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeTextOwner": {
+                "kind": "edge",
+                "id": "conn-web-gw",
+                "from": "client_web",
+                "to": "api_gw"
+              },
+              "minimumRequiredNodeTextPx": 6,
+              "readabilityOk": true,
+              "hasLegend": true,
+              "hasNavigationDock": true,
+              "legendDockIntersectionArea": 0,
+              "dockStageIntersectionArea": 0,
+              "dockStageGap": 10,
+              "requiredDockStageGap": 10,
+              "viewerChromeStageOk": true,
+              "viewerChromeReserve": 44,
+              "viewerChromeActive": true,
+              "viewerChromeOk": true,
+              "resolvedTheme": "light"
+            }
+          ]
+        },
+        "captures": {
+          "status": "not-requested",
+          "screenshots": [],
+          "contactSheet": null
+        },
+        "sidecars": {
+          "receipt": "cyberguard-system.browser-check.json",
+          "files": []
+        }
+      }
+    }
+  },
+  "diagnostics": [],
+  "evidence": {
+    "receipt": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.finalize.json",
+    "summaryReceipt": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.finalize-summary.json",
+    "browserCheckReceipt": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.browser-check.json"
+  },
+  "visualReview": "not-requested",
+  "finishedAt": "2026-09-29T05:10:23.298Z",
+  "durationMs": 5420,
+  "update": {
+    "status": "current",
+    "installedVersion": "3.0.1",
+    "availableVersion": "3.0.1",
+    "releaseNotes": null,
+    "checkedAt": "2026-09-29T04:22:18.620Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  }
+}

@@ -1,55 +1,52 @@
 const db = require('../config/db');
 
-const ALLOWED_UPDATE_FIELDS = Object.freeze(['full_name', 'role', 'org_id']);
+const ALLOWED_UPDATE_FIELDS = Object.freeze(['role', 'organization_id']);
 
 /**
  * User Model — CRUD operations on the 'users' table
  */
 const User = {
-  async create({ org_id = null, email, password_hash, full_name, role = 'individual' }) {
+  async create({ organization_id = null, email, password_hash, role = 'individual' }) {
     const text = `
-      INSERT INTO users (org_id, email, password_hash, full_name, role, created_at, updated_at)
-      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-      RETURNING id, org_id, email, full_name, role, created_at, updated_at;
+      INSERT INTO users (organization_id, email, password_hash, role, created_at)
+      VALUES ($1, $2, $3, $4, NOW())
+      RETURNING id, organization_id, email, role, created_at;
     `;
-    const res = await db.query(text, [org_id, email, password_hash, full_name, role]);
+    const res = await db.query(text, [organization_id, email, password_hash, role]);
     return res.rows[0];
   },
 
   async findById(id) {
     const text = `
-      SELECT *
+      SELECT id, email, password_hash, role, organization_id, created_at
       FROM users
       WHERE id = $1;
     `;
     const res = await db.query(text, [id]);
-    const user = res.rows[0];
-    if (user) {
-      user.organization_id = user.organization_id || user.org_id || null;
-    }
-    return user || null;
+    return res.rows[0] || null;
   },
 
   async findByEmail(email) {
     const text = `
-      SELECT *
+      SELECT id, email, password_hash, role, organization_id, created_at
       FROM users
-      WHERE email = $1;
+      WHERE LOWER(email) = LOWER($1);
     `;
     const res = await db.query(text, [email]);
     return res.rows[0] || null;
   },
 
-  async findByOrgId(org_id) {
+  async findByOrganizationId(organization_id) {
     const text = `
-      SELECT id, org_id, email, full_name, role, created_at
+      SELECT id, organization_id, email, role, created_at
       FROM users
-      WHERE org_id = $1
+      WHERE organization_id = $1
       ORDER BY created_at DESC;
     `;
-    const res = await db.query(text, [org_id]);
+    const res = await db.query(text, [organization_id]);
     return res.rows;
   },
+
 
   async update(id, fields = {}) {
     const keys = Object.keys(fields).filter(k => ALLOWED_UPDATE_FIELDS.includes(k));
@@ -60,9 +57,9 @@ const User = {
 
     const text = `
       UPDATE users
-      SET ${setClauses}, updated_at = NOW()
+      SET ${setClauses}
       WHERE id = $1
-      RETURNING id, org_id, email, full_name, role, updated_at;
+      RETURNING id, organization_id, email, role, created_at;
     `;
     const res = await db.query(text, values);
     return res.rows[0] || null;
