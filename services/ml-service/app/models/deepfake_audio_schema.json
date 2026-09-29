@@ -1,0 +1,27 @@
+{
+  "model_type": "LogisticRegression",
+  "feature_version": "2.0.0_leakage_fixed",
+  "features": [
+    "zero_crossing_rate",
+    "spectral_centroid_hz",
+    "spectral_rolloff_85_hz",
+    "spectral_rolloff_95_hz",
+    "spectral_flux",
+    "subband_ratio_4k_to_8k",
+    "subband_ratio_2k_to_4k",
+    "high_freq_ratio_4k",
+    "spectral_flatness",
+    "high_freq_cutoff_detected",
+    "mean_f0_hz",
+    "pitch_jitter_pct",
+    "anomaly_score"
+  ],
+  "feature_count": 13,
+  "target_mapping": {
+    "genuine": 0,
+    "manipulated": 1
+  },
+  "frozen_threshold": 0.5,
+  "target_sample_rate": 16000,
+  "audio_channels": 1
+}

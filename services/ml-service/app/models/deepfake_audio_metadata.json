@@ -1,0 +1,111 @@
+{
+  "model_name": "CYBERGUARD Deepfake Audio Classifier (Leakage-Fixed)",
+  "algorithm": "LogisticRegression",
+  "frozen_threshold": 0.5,
+  "candidate_comparison": {
+    "LogisticRegression": {
+      "accuracy": 0.68,
+      "balanced_accuracy": 0.68,
+      "precision": 0.6154,
+      "recall": 0.96,
+      "f1": 0.75,
+      "roc_auc": 0.7632,
+      "pr_auc": 0.766
+    },
+    "RandomForestClassifier": {
+      "accuracy": 0.62,
+      "balanced_accuracy": 0.62,
+      "precision": 0.6,
+      "recall": 0.72,
+      "f1": 0.6545,
+      "roc_auc": 0.6784,
+      "pr_auc": 0.6952
+    },
+    "GradientBoostingClassifier": {
+      "accuracy": 0.64,
+      "balanced_accuracy": 0.64,
+      "precision": 0.6296,
+      "recall": 0.68,
+      "f1": 0.6538,
+      "roc_auc": 0.6816,
+      "pr_auc": 0.6664
+    }
+  },
+  "ablation_results": {
+    "ablation_A_unnormalized_with_8k": {
+      "accuracy": 0.98,
+      "balanced_accuracy": 0.98,
+      "f1": 0.9804,
+      "roc_auc": 1.0
+    },
+    "ablation_B_unnormalized_without_8k": {
+      "accuracy": 0.98,
+      "balanced_accuracy": 0.98,
+      "f1": 0.9804,
+      "roc_auc": 1.0
+    },
+    "ablation_C_standardized_16k_redesigned": {
+      "accuracy": 0.62,
+      "balanced_accuracy": 0.62,
+      "f1": 0.6545,
+      "roc_auc": 0.6784
+    }
+  },
+  "feature_schema": {
+    "version": "2.0.0_leakage_fixed",
+    "features": [
+      "zero_crossing_rate",
+      "spectral_centroid_hz",
+      "spectral_rolloff_85_hz",
+      "spectral_rolloff_95_hz",
+      "spectral_flux",
+      "subband_ratio_4k_to_8k",
+      "subband_ratio_2k_to_4k",
+      "high_freq_ratio_4k",
+      "spectral_flatness",
+      "high_freq_cutoff_detected",
+      "mean_f0_hz",
+      "pitch_jitter_pct",
+      "anomaly_score"
+    ],
+    "feature_count": 13
+  },
+  "feature_importances": {
+    "zero_crossing_rate": 0.2808,
+    "spectral_flatness": 0.1441,
+    "spectral_flux": 0.131,
+    "subband_ratio_2k_to_4k": 0.1281,
+    "high_freq_ratio_4k": 0.0691,
+    "anomaly_score": 0.0558,
+    "subband_ratio_4k_to_8k": 0.042,
+    "high_freq_cutoff_detected": 0.0341,
+    "pitch_jitter_pct": 0.0215,
+    "mean_f0_hz": 0.0088,
+    "spectral_rolloff_85_hz": 0.0028,
+    "spectral_rolloff_95_hz": 0.0022,
+    "spectral_centroid_hz": 0.0014
+  },
+  "dataset": {
+    "name": "garystafford/deepfake-audio-detection",
+    "source": "https://huggingface.co/datasets/garystafford/deepfake-audio-detection",
+    "license": "CC-BY-4.0",
+    "preprocessing": "Mono 16 kHz polyphase resample, DC offset removed, peak normalized",
+    "train_samples": 140,
+    "validation_samples": 50,
+    "test_samples": 50,
+    "train_sources_count": 47,
+    "validation_sources_count": 23,
+    "test_sources_count": 17,
+    "unseen_test_engines": [
+      "Kokoro / HuggingFace TTS",
+      "Hume AI Expressive Voice"
+    ]
+  },
+  "validation_metrics": {
+    "accuracy": 0.68,
+    "balanced_accuracy": 0.68,
+    "f1_score": 0.75,
+    "roc_auc": 0.7632,
+    "threshold": 0.5
+  }
+}
