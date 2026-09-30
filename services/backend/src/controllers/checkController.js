@@ -1,5 +1,6 @@
 const { callMlEngine } = require('../utils/mlClient');
 const { persistDetectionIncident } = require('../services/incidentService');
+const { validateUserMediaOwnership, resolveStorageUrl } = require('../config/storage');
 
 const VALID_SOURCE_TYPES = Object.freeze(['email', 'sms', 'social']);
 const VALID_MEDIA_TYPES = Object.freeze(['image', 'audio']);
@@ -135,21 +136,40 @@ const checkController = {
       return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
     }
 
-    const { file_url, media_type } = req.body;
+    const { file_url, file_path, media_type } = req.body;
+    const targetFile = file_path || file_url;
 
     // Validate request shape
-    if (!file_url || typeof file_url !== 'string') {
-      return res.status(400).json({ error: 'INVALID_FILE_URL', message: 'A valid file_url string is required' });
+    if (!targetFile || typeof targetFile !== 'string' || targetFile.trim().length === 0) {
+      return res.status(400).json({ error: 'INVALID_FILE_URL', message: 'A valid file_url or file_path string is required' });
     }
     if (!media_type || !VALID_MEDIA_TYPES.includes(media_type)) {
       return res.status(400).json({ error: 'INVALID_MEDIA_TYPE', message: "media_type must be 'image' or 'audio'" });
     }
 
+    // Tenant / User Media Ownership Check
+    const isOwner = validateUserMediaOwnership(targetFile, req.user.id);
+    if (!isOwner) {
+      return res.status(403).json({
+        error: 'FORBIDDEN',
+        message: 'Access denied: cannot check media belonging to another user'
+      });
+    }
+
+    const resolvedFileUrl = file_url || resolveStorageUrl(file_path);
+
     let mlResult;
     try {
-      mlResult = await callMlEngine('/internal/analyze/media', { file_url, media_type });
+      mlResult = await callMlEngine('/internal/analyze/media', { file_url: resolvedFileUrl, media_type });
     } catch (err) {
       console.error('[checkController.checkMedia ML Service Error]', err.message);
+      if (err.message && (err.message.includes('HTTP 404') || err.message.includes('could not be resolved'))) {
+        return res.status(404).json({
+          error: 'FILE_NOT_FOUND',
+          message: 'Media file could not be found at specified storage URL',
+          file_url: resolvedFileUrl
+        });
+      }
       return res.status(502).json({
         error: 'DETECTION_ENGINE_UNAVAILABLE',
         message: 'Detection engine unavailable'

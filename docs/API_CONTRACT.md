@@ -211,19 +211,20 @@ Evaluate a website URL for brand impersonation, deceptive registration, and malw
 ---
 
 ### 2.3 Check Suspicious Media (Image / Audio Deepfake)
-Analyze an uploaded image or audio file for synthetic manipulation, generative artifacts, or voice cloning.
+Analyze an uploaded image or audio file for synthetic manipulation, generative artifacts, or voice cloning. In production, clients upload media directly to Supabase Storage via a signed upload URL obtained from `POST /api/v1/media/upload-url` and supply the resulting `file_path` (or resolved `file_url`).
 
 | Property | Specification |
 |---|---|
 | **Method** | `POST` |
-| **Path** | `/api/check/media` |
+| **Path** | `/api/v1/check/media` *(also available at `/api/check/media`)* |
 | **Auth Requirement** | Requires JWT |
-| **Description** | Evaluates image/audio using Vision Transformer (ViT) or voice anti-spoofing models. |
+| **Description** | Evaluates image/audio using Vision Transformer (ViT) or voice anti-spoofing models. Validates that the requested `file_path` resides strictly within the authenticated user's isolated upload directory (`uploads/<user_id>/*`). |
 
 **Request Body:**
 ```json
 {
-  "file_url": "https://storage.cyberguard.internal/uploads/sample-voice-clip.wav",
+  "file_path": "uploads/a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d/1727670000000_a1b2c3.wav", // Preferred: path returned by /media/upload-url
+  "file_url": "https://<supabase-project>.supabase.co/storage/v1/object/authenticated/cyberguard-media/uploads/a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d/1727670000000_a1b2c3.wav", // Optional if file_path is provided
   "media_type": "audio" // Enum: "image" | "audio"
 }
 ```
@@ -231,16 +232,62 @@ Analyze an uploaded image or audio file for synthetic manipulation, generative a
 **Response (`200 OK`):**
 ```json
 {
+  "id": "inc_1727670005000",
   "risk_level": "High", // Enum: "Safe" | "Low" | "Medium" | "High" | "Critical"
+  "risk_score": 85,
   "explanation": "High Risk: Acoustic spectral analysis indicates synthetic voice cloning artifacts consistent with generative voice models.",
-  "recommended_action": "Verify speaker identity via a secondary known channel before taking financial or sensitive action.",
-  "confidence_score": 0.89 // Float between 0.0 and 1.0
+  "recommended_actions": [
+    "Verify speaker identity via a secondary known channel before taking financial or sensitive action."
+  ],
+  "confidence_score": 0.89, // Float between 0.0 and 1.0
+  "signals": {
+    "spectral_centroid": 2450.5,
+    "pitch_jitter_pct": 2.8
+  }
 }
 ```
 
 **Errors:**
-- `400 Bad Request`: Invalid file URL or unsupported `media_type`.
-- `422 Unprocessable Entity`: Media file corrupt or unparseable.
+- `400 Bad Request`: Missing file reference or unsupported `media_type`.
+- `401 Unauthorized`: Missing or invalid bearer token.
+- `403 Forbidden`: `file_path` or `file_url` belongs to another user (`{ "error": "FORBIDDEN", "message": "Access denied: cannot check media belonging to another user" }`).
+- `404 Not Found`: Media file could not be accessed at storage URL.
+- `502 Bad Gateway`: Internal ML service unavailable.
+
+---
+
+### 2.4 Generate Signed Media Upload URL (`POST /api/v1/media/upload-url`)
+Generates a pre-signed, time-limited direct upload URL to Supabase Storage bucket `cyberguard-media`. Clients upload their raw image/audio binary directly to Supabase, bypassing backend gateway bandwidth limits, and subsequently pass the returned `file_path` to `POST /api/v1/check/media`.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/media/upload-url` *(also available at `/api/media/upload-url` and `/api/check/media/upload-url`)* |
+| **Auth Requirement** | Requires JWT (`Authorization: Bearer <jwt_token>`) |
+| **Description** | Issues pre-signed upload URL for Supabase Storage restricted to the authenticated user's isolated path `uploads/<user_id>/<timestamp>_<random_id>.<ext>`. |
+
+**Request Body:**
+```json
+{
+  "media_type": "image", // Enum: "image" | "audio" (required)
+  "file_size_bytes": 1048576, // Positive integer <= 50MB (52,428,800 bytes) (required)
+  "file_name": "suspect_profile.png" // Optional original filename for extension extraction
+}
+```
+
+**Response (`200 OK`):**
+```json
+{
+  "upload_url": "https://awjehrhtxhbugocwqeao.supabase.co/storage/v1/object/upload/sign/cyberguard-media/uploads/a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d/1727670000000_9f2a1b.png?token=663ae704c563decf35c09a9ad1a1ee8f",
+  "file_path": "uploads/a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d/1727670000000_9f2a1b.png",
+  "expiry_seconds": 3600
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Invalid `media_type` (`"media_type must be 'image' or 'audio'"`), missing or non-positive `file_size_bytes`, or `file_size_bytes` exceeds 50MB limit (`{ "error": "FILE_TOO_LARGE" }`).
+- `401 Unauthorized`: Missing or invalid bearer token.
+- `500 Internal Server Error`: Storage provider failure.
 
 ---
 

@@ -12,6 +12,7 @@
     "test:e2e": "node test_e2e_pipeline.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
