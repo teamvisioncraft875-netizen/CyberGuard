@@ -124,7 +124,8 @@ const checkController = {
       risk_level: (mlResult.risk_level || 'low').toLowerCase(),
       explanation: mlResult.explanation,
       recommended_actions: recommendedActions,
-      signals: mlResult.signals || {}
+      signals: mlResult.signals || {},
+      cached: Boolean(mlResult._cached)
     });
   },
 

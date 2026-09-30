@@ -26,6 +26,11 @@ For endpoints requiring authentication:
 Authorization: Bearer <jwt_token>
 ```
 
+### Redis Caching Policies
+To maintain sub-second response times and preserve external threat intelligence quotas:
+- **External Threat Intelligence APIs:** API calls to external services are cached for 24 hours to reduce quota usage (Key format: `api_cache:<service>:<identifier>`, TTL: 86,400s).
+- **Session Refresh Tokens:** Refresh tokens are cached for 7 days for faster validation (Key format: `refresh_token:<tokenHash>`, TTL: 604,800s). In the event of logout or revocation, cache entries are immediately invalidated.
+
 ---
 
 ## 1. Authentication Endpoints

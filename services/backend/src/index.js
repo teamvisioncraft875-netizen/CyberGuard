@@ -19,6 +19,14 @@ const mediaRoutes = require('./routes/mediaRoutes');
 const { checkLimiter, generalLimiter, searchLimiter } = require('./middlewares/rateLimiter');
 
 const { initSocket } = require('./config/socket');
+const { connectRedis, isConnected } = require('./config/redis');
+
+// Attempt Redis connection without blocking app startup
+connectRedis().then(() => {
+  console.log(`Redis connected: ${isConnected()}`);
+}).catch(() => {
+  console.log(`Redis connected: false`);
+});
 
 const app = express();
 const server = http.createServer(app);
