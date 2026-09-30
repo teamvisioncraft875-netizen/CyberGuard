@@ -83,8 +83,10 @@ def test_real_audio_loading_and_features():
         "spectral_centroid_hz",
         "spectral_rolloff_85_hz",
         "spectral_rolloff_95_hz",
+        "subband_ratio_4k_to_8k",
+        "subband_ratio_2k_to_4k",
         "high_freq_ratio_4k",
-        "high_freq_ratio_8k",
+        "spectral_flatness",
         "spectral_flux",
         "high_freq_cutoff_detected",
         "anomaly_score",
@@ -92,11 +94,11 @@ def test_real_audio_loading_and_features():
     for field in expected_fields:
         assert field in features, f"Missing expected audio feature: {field}"
 
-    assert features["sample_rate"] in (16000, 22050, 44100, 48000, 8000)
+    assert features["sample_rate"] == 16000
     assert features["duration_sec"] > 0.1
     assert 0.0 <= features["anomaly_score"] <= 1.0
-    assert 0.0 <= features["high_freq_ratio_4k"] <= 1.0
-    assert 0.0 <= features["high_freq_ratio_8k"] <= 1.0
+    assert 0.0 <= features["subband_ratio_4k_to_8k"] <= 1.0
+    assert 0.0 <= features["spectral_flatness"] <= 1.0
     assert isinstance(features["high_freq_cutoff_detected"], bool)
 
 

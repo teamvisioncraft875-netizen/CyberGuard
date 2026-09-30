@@ -179,3 +179,5 @@ build/
 datasets/logs_dataset/
 datasets/audio-dfd-benchmark/
 datasets/FaceForensics/
+datasets/deepfake-audio-detection/
+*.flac

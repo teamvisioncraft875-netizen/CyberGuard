@@ -1,8 +1,8 @@
 {
-  "timestamp": "2026-09-30 01:12:58 UTC",
-  "validation_claim": "Validated deepfake classification accuracy: NOT ESTABLISHED",
-  "status": "NOT ESTABLISHED",
-  "justification": "1. Audio Benchmark (Podonos): Ground-truth labels are held strictly private by the host;\n   self-scoring without official gold labels violates anti-fabrication rules.\n2. Visual Benchmark (FaceForensics++): The full test partition (~500 GB) is not stored locally.\n   Only 11 preview assets exist locally with frame-level source overlap (N=2 genuine, N=9 manipulated);\n   declaring benchmark accuracy on this subset would violate statistical significance and data leakage rules.",
+  "timestamp": "2026-09-30 04:29:48 UTC",
+  "validation_claim": "Validated deepfake audio classification performance on the cleaned, source-disjoint, encoding-normalized test partition of garystafford/deepfake-audio-detection: Accuracy: 72.00%, Balanced Acc: 72.00%, Precision: 72.00%, Recall: 72.00%, F1: 0.7200, ROC-AUC: 0.7856, PR-AUC: 0.8317, 95% CI: [0.5833, 0.8253] (tested against unseen Kokoro & Hume AI TTS architectures). Visual deepfake validation: NOT ESTABLISHED.",
+  "status": "PARTIALLY_ESTABLISHED",
+  "justification": "1. Audio Deepfake Benchmark (garystafford/deepfake-audio-detection):\n   - Standardized 16 kHz mono polyphase resampling applied across all splits (sampling-rate leakage removed).\n   - Strict cryptographic raw & decoded deduplication passed (zero duplicate / near-duplicate leakage).\n   - Unseen-TTS-Engine test set (N=50: 25 genuine YouTube, 25 fake Kokoro/Hume AI): Accuracy 72.00%, ROC-AUC 0.7856.\n2. Visual Deepfake Benchmark (FaceForensics++):\n   - NOT ESTABLISHED: Full 500GB benchmark requires institutional access; preview samples audited without fabricating real-world benchmark accuracy.",
   "podonos_audio_benchmark": {
     "dataset_name": "Podonos Audio Deepfake Detection Benchmark",
     "repository_url": "https://github.com/podonos/audio-dfd-benchmark.git",
@@ -216,6 +216,499 @@
       }
     ]
   },
-  "model_version": "2d_fft_and_acoustic_forensic_pipeline_v1",
+  "validated_deepfake_audio_benchmark": {
+    "dataset_name": "garystafford/deepfake-audio-detection",
+    "official_source_url": "https://huggingface.co/datasets/garystafford/deepfake-audio-detection",
+    "license": "CC-BY-4.0",
+    "modality": "audio",
+    "has_manifest": true,
+    "has_frozen_model": true,
+    "status": "ESTABLISHED_VALIDATED",
+    "metrics": {
+      "samples": 50,
+      "genuine_count": 25,
+      "manipulated_count": 25,
+      "threshold": 0.5,
+      "tp": 18,
+      "tn": 18,
+      "fp": 7,
+      "fn": 7,
+      "accuracy": 0.72,
+      "balanced_accuracy": 0.72,
+      "precision": 0.72,
+      "recall": 0.72,
+      "f1": 0.72,
+      "specificity": 0.72,
+      "roc_auc": 0.7856,
+      "pr_auc": 0.8317,
+      "accuracy_95_ci": [
+        0.5833,
+        0.8253
+      ]
+    },
+    "sample_breakdown": [
+      {
+        "sample_id": "yt_0003_part_001",
+        "source_id": "yt_0003",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.4793,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0003_part_002",
+        "source_id": "yt_0003",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.564,
+        "predicted_label": "manipulated",
+        "is_correct": false
+      },
+      {
+        "sample_id": "yt_0003_part_003",
+        "source_id": "yt_0003",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.4394,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0003_part_004",
+        "source_id": "yt_0003",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.4659,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0003_part_006",
+        "source_id": "yt_0003",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.6056,
+        "predicted_label": "manipulated",
+        "is_correct": false
+      },
+      {
+        "sample_id": "yt_0003_part_008",
+        "source_id": "yt_0003",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.5279,
+        "predicted_label": "manipulated",
+        "is_correct": false
+      },
+      {
+        "sample_id": "yt_0003_part_009",
+        "source_id": "yt_0003",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.2965,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0003_part_010",
+        "source_id": "yt_0003",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.5756,
+        "predicted_label": "manipulated",
+        "is_correct": false
+      },
+      {
+        "sample_id": "yt_0003_part_011",
+        "source_id": "yt_0003",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.3078,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0008_p2_part_258",
+        "source_id": "yt_0008",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.4133,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0008_p2_part_259",
+        "source_id": "yt_0008",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.4277,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0008_p2_part_260",
+        "source_id": "yt_0008",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.3722,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0008_p2_part_265",
+        "source_id": "yt_0008",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.502,
+        "predicted_label": "manipulated",
+        "is_correct": false
+      },
+      {
+        "sample_id": "yt_0008_part_002",
+        "source_id": "yt_0008",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.373,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0008_part_003",
+        "source_id": "yt_0008",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.4458,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0008_part_004",
+        "source_id": "yt_0008",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.6089,
+        "predicted_label": "manipulated",
+        "is_correct": false
+      },
+      {
+        "sample_id": "yt_0008_part_007",
+        "source_id": "yt_0008",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.433,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0009_p2_part_276",
+        "source_id": "yt_0009",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.3839,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0009_p2_part_277",
+        "source_id": "yt_0009",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.4368,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0009_p2_part_279",
+        "source_id": "yt_0009",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.2927,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0009_p2_part_281",
+        "source_id": "yt_0009",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.2694,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0009_p2_part_282",
+        "source_id": "yt_0009",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.3737,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0009_part_002",
+        "source_id": "yt_0009",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.4466,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "yt_0009_part_003",
+        "source_id": "yt_0009",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.514,
+        "predicted_label": "manipulated",
+        "is_correct": false
+      },
+      {
+        "sample_id": "yt_0009_part_004",
+        "source_id": "yt_0009",
+        "manipulation_type": "none",
+        "ground_truth": "genuine",
+        "classification_score": 0.4271,
+        "predicted_label": "genuine",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hg_0001_c_part_005",
+        "source_id": "hg_0001",
+        "manipulation_type": "Kokoro / HuggingFace TTS",
+        "ground_truth": "manipulated",
+        "classification_score": 0.622,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hg_0002_c_part_006",
+        "source_id": "hg_0002",
+        "manipulation_type": "Kokoro / HuggingFace TTS",
+        "ground_truth": "manipulated",
+        "classification_score": 0.5082,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hg_0003_c_part_004",
+        "source_id": "hg_0003",
+        "manipulation_type": "Kokoro / HuggingFace TTS",
+        "ground_truth": "manipulated",
+        "classification_score": 0.493,
+        "predicted_label": "genuine",
+        "is_correct": false
+      },
+      {
+        "sample_id": "hg_0004_c_part_004",
+        "source_id": "hg_0004",
+        "manipulation_type": "Kokoro / HuggingFace TTS",
+        "ground_truth": "manipulated",
+        "classification_score": 0.5791,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hg_0005_c_part_006",
+        "source_id": "hg_0005",
+        "manipulation_type": "Kokoro / HuggingFace TTS",
+        "ground_truth": "manipulated",
+        "classification_score": 0.5032,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hg_0006_c_part_005",
+        "source_id": "hg_0006",
+        "manipulation_type": "Kokoro / HuggingFace TTS",
+        "ground_truth": "manipulated",
+        "classification_score": 0.3741,
+        "predicted_label": "genuine",
+        "is_correct": false
+      },
+      {
+        "sample_id": "hg_0007_part_001",
+        "source_id": "hg_0007",
+        "manipulation_type": "Kokoro / HuggingFace TTS",
+        "ground_truth": "manipulated",
+        "classification_score": 0.4427,
+        "predicted_label": "genuine",
+        "is_correct": false
+      },
+      {
+        "sample_id": "hg_0008_c_part_005",
+        "source_id": "hg_0008",
+        "manipulation_type": "Kokoro / HuggingFace TTS",
+        "ground_truth": "manipulated",
+        "classification_score": 0.6869,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hg_0009_c_part_004",
+        "source_id": "hg_0009",
+        "manipulation_type": "Kokoro / HuggingFace TTS",
+        "ground_truth": "manipulated",
+        "classification_score": 0.6426,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hg_0010_c_part_005",
+        "source_id": "hg_0010",
+        "manipulation_type": "Kokoro / HuggingFace TTS",
+        "ground_truth": "manipulated",
+        "classification_score": 0.3927,
+        "predicted_label": "genuine",
+        "is_correct": false
+      },
+      {
+        "sample_id": "hg_0011_c_part_005",
+        "source_id": "hg_0011",
+        "manipulation_type": "Kokoro / HuggingFace TTS",
+        "ground_truth": "manipulated",
+        "classification_score": 0.3469,
+        "predicted_label": "genuine",
+        "is_correct": false
+      },
+      {
+        "sample_id": "hg_0012_c_part_006",
+        "source_id": "hg_0012",
+        "manipulation_type": "Kokoro / HuggingFace TTS",
+        "ground_truth": "manipulated",
+        "classification_score": 0.5849,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hg_0013_c_part_005",
+        "source_id": "hg_0013",
+        "manipulation_type": "Kokoro / HuggingFace TTS",
+        "ground_truth": "manipulated",
+        "classification_score": 0.4248,
+        "predicted_label": "genuine",
+        "is_correct": false
+      },
+      {
+        "sample_id": "hu_0001_c_part_012",
+        "source_id": "hu_0001",
+        "manipulation_type": "Hume AI Expressive Voice",
+        "ground_truth": "manipulated",
+        "classification_score": 0.8049,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hu_0001_c_part_013",
+        "source_id": "hu_0001",
+        "manipulation_type": "Hume AI Expressive Voice",
+        "ground_truth": "manipulated",
+        "classification_score": 0.6075,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hu_0001_c_part_014",
+        "source_id": "hu_0001",
+        "manipulation_type": "Hume AI Expressive Voice",
+        "ground_truth": "manipulated",
+        "classification_score": 0.8859,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hu_0001_c_part_015",
+        "source_id": "hu_0001",
+        "manipulation_type": "Hume AI Expressive Voice",
+        "ground_truth": "manipulated",
+        "classification_score": 0.4068,
+        "predicted_label": "genuine",
+        "is_correct": false
+      },
+      {
+        "sample_id": "hu_0001_part_001",
+        "source_id": "hu_0001",
+        "manipulation_type": "Hume AI Expressive Voice",
+        "ground_truth": "manipulated",
+        "classification_score": 0.728,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hu_0001_part_002",
+        "source_id": "hu_0001",
+        "manipulation_type": "Hume AI Expressive Voice",
+        "ground_truth": "manipulated",
+        "classification_score": 0.562,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hu_0001_part_003",
+        "source_id": "hu_0001",
+        "manipulation_type": "Hume AI Expressive Voice",
+        "ground_truth": "manipulated",
+        "classification_score": 0.7814,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hu_0001_part_004",
+        "source_id": "hu_0001",
+        "manipulation_type": "Hume AI Expressive Voice",
+        "ground_truth": "manipulated",
+        "classification_score": 0.7111,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hu_0001_part_005",
+        "source_id": "hu_0001",
+        "manipulation_type": "Hume AI Expressive Voice",
+        "ground_truth": "manipulated",
+        "classification_score": 0.5374,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hu_0001_part_006",
+        "source_id": "hu_0001",
+        "manipulation_type": "Hume AI Expressive Voice",
+        "ground_truth": "manipulated",
+        "classification_score": 0.5882,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hu_0001_part_007",
+        "source_id": "hu_0001",
+        "manipulation_type": "Hume AI Expressive Voice",
+        "ground_truth": "manipulated",
+        "classification_score": 0.8657,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      },
+      {
+        "sample_id": "hu_0001_part_008",
+        "source_id": "hu_0001",
+        "manipulation_type": "Hume AI Expressive Voice",
+        "ground_truth": "manipulated",
+        "classification_score": 0.6798,
+        "predicted_label": "manipulated",
+        "is_correct": true
+      }
+    ],
+    "leakage_verification": {
+      "total_sources": 87,
+      "train_sources": 47,
+      "val_sources": 23,
+      "test_sources": 17,
+      "train_val_overlap": 0,
+      "train_test_overlap": 0,
+      "val_test_overlap": 0,
+      "zero_leakage_verified": true
+    }
+  },
+  "model_version": "deepfake_audio_classifier_v1",
   "production_threshold": 0.5
 }

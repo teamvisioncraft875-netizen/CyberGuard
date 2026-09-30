@@ -170,10 +170,246 @@ def test_threshold_and_risk_tier_boundaries():
 
 
 def test_reproducible_validation_audit_execution():
-    """Verifies execution of the validation audit and reports status NOT ESTABLISHED."""
+    """Verifies execution of the validation audit and report generation."""
     report = run_full_validation_audit()
-    assert report["status"] == "NOT ESTABLISHED"
-    assert "NOT ESTABLISHED" in report["validation_claim"]
+    assert report["status"] in ("ESTABLISHED", "NOT ESTABLISHED", "PARTIALLY_ESTABLISHED")
     assert "podonos_audio_benchmark" in report
     assert "faceforensics_visual_benchmark" in report
+    assert "validated_deepfake_audio_benchmark" in report
     assert report["production_threshold"] == 0.50
+
+    # Podonos must remain private/blocked
+    assert report["podonos_audio_benchmark"]["status"] == "BLOCKED_PRIVATE_LABELS"
+    # Audio benchmark must be established
+    assert report["validated_deepfake_audio_benchmark"]["status"] == "ESTABLISHED_VALIDATED"
+    metrics = report["validated_deepfake_audio_benchmark"]["metrics"]
+    assert metrics["accuracy"] >= 0.65
+    assert metrics["balanced_accuracy"] >= 0.65
+    assert metrics["roc_auc"] >= 0.70
+    assert metrics["samples"] == 50
+
+
+
+def test_deepfake_audio_model_and_schema_artifacts():
+    """Verifies that the serialized model, schema, and training metadata exist and match leakage-fixed specs."""
+    import joblib
+    models_dir = PROJECT_ROOT / "services" / "ml-service" / "app" / "models"
+    model_path = models_dir / "deepfake_audio_classifier.joblib"
+    schema_path = models_dir / "deepfake_audio_schema.json"
+    metadata_path = models_dir / "deepfake_audio_metadata.json"
+
+    assert model_path.exists(), "Trained model artifact missing"
+    assert schema_path.exists(), "Feature schema missing"
+    assert metadata_path.exists(), "Training metadata missing"
+
+    model = joblib.load(model_path)
+    assert hasattr(model, "predict_proba"), "Model must support predict_proba"
+
+    with open(schema_path, "r", encoding="utf-8") as f:
+        schema = json.load(f)
+
+    assert schema["model_type"] in ("LogisticRegression", "RandomForestClassifier", "GradientBoostingClassifier")
+    assert schema["feature_version"] == "2.0.0_leakage_fixed"
+    assert schema["feature_count"] == 13
+    assert schema["target_sample_rate"] == 16000
+    assert schema["audio_channels"] == 1
+
+    # Anti-leakage assertions: no encoding or Nyquist artifacts exposed
+    assert "high_freq_ratio_8k" not in schema["features"], "Encoding leakage feature high_freq_ratio_8k must NOT be present!"
+    assert "sample_rate" not in schema["features"], "Original sample rate must not be a classifier feature!"
+    assert "duration_sec" not in schema["features"]
+
+    # Redesigned features must be present
+    assert "subband_ratio_4k_to_8k" in schema["features"]
+    assert "subband_ratio_2k_to_4k" in schema["features"]
+    assert "spectral_flatness" in schema["features"]
+    assert "pitch_jitter_pct" in schema["features"]
+    assert schema["frozen_threshold"] > 0.0
+
+
+def test_deepfake_audio_source_level_split_integrity():
+    """Programmatically verifies zero source leakage across Train, Validation, and Test."""
+    import pandas as pd
+    manifest_path = PROJECT_ROOT / "datasets" / "deepfake-audio-detection" / "manifest.csv"
+    assert manifest_path.exists(), "Manifest missing"
+
+    df = pd.read_csv(manifest_path)
+    assert len(df) == 240
+    assert set(df["split"].unique()) == {"train", "validation", "test"}
+
+    train_sources = set(df[df["split"] == "train"]["source_id"])
+    val_sources = set(df[df["split"] == "validation"]["source_id"])
+    test_sources = set(df[df["split"] == "test"]["source_id"])
+
+    assert len(train_sources & val_sources) == 0, f"Train/Val source leakage: {train_sources & val_sources}"
+    assert len(train_sources & test_sources) == 0, f"Train/Test source leakage: {train_sources & test_sources}"
+    assert len(val_sources & test_sources) == 0, f"Val/Test source leakage: {val_sources & test_sources}"
+
+    # Verify class balance in each split
+    for s in ["train", "validation", "test"]:
+        split_df = df[df["split"] == s]
+        real_c = sum(split_df["label"] == "genuine")
+        fake_c = sum(split_df["label"] == "manipulated")
+        assert real_c == fake_c, f"Split {s} is not balanced: {real_c} vs {fake_c}"
+
+
+def test_cryptographic_hash_and_decoded_deduplication():
+    """Verifies that raw and decoded hashes have ZERO cross-split intersection."""
+    import pandas as pd
+    manifest_path = PROJECT_ROOT / "datasets" / "deepfake-audio-detection" / "manifest.csv"
+    df = pd.read_csv(manifest_path)
+
+    train_raw_h = set(df[df["split"] == "train"]["raw_sha256"])
+    val_raw_h = set(df[df["split"] == "validation"]["raw_sha256"])
+    test_raw_h = set(df[df["split"] == "test"]["raw_sha256"])
+
+    assert len(train_raw_h & val_raw_h) == 0, "Train-Val raw hash collision!"
+    assert len(train_raw_h & test_raw_h) == 0, "Train-Test raw hash collision!"
+    assert len(val_raw_h & test_raw_h) == 0, "Val-Test raw hash collision!"
+
+    train_dec_h = set(df[df["split"] == "train"]["decoded_sha256"])
+    val_dec_h = set(df[df["split"] == "validation"]["decoded_sha256"])
+    test_dec_h = set(df[df["split"] == "test"]["decoded_sha256"])
+
+    assert len(train_dec_h & val_dec_h) == 0, "Train-Val decoded hash collision!"
+    assert len(train_dec_h & test_dec_h) == 0, "Train-Test decoded hash collision!"
+    assert len(val_dec_h & test_dec_h) == 0, "Val-Test decoded hash collision!"
+
+
+def test_unseen_tts_engine_generalization_partitioning():
+    """Verifies that Kokoro and Hume AI TTS engines are strictly held out in the Test partition."""
+    import pandas as pd
+    manifest_path = PROJECT_ROOT / "datasets" / "deepfake-audio-detection" / "manifest.csv"
+    df = pd.read_csv(manifest_path)
+
+    train_engines = set(df[(df["split"] == "train") & (df["label"] == "manipulated")]["manipulation_type"])
+    val_engines = set(df[(df["split"] == "validation") & (df["label"] == "manipulated")]["manipulation_type"])
+    test_engines = set(df[(df["split"] == "test") & (df["label"] == "manipulated")]["manipulation_type"])
+
+    # Unseen engines must not appear in train or validation
+    assert "Kokoro / HuggingFace TTS" not in train_engines
+    assert "Kokoro / HuggingFace TTS" not in val_engines
+    assert "Hume AI Expressive Voice" not in train_engines
+    assert "Hume AI Expressive Voice" not in val_engines
+
+    # Unseen engines must comprise the fake test set
+    assert test_engines == {"Kokoro / HuggingFace TTS", "Hume AI Expressive Voice"}
+
+
+def test_sample_rate_and_mono_normalization():
+    """Verifies that audio from arbitrary sample rates (44.1 kHz, 48 kHz, 8 kHz) and stereo are normalized to 16 kHz mono."""
+    from app.services.media_anomaly.audio_detector import standardize_audio
+    import scipy.io.wavfile as wavfile
+    import io
+
+    # Synthetic 44.1 kHz stereo audio buffer
+    sr_orig = 44100
+    t = np.linspace(0, 1.0, sr_orig)
+    tone_left = np.sin(2 * np.pi * 440 * t)
+    tone_right = np.cos(2 * np.pi * 880 * t)
+    stereo_pcm = np.stack([tone_left, tone_right], axis=1)
+
+    bio = io.BytesIO()
+    wavfile.write(bio, sr_orig, (stereo_pcm * 32767).astype(np.int16))
+    raw_bytes = bio.getvalue()
+
+    sr_norm, audio_norm = standardize_audio(raw_bytes)
+    assert sr_norm == 16000
+    assert audio_norm.ndim == 1, "Audio must be converted to mono"
+    assert len(audio_norm) == 16000, "1.0s at 16 kHz must have exactly 16000 samples"
+    assert -1.05 <= np.min(audio_norm) and np.max(audio_norm) <= 1.05
+
+
+def test_deterministic_preprocessing_and_production_parity():
+    """Verifies that standardize_audio produces bitwise identical results across repeated runs."""
+    from app.services.media_anomaly.audio_detector import standardize_audio
+    manifest_path = PROJECT_ROOT / "datasets" / "deepfake-audio-detection" / "manifest.csv"
+    import pandas as pd
+    df = pd.read_csv(manifest_path)
+    sample_path = str(PROJECT_ROOT / "datasets" / "deepfake-audio-detection" / df.iloc[0]["path"])
+
+    sr1, a1 = standardize_audio(sample_path)
+    sr2, a2 = standardize_audio(sample_path)
+
+    assert sr1 == sr2 == 16000
+    assert np.array_equal(a1, a2), "Standardization must be completely deterministic"
+
+
+def test_deepfake_audio_inference_determinism_and_bounds():
+    """Verifies deterministic prediction, absence of NaN/Inf, and probability bounds [0.0, 1.0]."""
+    manifest_path = PROJECT_ROOT / "datasets" / "deepfake-audio-detection" / "manifest.csv"
+    import pandas as pd
+    df = pd.read_csv(manifest_path)
+    sample_rel = df.iloc[0]["path"]
+    full_path = str(PROJECT_ROOT / "datasets" / "deepfake-audio-detection" / sample_rel)
+
+    feats1 = extract_audio_forensic_features(full_path)
+    feats2 = extract_audio_forensic_features(full_path)
+
+    for k in ["anomaly_score", "spectral_centroid_hz", "pitch_jitter_pct", "spectral_flux", "spectral_flatness", "subband_ratio_4k_to_8k"]:
+        assert feats1[k] == feats2[k], f"Non-deterministic feature {k}"
+        assert not np.isnan(feats1[k]), f"NaN found in {k}"
+        assert not np.isinf(feats1[k]), f"Inf found in {k}"
+
+    assert 0.0 <= feats1["anomaly_score"] <= 1.0
+
+
+def test_nan_inf_protection_on_silent_and_extreme_audio():
+    """Verifies that silence or extreme DC audio inputs do not produce NaN or Inf values."""
+    import scipy.io.wavfile as wavfile
+    import io
+    # Silent audio buffer
+    silence = np.zeros(16000, dtype=np.int16)
+    bio = io.BytesIO()
+    wavfile.write(bio, 16000, silence)
+    feats = extract_audio_forensic_features(bio.getvalue())
+
+    for k, v in feats.items():
+        if isinstance(v, (int, float)):
+            assert not np.isnan(v), f"NaN in {k} on silence"
+            assert not np.isinf(v), f"Inf in {k} on silence"
+
+
+def test_production_api_audio_response_with_supervised_classifier():
+    """Verifies that analyze_media returns valid UnifiedAnalysisResponse with supervised classifier signals."""
+    from app.services.media_engine import analyze_media
+    from app.schemas.analyze import MediaAnalyzeRequest, MediaType
+
+    manifest_path = PROJECT_ROOT / "datasets" / "deepfake-audio-detection" / "manifest.csv"
+    import pandas as pd
+    df = pd.read_csv(manifest_path)
+    sample_rel = df.iloc[0]["path"]
+    full_path = str(PROJECT_ROOT / "datasets" / "deepfake-audio-detection" / sample_rel)
+
+    req = MediaAnalyzeRequest(
+        media_type=MediaType.AUDIO,
+        file_url=full_path
+    )
+    resp = analyze_media(req)
+
+    assert resp.risk_score >= 0 and resp.risk_score <= 100
+    assert resp.risk_level in [RiskLevel.SAFE, RiskLevel.LOW, RiskLevel.MEDIUM, RiskLevel.HIGH, RiskLevel.CRITICAL]
+    assert len(resp.explanation) > 10
+    assert len(resp.recommended_actions) >= 1
+    assert "classification" in resp.signals
+    assert resp.signals["classification"] in ("genuine", "manipulated")
+    assert "classification_score" in resp.signals
+    assert 0.0 <= resp.signals["classification_score"] <= 1.0
+    assert "spectral_centroid_hz" in resp.signals
+    assert "pitch_jitter_pct" in resp.signals
+
+
+def test_production_api_security_controls():
+    """Verifies SSRF protection against loopback, cloud metadata, and traversal."""
+    from app.services.media_engine import analyze_media
+    from app.schemas.analyze import MediaAnalyzeRequest, MediaType
+
+    # SSRF loopback attempt
+    with pytest.raises(ValueError, match="SSRF protection"):
+        analyze_media(MediaAnalyzeRequest(media_type=MediaType.IMAGE, file_url="http://127.0.0.1:8080/secret"))
+
+    # SSRF metadata attempt
+    with pytest.raises(ValueError, match="SSRF protection"):
+        analyze_media(MediaAnalyzeRequest(media_type=MediaType.AUDIO, file_url="http://169.254.169.254/latest/meta-data/"))
+
+

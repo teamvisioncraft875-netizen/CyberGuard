@@ -24,6 +24,30 @@ from app.schemas.analyze import (
 from app.services.media_anomaly.audio_detector import extract_audio_forensic_features
 from app.services.media_anomaly.image_detector import extract_image_forensic_features
 
+_DEEPFAKE_AUDIO_MODEL = None
+_DEEPFAKE_AUDIO_SCHEMA = None
+
+
+def _get_deepfake_audio_classifier():
+    """
+    Lazy loader for validated supervised RandomForest deepfake audio classifier.
+    """
+    global _DEEPFAKE_AUDIO_MODEL, _DEEPFAKE_AUDIO_SCHEMA
+    if _DEEPFAKE_AUDIO_MODEL is None:
+        model_path = Path(__file__).resolve().parent.parent / "models" / "deepfake_audio_classifier.joblib"
+        schema_path = Path(__file__).resolve().parent.parent / "models" / "deepfake_audio_schema.json"
+        if model_path.exists():
+            import joblib
+            try:
+                _DEEPFAKE_AUDIO_MODEL = joblib.load(model_path)
+                if schema_path.exists():
+                    import json
+                    with open(schema_path, "r", encoding="utf-8") as f:
+                        _DEEPFAKE_AUDIO_SCHEMA = json.load(f)
+            except Exception:
+                pass
+    return _DEEPFAKE_AUDIO_MODEL, _DEEPFAKE_AUDIO_SCHEMA
+
 # Maximum allowed size for media files (10 MB)
 MAX_MEDIA_BYTES = 10 * 1024 * 1024
 
@@ -180,19 +204,41 @@ def analyze_media(request: MediaAnalyzeRequest) -> UnifiedAnalysisResponse:
     if is_audio:
         # Run real acoustic & spectral feature extraction
         audio_features = extract_audio_forensic_features(data)
-        anomaly_score = audio_features["anomaly_score"]
-        risk_score, risk_level, confidence = _score_to_risk(anomaly_score)
+
+        # Supervised classification prediction if model is loaded
+        clf, schema = _get_deepfake_audio_classifier()
+        if clf is not None and schema is not None:
+            feat_names = schema.get("features", [])
+            row = dict(audio_features)
+            row["high_freq_cutoff_detected"] = 1.0 if row.get("high_freq_cutoff_detected") else 0.0
+            import pandas as pd
+            feat_df = pd.DataFrame([[float(row.get(fn, 0.0)) for fn in feat_names]], columns=feat_names)
+            prob_fake = float(clf.predict_proba(feat_df)[0, 1])
+            classification_score = prob_fake
+            threshold = schema.get("frozen_threshold", 0.50)
+            supervised_classification = "manipulated" if prob_fake >= threshold else "genuine"
+            model_name_tag = schema.get("model_type", "classifier").lower()
+            model_type_str = f"supervised_{model_name_tag}_audio_detector"
+        else:
+            classification_score = audio_features["anomaly_score"]
+            supervised_classification = "manipulated" if classification_score >= 0.50 else "genuine"
+            model_type_str = "acoustic_spectral_forensic_analyzer"
+
+        risk_score, risk_level, confidence = _score_to_risk(classification_score)
 
         # Dynamic XAI explanation derived strictly from computed measurements
         is_anomalous = risk_score >= 50
         cutoff_text = "sharp neural vocoder cutoff detected" if audio_features["high_freq_cutoff_detected"] else "natural spectral rolloff"
         f0_val = audio_features["mean_f0_hz"]
         jitter_val = audio_features["pitch_jitter_pct"]
+        flatness_val = audio_features.get("spectral_flatness", 0.0)
+        subband_4k_8k = audio_features.get("subband_ratio_4k_to_8k", 0.0)
 
         if is_anomalous:
             explanation = (
                 f"Acoustic spectral analysis indicates synthetic voice cloning: "
-                f"pitch jitter = {jitter_val}% (F0 = {f0_val} Hz), spectral centroid = {audio_features['spectral_centroid_hz']} Hz, "
+                f"pitch jitter = {jitter_val}% (F0 = {f0_val} Hz), spectral flatness = {flatness_val}, "
+                f"sub-band 4k-8k ratio = {subband_4k_8k}, spectral centroid = {audio_features['spectral_centroid_hz']} Hz, "
                 f"and 85% energy rolloff at {audio_features['spectral_rolloff_85_hz']} Hz with {cutoff_text}."
             )
             recommended_actions = [
@@ -204,7 +250,7 @@ def analyze_media(request: MediaAnalyzeRequest) -> UnifiedAnalysisResponse:
             explanation = (
                 f"Acoustic spectral distribution is consistent with natural human speech: "
                 f"spectral centroid = {audio_features['spectral_centroid_hz']} Hz, pitch jitter = {jitter_val}%, "
-                f"and smooth spectral rolloff (95% energy at {audio_features['spectral_rolloff_95_hz']} Hz)."
+                f"spectral flatness = {flatness_val}, and smooth spectral rolloff (95% energy at {audio_features['spectral_rolloff_95_hz']} Hz)."
             )
             recommended_actions = [
                 "No synthetic acoustic anomalies detected; proceed with standard operational workflow"
@@ -214,8 +260,11 @@ def analyze_media(request: MediaAnalyzeRequest) -> UnifiedAnalysisResponse:
             "file_url": request.file_url,
             "media_type": "audio",
             "model_type": "acoustic_spectral_forensic_analyzer",
+            "classifier_model": model_type_str,
             "analysis_path": "acoustic_spectral_pipeline",
-            "anomaly_score": anomaly_score,
+            "classification": supervised_classification,
+            "classification_score": round(classification_score, 4),
+            "anomaly_score": audio_features["anomaly_score"],
             **audio_features
         }
 

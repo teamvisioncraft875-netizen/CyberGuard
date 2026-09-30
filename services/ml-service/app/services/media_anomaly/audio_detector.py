@@ -12,38 +12,75 @@ import scipy.signal as signal
 from typing import Dict, Any, Tuple
 
 
+TARGET_SAMPLE_RATE = 16000
+
+
 def _load_audio_data(audio_input: str | bytes) -> Tuple[int, np.ndarray]:
     """
-    Loads audio from either a file path or raw bytes into a mono float32 array.
+    Standardized CYBERGUARD Audio Preprocessing Pipeline.
+    Loads audio from either a file path or raw bytes, converts multi-channel to mono,
+    resamples to a common 16 kHz standard using polyphase anti-aliasing filtering,
+    removes DC offset, and peak-normalizes to [-1.0, 1.0].
+    Guarantees deterministic output and eliminates sample-rate / channel-count leakage.
     """
     try:
-        if isinstance(audio_input, bytes):
-            sr, raw = wavfile.read(io.BytesIO(audio_input))
-        elif isinstance(audio_input, str):
-            sr, raw = wavfile.read(audio_input)
-        else:
-            raise ValueError(f"Unsupported audio input type: {type(audio_input)}")
+        try:
+            import soundfile as sf
+            if isinstance(audio_input, bytes):
+                raw, sr = sf.read(io.BytesIO(audio_input), dtype="float32")
+            elif isinstance(audio_input, str):
+                raw, sr = sf.read(audio_input, dtype="float32")
+            else:
+                raise ValueError(f"Unsupported audio input type: {type(audio_input)}")
+        except Exception:
+            if isinstance(audio_input, bytes):
+                sr, raw = wavfile.read(io.BytesIO(audio_input))
+            elif isinstance(audio_input, str):
+                sr, raw = wavfile.read(audio_input)
+            else:
+                raise ValueError(f"Unsupported audio input type: {type(audio_input)}")
     except Exception as e:
-        raise ValueError(f"Unsupported audio format or corrupted WAV file: {e}")
+        raise ValueError(f"Unsupported audio format or corrupted file: {e}")
 
-    # Convert multi-channel to mono
+    # 1. Convert multi-channel to mono
     if raw.ndim > 1:
         raw = raw.mean(axis=1)
 
-    # Normalize integer PCM or float to float32 in [-1.0, 1.0]
+    # 2. Normalize integer PCM or float to float32 in [-1.0, 1.0]
     if np.issubdtype(raw.dtype, np.integer):
         max_val = float(np.iinfo(raw.dtype).max)
         audio = (raw.astype(np.float32) / max_val)
     else:
         audio = raw.astype(np.float32)
 
-    # Remove DC offset
-    audio = audio - np.mean(audio)
-    peak = np.max(np.abs(audio))
-    if peak > 0:
+    # 3. Standardize sample rate to 16,000 Hz via polyphase resampling
+    sr = int(sr)
+    if sr != TARGET_SAMPLE_RATE and len(audio) > 0:
+        gcd = math.gcd(sr, TARGET_SAMPLE_RATE)
+        up = TARGET_SAMPLE_RATE // gcd
+        down = sr // gcd
+        audio = signal.resample_poly(audio, up, down).astype(np.float32)
+        sr = TARGET_SAMPLE_RATE
+
+    # 4. Remove DC offset
+    if len(audio) > 0:
+        audio = audio - float(np.mean(audio))
+
+    # 5. Peak normalization
+    peak = float(np.max(np.abs(audio))) if len(audio) > 0 else 0.0
+    if peak > 1e-6:
         audio = audio / peak
 
-    return int(sr), audio
+    return sr, audio
+
+
+def standardize_audio(audio_input: str | bytes) -> Tuple[int, np.ndarray]:
+    """
+    Standardizes audio input to 16 kHz mono float32 normalized in [-1.0, 1.0].
+    Public interface for validation, testing, and production parity checks.
+    """
+    return _load_audio_data(audio_input)
+
 
 
 def _compute_pitch_jitter(audio: np.ndarray, sr: int, frame_len_ms: float = 40.0, hop_ms: float = 20.0) -> Tuple[float, float]:
@@ -92,6 +129,8 @@ def _compute_pitch_jitter(audio: np.ndarray, sr: int, frame_len_ms: float = 40.0
 def extract_audio_forensic_features(audio_input: str | bytes) -> Dict[str, Any]:
     """
     Extracts deepfake forensic acoustic & spectral indicators from audio input.
+    All inputs are pre-normalized to 16 kHz mono to prevent sampling rate / encoding leakage.
+    Features are strictly computed on normalized acoustic properties.
     """
     sr, audio = _load_audio_data(audio_input)
     duration_sec = round(len(audio) / float(sr), 3)
@@ -101,6 +140,7 @@ def extract_audio_forensic_features(audio_input: str | bytes) -> Dict[str, Any]:
 
     # 1. Zero-Crossing Rate
     zcr = float(np.mean(np.abs(np.diff(np.signbit(audio)))))
+    zcr = 0.0 if math.isnan(zcr) or math.isinf(zcr) else zcr
 
     # 2. Spectrogram & Spectral Moments
     nperseg = min(1024, len(audio))
@@ -108,10 +148,12 @@ def extract_audio_forensic_features(audio_input: str | bytes) -> Dict[str, Any]:
     freqs, times, Sxx = signal.spectrogram(audio, fs=sr, nperseg=nperseg, noverlap=noverlap)
     power = np.abs(Sxx)
     total_power_per_frame = power.sum(axis=0) + 1e-12
+    total_power = float(power.sum()) + 1e-12
 
     # Spectral Centroid
     centroids = (freqs[:, None] * power).sum(axis=0) / total_power_per_frame
     mean_centroid = float(np.mean(centroids))
+    mean_centroid = 0.0 if math.isnan(mean_centroid) or math.isinf(mean_centroid) else mean_centroid
 
     # Spectral Rolloff (85% and 95%)
     cum_power = np.cumsum(power, axis=0) / total_power_per_frame[None, :]
@@ -119,6 +161,8 @@ def extract_audio_forensic_features(audio_input: str | bytes) -> Dict[str, Any]:
     rolloff_95_idx = np.apply_along_axis(lambda col: np.searchsorted(col, 0.95), 0, cum_power)
     rolloff_85 = float(np.mean(freqs[np.clip(rolloff_85_idx, 0, len(freqs) - 1)]))
     rolloff_95 = float(np.mean(freqs[np.clip(rolloff_95_idx, 0, len(freqs) - 1)]))
+    rolloff_85 = 0.0 if math.isnan(rolloff_85) or math.isinf(rolloff_85) else rolloff_85
+    rolloff_95 = 0.0 if math.isnan(rolloff_95) or math.isinf(rolloff_95) else rolloff_95
 
     # Spectral Flux (frame-to-frame Euclidean distance)
     if power.shape[1] > 1:
@@ -126,34 +170,51 @@ def extract_audio_forensic_features(audio_input: str | bytes) -> Dict[str, Any]:
         spectral_flux = float(np.mean(np.sqrt(np.sum(np.diff(norm_power, axis=1)**2, axis=0))))
     else:
         spectral_flux = 0.0
+    spectral_flux = 0.0 if math.isnan(spectral_flux) or math.isinf(spectral_flux) else spectral_flux
 
-    # High-Frequency Energy Ratio (>4000 Hz and >8000 Hz)
+    # Normalized Sub-band Ratios (strictly within valid 16 kHz band: [0, 8000 Hz])
+    # 4000 Hz - 7600 Hz sub-band: assesses harmonic preservation vs band-limited drop-off
+    mask_4k_8k = (freqs >= 4000) & (freqs <= 7600)
+    subband_ratio_4k_to_8k = float(np.sum(power[mask_4k_8k, :]) / total_power)
+    subband_ratio_4k_to_8k = 0.0 if math.isnan(subband_ratio_4k_to_8k) or math.isinf(subband_ratio_4k_to_8k) else subband_ratio_4k_to_8k
+
+    # 2000 Hz - 4000 Hz sub-band: mid-formant speech ratio
+    mask_2k_4k = (freqs >= 2000) & (freqs < 4000)
+    subband_ratio_2k_to_4k = float(np.sum(power[mask_2k_4k, :]) / total_power)
+    subband_ratio_2k_to_4k = 0.0 if math.isnan(subband_ratio_2k_to_4k) or math.isinf(subband_ratio_2k_to_4k) else subband_ratio_2k_to_4k
+
+    # High frequency ratio >= 4000 Hz
     hf_mask_4k = freqs >= 4000
-    hf_ratio_4k = float(np.sum(power[hf_mask_4k, :]) / (np.sum(power) + 1e-12))
+    hf_ratio_4k = float(np.sum(power[hf_mask_4k, :]) / total_power)
+    hf_ratio_4k = 0.0 if math.isnan(hf_ratio_4k) or math.isinf(hf_ratio_4k) else hf_ratio_4k
 
-    hf_mask_8k = freqs >= 8000
-    hf_ratio_8k = float(np.sum(power[hf_mask_8k, :]) / (np.sum(power) + 1e-12)) if np.any(hf_mask_8k) else 0.0
+    # Spectral Flatness (Wiener Entropy: geometric mean / arithmetic mean of power spectrum)
+    # Neural vocoders and synthetic speech exhibit distinct tonality / flatness smearing
+    p_mean_spectrum = np.mean(power, axis=1) + 1e-12
+    log_geom = float(np.mean(np.log(p_mean_spectrum)))
+    geom_mean = float(np.exp(np.clip(log_geom, -50.0, 50.0)))
+    arith_mean = float(np.mean(p_mean_spectrum))
+    spectral_flatness = float(geom_mean / (arith_mean + 1e-12))
+    spectral_flatness = float(np.clip(spectral_flatness, 0.0, 1.0))
+    if math.isnan(spectral_flatness) or math.isinf(spectral_flatness):
+        spectral_flatness = 0.0
 
-    # 3. Neural Vocoder High-Frequency Cutoff Detection
-    # Many generative TTS models (HiFi-GAN, WaveGlow) exhibit sharp cutoff cliffs near 8kHz or 11kHz
-    max_nyquist = sr / 2.0
-    has_steep_cutoff = bool(rolloff_95 < 0.65 * max_nyquist and hf_ratio_8k < 0.015 and max_nyquist >= 8000)
+    # 3. Neural Vocoder Cutoff Detection (at 16 kHz standardized sample rate)
+    # Many generative TTS models exhibit unnatural cutoffs below 4.5 kHz or severely suppressed 4-8 kHz energy
+    has_steep_cutoff = bool(rolloff_95 < 4600.0 and subband_ratio_4k_to_8k < 0.008)
 
     # 4. Pitch & Jitter
     mean_f0, jitter_pct = _compute_pitch_jitter(audio, sr)
+    mean_f0 = 0.0 if math.isnan(mean_f0) or math.isinf(mean_f0) else mean_f0
+    jitter_pct = 0.0 if math.isnan(jitter_pct) or math.isinf(jitter_pct) else jitter_pct
 
     # 5. Continuous Anomaly Score Formulation [0.0, 1.0]
-    # Synthetic cues:
-    # a. High-frequency steep cutoff (weight 0.35)
-    # b. Pitch unnaturalness: jitter < 0.6% (flat robot) or > 5.5% (synthetic glitch) (weight 0.25)
-    # c. Discontinuous spectral flux (> 0.40) (weight 0.20)
-    # d. Spectral centroid abnormality relative to human range (weight 0.20)
     score_cutoff = 0.85 if has_steep_cutoff else 0.15
 
     score_pitch = 0.20
     if jitter_pct > 0.0:
         if jitter_pct < 0.65:
-            score_pitch = 0.80  # Unnatural robotic invariance
+            score_pitch = 0.80  # Robotic invariance
         elif jitter_pct > 5.0:
             score_pitch = 0.75  # Phase discontinuity / glitch
         else:
@@ -165,11 +226,14 @@ def extract_audio_forensic_features(audio_input: str | bytes) -> Dict[str, Any]:
     if mean_centroid < 800 or mean_centroid > 3800:
         score_centroid = 0.75
 
+    score_flatness = float(np.clip(abs(spectral_flatness - 0.12) / 0.15, 0.1, 0.9))
+
     raw_anomaly = (
-        0.35 * score_cutoff +
+        0.30 * score_cutoff +
         0.25 * score_pitch +
-        0.20 * score_flux +
-        0.20 * score_centroid
+        0.15 * score_flux +
+        0.15 * score_centroid +
+        0.15 * score_flatness
     )
     anomaly_score = float(np.clip(raw_anomaly, 0.05, 0.95))
 
@@ -181,10 +245,13 @@ def extract_audio_forensic_features(audio_input: str | bytes) -> Dict[str, Any]:
         "spectral_rolloff_85_hz": round(rolloff_85, 1),
         "spectral_rolloff_95_hz": round(rolloff_95, 1),
         "spectral_flux": round(spectral_flux, 4),
+        "subband_ratio_4k_to_8k": round(subband_ratio_4k_to_8k, 4),
+        "subband_ratio_2k_to_4k": round(subband_ratio_2k_to_4k, 4),
         "high_freq_ratio_4k": round(hf_ratio_4k, 4),
-        "high_freq_ratio_8k": round(hf_ratio_8k, 4),
+        "spectral_flatness": round(spectral_flatness, 4),
         "high_freq_cutoff_detected": has_steep_cutoff,
         "mean_f0_hz": mean_f0,
         "pitch_jitter_pct": jitter_pct,
         "anomaly_score": round(anomaly_score, 4)
     }
+
