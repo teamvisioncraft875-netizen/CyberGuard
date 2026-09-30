@@ -52,7 +52,7 @@ function auth(req, res, next) {
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({
         error: 'TOKEN_EXPIRED',
-        message: 'Authentication token has expired'
+        message: 'Please call POST /auth/refresh to get a new access token'
       });
     }
 

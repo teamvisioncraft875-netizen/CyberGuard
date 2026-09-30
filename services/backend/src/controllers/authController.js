@@ -3,12 +3,22 @@ const jwt = require('jsonwebtoken');
 const config = require('../config');
 const User = require('../models/User');
 const Organization = require('../models/Organization');
+const RefreshToken = require('../models/RefreshToken');
 
 const JWT_SECRET = config.JWT_SECRET || process.env.JWT_SECRET;
-const TOKEN_EXPIRY = '24h';
+const ACCESS_TOKEN_EXPIRY = '15m'; // 15 minutes short-lived access token
+
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
+  path: '/'
+};
 
 /**
- * Auth Controller — Handles user registration, authentication, and session retrieval.
+ * Auth Controller — Handles user registration, authentication, session retrieval,
+ * and dual-token refresh / logout flows.
  */
 const authController = {
   /**
@@ -93,8 +103,8 @@ const authController = {
         organization_id: assignedOrgId
       });
 
-      // 6. Issue real JWT with payload { id, email, role, organization_id } valid for 24h
-      const token = jwt.sign(
+      // 6. Issue short-lived access token (15m)
+      const accessToken = jwt.sign(
         {
           id: user.id,
           email: user.email,
@@ -102,12 +112,18 @@ const authController = {
           organization_id: user.organization_id || null
         },
         JWT_SECRET,
-        { expiresIn: TOKEN_EXPIRY }
+        { expiresIn: ACCESS_TOKEN_EXPIRY }
       );
 
-      // 7. Return user (excluding password_hash) and token
+      // 7. Issue long-lived refresh token (7 days) and set HTTP-only cookie
+      const refreshToken = await RefreshToken.create(user.id);
+      res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
+
+      // 8. Return user, accessToken, and refreshToken
       return res.status(201).json({
-        token,
+        token: accessToken,
+        accessToken,
+        refreshToken,
         user: {
           id: user.id,
           email: user.email,
@@ -160,8 +176,8 @@ const authController = {
         });
       }
 
-      // Issue JWT with same payload/expiry (24h)
-      const token = jwt.sign(
+      // Issue short-lived access token (15m)
+      const accessToken = jwt.sign(
         {
           id: user.id,
           email: user.email,
@@ -169,11 +185,17 @@ const authController = {
           organization_id: user.organization_id || null
         },
         JWT_SECRET,
-        { expiresIn: TOKEN_EXPIRY }
+        { expiresIn: ACCESS_TOKEN_EXPIRY }
       );
 
+      // Issue long-lived refresh token (7 days) and set HTTP-only cookie
+      const refreshToken = await RefreshToken.create(user.id);
+      res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
+
       return res.status(200).json({
-        token,
+        token: accessToken,
+        accessToken,
+        refreshToken,
         user: {
           id: user.id,
           email: user.email,
@@ -187,6 +209,92 @@ const authController = {
       return res.status(500).json({
         error: 'INTERNAL_SERVER_ERROR',
         message: 'Authentication failed'
+      });
+    }
+  },
+
+  /**
+   * POST /api/v1/auth/refresh
+   * Accepts: req.body.refreshToken OR req.cookies.refreshToken
+   * Generates a new access token without requiring the user to re-authenticate.
+   */
+  async refresh(req, res) {
+    const rawToken = req.body?.refreshToken || req.cookies?.refreshToken;
+
+    if (!rawToken || typeof rawToken !== 'string') {
+      return res.status(401).json({
+        error: 'REFRESH_TOKEN_INVALID',
+        message: 'Please login again'
+      });
+    }
+
+    try {
+      const tokenHash = RefreshToken.hash(rawToken);
+      const userId = await RefreshToken.findValid(tokenHash, req.user?.id || null);
+
+      if (!userId) {
+        return res.status(401).json({
+          error: 'REFRESH_TOKEN_INVALID',
+          message: 'Please login again'
+        });
+      }
+
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(401).json({
+          error: 'REFRESH_TOKEN_INVALID',
+          message: 'Please login again'
+        });
+      }
+
+      const accessToken = jwt.sign(
+        {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          organization_id: user.organization_id || null
+        },
+        JWT_SECRET,
+        { expiresIn: ACCESS_TOKEN_EXPIRY }
+      );
+
+      return res.status(200).json({
+        token: accessToken,
+        accessToken
+      });
+    } catch (err) {
+      console.error('[authController.refresh Error]', err.message);
+      return res.status(500).json({
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Token refresh failed'
+      });
+    }
+  },
+
+  /**
+   * POST /api/v1/auth/logout
+   * Requires: auth middleware
+   * Revokes all refresh tokens for the authenticated user and clears the HTTP-only cookie.
+   */
+  async logout(req, res) {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({
+        error: 'UNAUTHORIZED',
+        message: 'Authentication required'
+      });
+    }
+
+    try {
+      await RefreshToken.revokeByUserId(req.user.id);
+      res.clearCookie('refreshToken', { path: '/' });
+      return res.status(200).json({
+        message: 'Logged out'
+      });
+    } catch (err) {
+      console.error('[authController.logout Error]', err.message);
+      return res.status(500).json({
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Logout failed'
       });
     }
   },

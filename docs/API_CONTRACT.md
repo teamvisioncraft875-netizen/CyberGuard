@@ -36,50 +36,51 @@ Register a new user as an individual, employee, or organization admin.
 | Property | Specification |
 |---|---|
 | **Method** | `POST` |
-| **Path** | `/api/auth/signup` |
+| **Path** | `/api/v1/auth/signup` *(also available at `/api/auth/signup`)* |
 | **Auth Requirement** | Public |
-| **Description** | Creates user account and returns authentication token with initial profile. |
+| **Description** | Creates user account, generates short-lived access token (15m), issues long-lived refresh token (7d), and sets HTTP-only `refreshToken` cookie. |
 
 **Request Body:**
 ```json
 {
   "email": "analyst@enterprise.com",
   "password": "SecurePassword123!",
-  "full_name": "Jane Doe",
-  "role": "individual", // Enum: "individual" | "employee" | "admin"
-  "organization_id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c" // UUID, optional (required for employees)
+  "role": "individual", // Enum: "individual" | "employee"
+  "organization_name": "Acme Corp" // Required if role is "employee"
 }
 ```
 
 **Response (`201 Created`):**
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "a9b8c7d6e5f4...64-char-hex...",
   "user": {
     "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
     "email": "analyst@enterprise.com",
-    "full_name": "Jane Doe",
     "role": "individual",
     "organization_id": null,
     "created_at": "2026-09-09T08:00:00Z"
   }
 }
 ```
+*Note: Also sets an HTTP-only, Secure, SameSite=Strict cookie named `refreshToken` with 7 days expiration.*
 
 **Errors:**
-- `400 Bad Request`: Malformed email, weak password, or duplicate account (`{ "error": "EMAIL_EXISTS", "message": "Email already registered" }`).
+- `400 Bad Request`: Malformed email, weak password (<8 characters), or missing organization name for employees.
+- `409 Conflict`: Email already registered (`{ "error": "EMAIL_ALREADY_EXISTS" }`).
 
 ---
 
 ### 1.2 User Login
-Authenticate user credentials and receive a JWT session token.
+Authenticate user credentials and receive access and refresh tokens.
 
 | Property | Specification |
 |---|---|
 | **Method** | `POST` |
-| **Path** | `/api/auth/login` |
+| **Path** | `/api/v1/auth/login` *(also available at `/api/auth/login`)* |
 | **Auth Requirement** | Public |
-| **Description** | Validates email and password; generates JWT bearer token. |
+| **Description** | Validates email and bcrypt password hash; returns short-lived access token (15m), issues long-lived refresh token (7d), and sets HTTP-only `refreshToken` cookie. |
 
 **Request Body:**
 ```json
@@ -92,23 +93,82 @@ Authenticate user credentials and receive a JWT session token.
 **Response (`200 OK`):**
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "a9b8c7d6e5f4...64-char-hex...",
   "user": {
     "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
     "email": "analyst@enterprise.com",
-    "full_name": "Jane Doe",
     "role": "admin",
-    "organization_id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c"
+    "organization_id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
+    "created_at": "2026-09-09T08:00:00Z"
   }
+}
+```
+*Note: Also sets an HTTP-only, Secure, SameSite=Strict cookie named `refreshToken` with 7 days expiration.*
+
+**Errors:**
+- `400 Bad Request`: Missing email or password (`{ "error": "MISSING_CREDENTIALS" }`).
+- `401 Unauthorized`: Invalid email or password (`{ "error": "INVALID_CREDENTIALS" }`).
+
+---
+
+### 1.3 Refresh Access Token (`POST /api/v1/auth/refresh`)
+Obtain a new short-lived access token without requiring the user to re-enter credentials.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/auth/refresh` *(also available at `/api/auth/refresh`)* |
+| **Auth Requirement** | Public (no Bearer token needed; authenticated via refresh token) |
+| **Description** | Validates SHA-256 hashed refresh token from HTTP-only cookie or request body. If valid and not expired/revoked, returns a new 15-minute access token. |
+
+**Request Body (optional if cookie is present):**
+```json
+{
+  "refreshToken": "a9b8c7d6e5f4...64-char-hex..." // Optional: web clients send via HTTP-only cookie
+}
+```
+
+**Response (`200 OK`):**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
 **Errors:**
-- `401 Unauthorized`: Invalid email or password (`{ "error": "INVALID_CREDENTIALS", "message": "Invalid email or password" }`).
+- `401 Unauthorized`: Refresh token missing, invalid, revoked, or expired (`{ "error": "REFRESH_TOKEN_INVALID", "message": "Please login again" }`).
 
 ---
 
-### 1.3 Get Current User Profile (`GET /api/v1/auth/me`)
+### 1.4 User Logout (`POST /api/v1/auth/logout`)
+Terminate the user session, revoke all refresh tokens in the database, and clear cookies.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/auth/logout` *(also available at `/api/auth/logout`)* |
+| **Auth Requirement** | Requires JWT (`Authorization: Bearer <access_token>`) |
+| **Description** | Revokes all refresh tokens belonging to the authenticated user and clears the `refreshToken` HTTP-only cookie. |
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+```
+
+**Response (`200 OK`):**
+```json
+{
+  "message": "Logged out"
+}
+```
+
+**Errors:**
+- `401 Unauthorized`: Missing or invalid bearer token.
+
+---
+
+### 1.5 Get Current User Profile (`GET /api/v1/auth/me`)
 Retrieve authenticated user profile and organizational context.
 
 | Property | Specification |
@@ -130,7 +190,6 @@ Authorization: Bearer <jwt_token>
 {
   "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
   "email": "analyst@enterprise.com",
-  "full_name": "Jane Doe",
   "role": "admin",
   "organization_id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
   "created_at": "2026-09-09T08:00:00Z"
@@ -138,7 +197,7 @@ Authorization: Bearer <jwt_token>
 ```
 
 **Errors:**
-- `401 Unauthorized`: Missing, expired, or invalid token (`{ "error": "UNAUTHORIZED" | "TOKEN_EXPIRED" | "INVALID_TOKEN", "message": "..." }`).
+- `401 Unauthorized`: Missing, expired, or invalid token (`{ "error": "TOKEN_EXPIRED", "message": "Please call POST /auth/refresh to get a new access token" }`).
 
 ---
 
