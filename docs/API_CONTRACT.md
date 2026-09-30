@@ -659,6 +659,107 @@ Retrieve high-priority security alerts across all active linked dependents.
 
 ---
 
+### 6.5 List Guardian Links
+Retrieve all guardian-dependent relationships associated with the authenticated user or organization.
+
+| Property | Specification |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/api/v1/guardian/links` |
+| **Auth Requirement** | Requires JWT (`Authorization: Bearer <jwt_token>`) |
+| **Description** | Returns all guardian links where caller is either guardian or dependent. Admins see all links within their organization. By default, returns active and pending links (excludes revoked unless requested). |
+
+**Query Parameters:**
+- `status` *(optional, string)*: Filter links by status (`active`, `pending`, `revoked`, `all`).
+
+**Response (`200 OK`):**
+```json
+{
+  "links": [
+    {
+      "id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
+      "link_id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
+      "guardian_user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+      "dependent_user_id": "c9d8e7f6-a5b4-3c2d-1e0f-9a8b7c6d5e4f",
+      "status": "pending",
+      "guardian_email": "guardian@family.org",
+      "dependent_email": "dependent@family.org",
+      "created_at": "2026-09-09T08:25:00Z"
+    }
+  ]
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Invalid status filter query parameter (`INVALID_STATUS`).
+- `401 Unauthorized`: Missing or invalid bearer token.
+
+---
+
+### 6.6 Revoke Guardian Link
+Terminate an active or pending guardian-dependent link.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/guardian/link/:id/revoke` |
+| **Auth Requirement** | Requires JWT (`Authorization: Bearer <jwt_token>`) |
+| **Description** | Allows either the guardian or the dependent to immediately revoke a link. Transitions status to `revoked`. Dependent alerts stop broadcasting to the guardian. |
+
+**Path Parameters:**
+- `id` *(required, UUID)*: Primary key UUID of the guardian link.
+
+**Request Body:** None
+
+**Response (`200 OK`):**
+```json
+{
+  "id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
+  "link_id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
+  "status": "revoked",
+  "guardian_user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+  "dependent_user_id": "c9d8e7f6-a5b4-3c2d-1e0f-9a8b7c6d5e4f",
+  "created_at": "2026-09-09T08:25:00Z"
+}
+```
+
+**Errors:**
+- `401 Unauthorized`: Missing or invalid bearer token.
+- `404 Not Found`: Link not found, invalid UUID, or caller is not a participant on this link (`NOT_FOUND`).
+
+---
+
+### 6.7 Search User by Email
+Find a user by email to establish a guardian-dependent relationship.
+
+| Property | Specification |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/api/v1/users/search` *(also `/api/v1/guardian/users/search`)* |
+| **Auth Requirement** | Requires JWT (`Authorization: Bearer <jwt_token>`) |
+| **Description** | Searches for a registered user by email before creating a guardian link. Scoped to same organization for enterprise callers, or across individuals for consumer callers. Password hashes and credentials strictly excluded. Rate limited at 30 req / 15 min. |
+
+**Query Parameters:**
+- `email` *(required, string)*: Email address to search for.
+
+**Response (`200 OK`):**
+```json
+{
+  "id": "c9d8e7f6-a5b4-3c2d-1e0f-9a8b7c6d5e4f",
+  "email": "dependent@family.org",
+  "role": "individual",
+  "organization_id": null
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Missing or empty `email` query parameter (`BAD_REQUEST`).
+- `401 Unauthorized`: Missing or invalid bearer token.
+- `404 Not Found`: No user found matching the email address within authorized scope (`NOT_FOUND`).
+- `429 Too Many Requests`: Search rate limit exceeded (`RATE_LIMIT_EXCEEDED`).
+
+---
+
 ## 7. Internal Detection Services (Node.js Gateway → FastAPI ML Service)
 
 > **RESTRICTED:** Internal private network only. Never exposed directly to the public web or client applications.

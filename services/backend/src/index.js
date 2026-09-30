@@ -13,8 +13,9 @@ const incidentRoutes = require('./routes/incidentRoutes');
 const guardianRoutes = require('./routes/guardianRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const actionRoutes = require('./routes/actionRoutes');
+const userRoutes = require('./routes/userRoutes');
 
-const { checkLimiter, generalLimiter } = require('./middlewares/rateLimiter');
+const { checkLimiter, generalLimiter, searchLimiter } = require('./middlewares/rateLimiter');
 
 const { initSocket } = require('./config/socket');
 
@@ -55,6 +56,7 @@ v1Router.use('/incidents', generalLimiter, incidentRoutes);
 v1Router.use('/guardian', generalLimiter, guardianRoutes);
 v1Router.use('/analytics', generalLimiter, analyticsRoutes);
 v1Router.use('/actions', generalLimiter, actionRoutes);
+v1Router.use('/users', searchLimiter, userRoutes);
 
 // Mount versioned and root API routers
 app.use('/api/v1', v1Router);

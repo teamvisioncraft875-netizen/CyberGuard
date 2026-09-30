@@ -1,4 +1,5 @@
 const GuardianLink = require('../models/GuardianLink');
+const User = require('../models/User');
 const db = require('../config/db');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -148,10 +149,132 @@ const guardianController = {
   },
 
   /**
-   * Alias for declineGuardianLink
+   * GET /api/v1/guardian/links
+   */
+  async listLinks(req, res) {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
+    }
+
+    const { status } = req.query;
+    if (status && !['active', 'pending', 'revoked', 'all'].includes(status)) {
+      return res.status(400).json({
+        error: 'INVALID_STATUS',
+        message: "Status filter must be one of: 'active', 'pending', 'revoked', 'all'"
+      });
+    }
+
+    const isAdmin = req.user.role === 'admin';
+    const organizationId = req.user.organization_id;
+
+    try {
+      const links = await GuardianLink.listLinks({
+        userId: req.user.id,
+        organizationId,
+        isAdmin,
+        status
+      });
+
+      return res.status(200).json({ links: links || [] });
+    } catch (err) {
+      console.error('[guardianController.listLinks error]', err.message);
+      return res.status(500).json({ error: 'DB_ERROR', message: 'Failed to retrieve guardian links' });
+    }
+  },
+
+  /**
+   * POST /api/v1/guardian/link/:id/revoke
+   */
+  async revokeLink(req, res) {
+    const { id } = req.params;
+
+    if (!id || !UUID_REGEX.test(id)) {
+      return res.status(404).json({
+        error: 'NOT_FOUND',
+        message: 'Guardian link not found'
+      });
+    }
+
+    try {
+      const link = await GuardianLink.findById(id);
+
+      // Verify link exists and req.user.id is either guardian_user_id or dependent_user_id
+      if (!link || (link.guardian_user_id !== req.user?.id && link.dependent_user_id !== req.user?.id)) {
+        return res.status(404).json({
+          error: 'NOT_FOUND',
+          message: 'Guardian link not found'
+        });
+      }
+
+      const updated = await GuardianLink.updateStatus(id, 'revoked');
+      return res.status(200).json({
+        id: updated?.id || id,
+        link_id: updated?.link_id || updated?.id || id,
+        status: 'revoked',
+        guardian_user_id: updated?.guardian_user_id || link.guardian_user_id,
+        dependent_user_id: updated?.dependent_user_id || link.dependent_user_id,
+        created_at: updated?.created_at || link.created_at
+      });
+    } catch (err) {
+      console.error('[guardianController.revokeLink error]', err.message);
+      return res.status(500).json({ error: 'DB_ERROR', message: 'Failed to revoke guardian link' });
+    }
+  },
+
+  /**
+   * Alias for backwards compatibility
    */
   revokeGuardianLink(req, res) {
-    return guardianController.declineGuardianLink(req, res);
+    return guardianController.revokeLink(req, res);
+  },
+
+  /**
+   * GET /api/v1/users/search?email=<email>
+   */
+  async searchUserByEmail(req, res) {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'UNAUTHORIZED', message: 'Authentication required' });
+    }
+
+    const { email } = req.query;
+    if (!email || typeof email !== 'string' || !email.trim()) {
+      return res.status(400).json({
+        error: 'BAD_REQUEST',
+        message: 'email query parameter is required'
+      });
+    }
+
+    try {
+      const targetEmail = email.trim();
+      const users = await User.searchByEmail({
+        email: targetEmail,
+        callerRole: req.user.role,
+        organizationId: req.user.organization_id
+      });
+
+      if (!users || users.length === 0) {
+        return res.status(404).json({
+          error: 'NOT_FOUND',
+          message: 'User not found'
+        });
+      }
+
+      const sanitizedUsers = users.map(u => ({
+        id: u.id,
+        email: u.email,
+        role: u.role,
+        organization_id: u.organization_id || null
+      }));
+
+      return res.status(200).json({
+        users: sanitizedUsers,
+        user: sanitizedUsers[0],
+        ...sanitizedUsers[0]
+      });
+    } catch (err) {
+      console.error('[guardianController.searchUserByEmail error]', err.message);
+      return res.status(500).json({ error: 'DB_ERROR', message: 'Failed to search for user' });
+    }
   },
 
   /**

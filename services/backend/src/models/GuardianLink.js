@@ -59,6 +59,47 @@ const GuardianLink = {
     `;
     const res = await db.query(text, [link_id, status]);
     return res.rows[0] || null;
+  },
+
+  async listLinks({ userId, organizationId, isAdmin, status }) {
+    let query = `
+      SELECT gl.id,
+             gl.id as link_id,
+             gl.guardian_user_id,
+             gl.dependent_user_id,
+             gl.status,
+             gl.created_at,
+             ug.email AS guardian_email,
+             ud.email AS dependent_email
+      FROM guardian_links gl
+      JOIN users ug ON ug.id = gl.guardian_user_id
+      JOIN users ud ON ud.id = gl.dependent_user_id
+    `;
+    const params = [];
+    const whereClauses = [];
+
+    if (isAdmin && organizationId) {
+      params.push(organizationId);
+      whereClauses.push(`(ug.organization_id = $${params.length} OR ud.organization_id = $${params.length})`);
+    } else {
+      params.push(userId);
+      whereClauses.push(`(gl.guardian_user_id = $${params.length} OR gl.dependent_user_id = $${params.length})`);
+    }
+
+    if (status) {
+      if (status !== 'all') {
+        params.push(status);
+        whereClauses.push(`gl.status = $${params.length}`);
+      }
+    } else {
+      // By default, exclude revoked links unless explicitly requested via ?status=revoked or ?status=all
+      whereClauses.push(`gl.status != 'revoked'`);
+    }
+
+    query += ` WHERE ${whereClauses.join(' AND ')} ORDER BY gl.created_at DESC;`;
+
+    const res = await db.query(query, params);
+    return res.rows;
   }
 };
 

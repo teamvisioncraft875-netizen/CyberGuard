@@ -47,6 +47,30 @@ const User = {
     return res.rows;
   },
 
+  async searchByEmail({ email, callerRole, organizationId }) {
+    let text;
+    let params;
+
+    if ((callerRole === 'admin' || callerRole === 'employee') && organizationId) {
+      text = `
+        SELECT id, email, role, organization_id, created_at
+        FROM users
+        WHERE LOWER(email) = LOWER($1) AND organization_id = $2;
+      `;
+      params = [email, organizationId];
+    } else {
+      text = `
+        SELECT id, email, role, organization_id, created_at
+        FROM users
+        WHERE LOWER(email) = LOWER($1) AND role = 'individual' AND organization_id IS NULL;
+      `;
+      params = [email];
+    }
+
+    const res = await db.query(text, params);
+    return res.rows;
+  },
+
 
   async update(id, fields = {}) {
     const keys = Object.keys(fields).filter(k => ALLOWED_UPDATE_FIELDS.includes(k));

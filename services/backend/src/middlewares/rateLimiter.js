@@ -21,6 +21,7 @@ const authLimiter = rateLimit({
   standardHeaders: true, // Return standard RateLimit-* headers
   legacyHeaders: false, // Disable X-RateLimit-* headers
   statusCode: 429,
+  skip: () => process.env.SKIP_RATE_LIMIT === 'true',
   handler: rateLimitHandler
 });
 
@@ -34,6 +35,7 @@ const checkLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   statusCode: 429,
+  skip: () => process.env.SKIP_RATE_LIMIT === 'true',
   handler: rateLimitHandler
 });
 
@@ -53,11 +55,27 @@ const generalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   statusCode: 429,
+  skip: () => process.env.SKIP_RATE_LIMIT === 'true',
+  handler: rateLimitHandler
+});
+
+/**
+ * Search Limiter: 30 requests per 15 minutes per IP.
+ * Applied to user search endpoints (/users/search) for autocomplete and guardian linking.
+ */
+const searchLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  statusCode: 429,
+  skip: () => process.env.SKIP_RATE_LIMIT === 'true',
   handler: rateLimitHandler
 });
 
 module.exports = {
   authLimiter,
   checkLimiter,
-  generalLimiter
+  generalLimiter,
+  searchLimiter
 };
