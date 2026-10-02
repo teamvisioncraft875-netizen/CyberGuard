@@ -1207,4 +1207,139 @@ Retrieve paginated audit log events strictly scoped to the authenticated admin's
 - `429 Too Many Requests`: General rate limit exceeded.
 - `500 Internal Server Error`: Database query failure (`{ "error": "INTERNAL_SERVER_ERROR" }`).
 
+---
+
+## 11. Automated Response Layer Endpoints (Phase 1B: Shadow Mode)
+
+Automated response orchestration and policy management. In Phase 1B, the policy engine operates in strict **Shadow Mode**: proposed actions are evaluated, matched against tenant policies, guardrailed, and logged to `response_actions` with `status='proposed'` and `action_mode='shadow'`. No disruptive actions are executed.
+
+### 11.1 List Response Actions
+Retrieve paginated response actions (proposed, pending approval, executed, etc.) scoped to the authenticated admin's organization.
+
+| Property | Specification |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/api/v1/admin/response-actions` |
+| **Auth Requirement** | Bearer JWT (Admin role only: `roleCheck(['admin'])`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Returns proposed or executed response actions for the caller's organization with optional status and incident filters. |
+
+**Query Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `incident_id` | UUID | No | — | Filter by specific incident ID |
+| `status` | String | No | — | Filter by status (`proposed`, `pending_approval`, `approved`, `rejected`, `executed`, `failed`, `expired`, `rolled_back`) |
+| `from` | ISO8601 String | No | — | Lower bound created_at timestamp |
+| `to` | ISO8601 String | No | — | Upper bound created_at timestamp |
+| `limit` | Integer | No | `25` | Maximum number of records to return (capped at 100) |
+| `offset` | Integer | No | `0` | Number of records to skip |
+
+**Response (`200 OK`):**
+```json
+{
+  "success": true,
+  "total": 1,
+  "limit": 25,
+  "offset": 0,
+  "actions": [
+    {
+      "id": "e47ac10b-58cc-4372-a567-0e02b2c3d480",
+      "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+      "incident_id": "3c8340d8-118e-4a69-9da8-7cfa8c95029e",
+      "policy_id": "8d09bf3c-4e89-48ce-8dbe-268e24c2cecb",
+      "action_type": "notify_admin",
+      "action_mode": "shadow",
+      "status": "proposed",
+      "requested_by_id": null,
+      "approved_by_id": null,
+      "approved_at": null,
+      "target": {
+        "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+        "incident_id": "3c8340d8-118e-4a69-9da8-7cfa8c95029e"
+      },
+      "result": null,
+      "created_at": "2026-10-03T00:30:00.000Z",
+      "scheduled_at": null,
+      "executed_at": null,
+      "expires_at": null
+    }
+  ]
+}
+```
+
+**Errors:**
+- `401 Unauthorized`: Missing or invalid JWT (`{ "error": "UNAUTHORIZED" }`).
+- `403 Forbidden`: Authenticated user lacks `admin` role or organization membership (`{ "error": "FORBIDDEN" }`).
+- `500 Internal Server Error`: Server failure retrieving actions.
+
+---
+
+### 11.2 Create Response Policy
+Create a new automated response policy for the authenticated administrator's organization.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/admin/response-policies` |
+| **Auth Requirement** | Bearer JWT (Admin role only: `roleCheck(['admin'])`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Configures automated evaluation rules for incoming incidents based on threat type, risk score threshold, and optional target filters. |
+
+**Request Body:**
+```json
+{
+  "name": "High Severity Phishing Response Policy",
+  "enabled": true,
+  "rules": [
+    {
+      "threat_type": "phishing",
+      "min_score": 70,
+      "action_type": "notify_admin",
+      "action_mode": "shadow",
+      "requires_approval": false,
+      "auto_execute_after_mins": 0,
+      "target_filter": {
+        "user_roles": ["employee", "admin"]
+      }
+    }
+  ]
+}
+```
+
+**Response (`201 Created`):**
+```json
+{
+  "success": true,
+  "policy": {
+    "id": "8d09bf3c-4e89-48ce-8dbe-268e24c2cecb",
+    "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+    "name": "High Severity Phishing Response Policy",
+    "enabled": true,
+    "created_by_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "rules": [
+      {
+        "threat_type": "phishing",
+        "min_score": 70,
+        "action_type": "notify_admin",
+        "action_mode": "shadow",
+        "requires_approval": false,
+        "auto_execute_after_mins": 0,
+        "target_filter": {
+          "user_roles": ["employee", "admin"]
+        }
+      }
+    ],
+    "created_at": "2026-10-03T00:30:00.000Z",
+    "updated_at": "2026-10-03T00:30:00.000Z"
+  }
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Missing policy name or invalid rules format (`{ "error": "VALIDATION_ERROR", "message": "..." }`).
+- `401 Unauthorized`: Missing or invalid JWT.
+- `403 Forbidden`: Authenticated user lacks `admin` role or organization membership.
+- `500 Internal Server Error`: Failed to create policy in database.
+
+
 
