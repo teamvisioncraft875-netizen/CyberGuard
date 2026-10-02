@@ -4,6 +4,7 @@ const config = require('../config');
 const User = require('../models/User');
 const Organization = require('../models/Organization');
 const RefreshToken = require('../models/RefreshToken');
+const auditService = require('../services/auditService');
 
 const JWT_SECRET = config.JWT_SECRET || process.env.JWT_SECRET;
 const ACCESS_TOKEN_EXPIRY = '15m'; // 15 minutes short-lived access token
@@ -119,7 +120,19 @@ const authController = {
       const refreshToken = await RefreshToken.create(user.id);
       res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
 
-      // 8. Return user, accessToken, and refreshToken
+      // 8. Log signup event
+      auditService.log({
+        organization_id: user.organization_id || null,
+        user_id: user.id,
+        actor_type: user.role === 'admin' ? 'admin' : 'user',
+        action: auditService.AUDIT_ACTIONS.AUTH_SIGNUP,
+        resource_type: 'user',
+        resource_id: user.id,
+        details: { email: user.email, role: user.role },
+        ip_address: req.ip
+      });
+
+      // 9. Return user, accessToken, and refreshToken
       return res.status(201).json({
         token: accessToken,
         accessToken,
@@ -161,6 +174,16 @@ const authController = {
 
       // If user not found -> 401 INVALID_CREDENTIALS
       if (!user) {
+        auditService.log({
+          organization_id: null,
+          user_id: null,
+          actor_type: 'user',
+          action: auditService.AUDIT_ACTIONS.AUTH_LOGIN_FAILED,
+          resource_type: 'user',
+          resource_id: null,
+          details: { attempted_email: normalizedEmail },
+          ip_address: req.ip
+        });
         return res.status(401).json({
           error: 'INVALID_CREDENTIALS',
           message: 'Invalid email or password'
@@ -170,6 +193,16 @@ const authController = {
       // Compare password with bcrypt
       const isMatch = await bcrypt.compare(password, user.password_hash);
       if (!isMatch) {
+        auditService.log({
+          organization_id: user.organization_id || null,
+          user_id: user.id,
+          actor_type: user.role === 'admin' ? 'admin' : 'user',
+          action: auditService.AUDIT_ACTIONS.AUTH_LOGIN_FAILED,
+          resource_type: 'user',
+          resource_id: user.id,
+          details: { attempted_email: normalizedEmail },
+          ip_address: req.ip
+        });
         return res.status(401).json({
           error: 'INVALID_CREDENTIALS',
           message: 'Invalid email or password'
@@ -191,6 +224,18 @@ const authController = {
       // Issue long-lived refresh token (7 days) and set HTTP-only cookie
       const refreshToken = await RefreshToken.create(user.id);
       res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
+
+      // Log successful login
+      auditService.log({
+        organization_id: user.organization_id || null,
+        user_id: user.id,
+        actor_type: user.role === 'admin' ? 'admin' : 'user',
+        action: auditService.AUDIT_ACTIONS.AUTH_LOGIN_SUCCESS,
+        resource_type: 'user',
+        resource_id: user.id,
+        details: { email: user.email },
+        ip_address: req.ip
+      });
 
       return res.status(200).json({
         token: accessToken,
@@ -222,6 +267,16 @@ const authController = {
     const rawToken = req.body?.refreshToken || req.cookies?.refreshToken;
 
     if (!rawToken || typeof rawToken !== 'string') {
+      auditService.log({
+        organization_id: req.user?.organization_id || null,
+        user_id: req.user?.id || null,
+        actor_type: req.user?.role === 'admin' ? 'admin' : 'user',
+        action: auditService.AUDIT_ACTIONS.AUTH_REFRESH_FAILED,
+        resource_type: 'session',
+        resource_id: null,
+        details: { reason: 'Missing or malformed refresh token' },
+        ip_address: req.ip
+      });
       return res.status(401).json({
         error: 'REFRESH_TOKEN_INVALID',
         message: 'Please login again'
@@ -233,6 +288,16 @@ const authController = {
       const userId = await RefreshToken.findValid(tokenHash, req.user?.id || null);
 
       if (!userId) {
+        auditService.log({
+          organization_id: req.user?.organization_id || null,
+          user_id: req.user?.id || null,
+          actor_type: req.user?.role === 'admin' ? 'admin' : 'user',
+          action: auditService.AUDIT_ACTIONS.AUTH_REFRESH_FAILED,
+          resource_type: 'session',
+          resource_id: null,
+          details: { reason: 'Refresh token not found or revoked' },
+          ip_address: req.ip
+        });
         return res.status(401).json({
           error: 'REFRESH_TOKEN_INVALID',
           message: 'Please login again'
@@ -241,6 +306,16 @@ const authController = {
 
       const user = await User.findById(userId);
       if (!user) {
+        auditService.log({
+          organization_id: null,
+          user_id: userId,
+          actor_type: 'user',
+          action: auditService.AUDIT_ACTIONS.AUTH_REFRESH_FAILED,
+          resource_type: 'session',
+          resource_id: null,
+          details: { reason: 'Associated user record no longer exists' },
+          ip_address: req.ip
+        });
         return res.status(401).json({
           error: 'REFRESH_TOKEN_INVALID',
           message: 'Please login again'
@@ -287,6 +362,18 @@ const authController = {
     try {
       await RefreshToken.revokeByUserId(req.user.id);
       res.clearCookie('refreshToken', { path: '/' });
+
+      auditService.log({
+        organization_id: req.user.organization_id || null,
+        user_id: req.user.id,
+        actor_type: req.user.role === 'admin' ? 'admin' : 'user',
+        action: auditService.AUDIT_ACTIONS.AUTH_LOGOUT,
+        resource_type: 'user',
+        resource_id: req.user.id,
+        details: { email: req.user.email },
+        ip_address: req.ip
+      });
+
       return res.status(200).json({
         message: 'Logged out'
       });

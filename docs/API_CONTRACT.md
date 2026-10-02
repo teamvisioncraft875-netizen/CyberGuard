@@ -1147,3 +1147,64 @@ These endpoints power the React Command Dashboard overview charts, threat distri
   ]
   ```
 
+---
+
+## 10. Audit Logging Endpoints
+
+Append-only, immutable audit trail for security compliance, administrative review, and automated response actions.
+
+### 10.1 List Audit Logs
+Retrieve paginated audit log events strictly scoped to the authenticated admin's organization.
+
+| Property | Specification |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/api/v1/audit-logs` *(also available at `/api/audit-logs`)* |
+| **Auth Requirement** | Bearer JWT (Admin role only: `roleCheck(['admin'])`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Returns an append-only sequence of audit log entries for the caller's organization. Admins without an organization receive an empty array with total 0. Sensitive fields are redacted and strings longer than 500 characters are truncated. |
+
+**Query Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `action` | String | No | — | Filter by audit action (e.g., `auth:login_success`, `incident:status_updated`) |
+| `resource_type` | String | No | — | Filter by resource type (e.g., `incident`, `action`, `user`, `guardian_link`) |
+| `user_id` | UUID | No | — | Filter by the target or actor user ID |
+| `from` | ISO8601 String | No | — | Lower bound created_at timestamp |
+| `to` | ISO8601 String | No | — | Upper bound created_at timestamp |
+| `limit` | Integer | No | `25` | Maximum number of records to return (capped at 100) |
+| `offset` | Integer | No | `0` | Number of records to skip |
+
+**Response (`200 OK`):**
+```json
+{
+  "total": 1,
+  "limit": 25,
+  "offset": 0,
+  "logs": [
+    {
+      "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+      "user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+      "actor_type": "admin",
+      "action": "incident:status_updated",
+      "resource_type": "incident",
+      "resource_id": "3c8340d8-118e-4a69-9da8-7cfa8c95029e",
+      "details": {
+        "previous_status": "open",
+        "new_status": "investigating"
+      },
+      "ip_address": "127.0.0.1",
+      "created_at": "2026-10-02T11:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Errors:**
+- `401 Unauthorized`: Missing, expired, or invalid JWT token (`{ "error": "UNAUTHORIZED" }`).
+- `403 Forbidden`: Authenticated user lacks `admin` role (`{ "error": "FORBIDDEN" }`).
+- `429 Too Many Requests`: General rate limit exceeded.
+- `500 Internal Server Error`: Database query failure (`{ "error": "INTERNAL_SERVER_ERROR" }`).
+
+
