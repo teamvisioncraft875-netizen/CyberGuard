@@ -1341,5 +1341,61 @@ Create a new automated response policy for the authenticated administrator's org
 - `403 Forbidden`: Authenticated user lacks `admin` role or organization membership.
 - `500 Internal Server Error`: Failed to create policy in database.
 
+---
+
+### 11.3 Approve or Reject Response Action
+Allows organization administrators to approve or reject a proposed or pending response action.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/admin/actions/:id/approve` *(also available at `/api/v1/admin/response-actions/:id/approve`)* |
+| **Auth Requirement** | Bearer JWT (Admin role only: `roleCheck(['admin'])`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Updates the response action status to `'approved'` or `'rejected'`, sets `approved_by_id` and `approved_at`, emits an append-only audit log entry, and dispatches a confirmation email to the approver. |
+
+**Request Body:**
+```json
+{
+  "approved": true // boolean: true to approve, false to reject
+}
+```
+
+**Response (`200 OK`):**
+```json
+{
+  "success": true,
+  "action": {
+    "id": "e47ac10b-58cc-4372-a567-0e02b2c3d480",
+    "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+    "incident_id": "3c8340d8-118e-4a69-9da8-7cfa8c95029e",
+    "policy_id": "8d09bf3c-4e89-48ce-8dbe-268e24c2cecb",
+    "action_type": "notify_admin",
+    "action_mode": "shadow",
+    "status": "approved",
+    "requested_by_id": null,
+    "approved_by_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "approved_at": "2026-10-03T01:15:00.000Z",
+    "target": {
+      "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+      "incident_id": "3c8340d8-118e-4a69-9da8-7cfa8c95029e"
+    },
+    "result": null,
+    "created_at": "2026-10-03T00:30:00.000Z",
+    "scheduled_at": null,
+    "executed_at": null,
+    "expires_at": null
+  }
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Missing or non-boolean `approved` field (`{ "error": "VALIDATION_ERROR" }`).
+- `401 Unauthorized`: Missing or invalid JWT.
+- `403 Forbidden`: User is not an admin or does not belong to an organization.
+- `404 Not Found`: Response action does not exist or belongs to another organization.
+- `500 Internal Server Error`: Failed to update action in database.
+
+
 
 

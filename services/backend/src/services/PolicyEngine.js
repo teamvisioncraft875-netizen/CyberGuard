@@ -1,5 +1,6 @@
 const ResponsePolicy = require('../models/ResponsePolicy');
 const ResponseAction = require('../models/ResponseAction');
+const notificationService = require('./notificationService');
 
 const ALLOWED_ACTION_TYPES = [
   'notify_admin',
@@ -337,6 +338,13 @@ class PolicyEngine {
           requested_by_id: action.requested_by_id
         });
         createdActions.push(created);
+
+        // Hook into response_actions creation (Phase 1C: Notification Service)
+        // Fire-and-forget: never block execution or fail incident response
+        const matchingPolicy = applicablePolicies.find((p) => p.policy_id === action.policy_id);
+        notificationService.sendActionNotification(created, incident, matchingPolicy).catch((nErr) => {
+          console.error('[NotificationService Hook Error]', nErr.message);
+        });
       }
 
       return createdActions;

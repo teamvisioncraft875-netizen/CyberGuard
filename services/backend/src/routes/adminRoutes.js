@@ -33,4 +33,22 @@ router.get(
   responseAdminController.listResponsePolicies
 );
 
+// POST /api/v1/admin/actions/:id/approve: auth + roleCheck(['admin'])
+router.post(
+  '/actions/:id/approve',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  responseAdminController.approveResponseAction
+);
+
+// POST /api/v1/admin/response-actions/:id/approve (alias)
+router.post(
+  '/response-actions/:id/approve',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  responseAdminController.approveResponseAction
+);
+
 module.exports = router;

@@ -155,6 +155,43 @@ const ResponseAction = {
       offset: parsedOffset,
       actions: dataRes.rows
     };
+  },
+
+  /**
+   * Finds a response action by ID scoped to organization.
+   *
+   * @param {string} id
+   * @param {string} organization_id
+   * @returns {Promise<Object|null>}
+   */
+  async findByIdAndOrg(id, organization_id) {
+    const text = 'SELECT * FROM public.response_actions WHERE id = $1 AND organization_id = $2;';
+    const res = await db.query(text, [id, organization_id]);
+    return res.rows[0] || null;
+  },
+
+  /**
+   * Updates response action status upon administrator approval or rejection.
+   *
+   * @param {string} id
+   * @param {Object} params
+   * @param {string} params.organization_id
+   * @param {'approved'|'rejected'} params.status
+   * @param {string} params.approved_by_id
+   * @param {Date|string} [params.approved_at]
+   * @returns {Promise<Object|null>}
+   */
+  async setApproval(id, { organization_id, status, approved_by_id, approved_at = new Date() }) {
+    const text = `
+      UPDATE public.response_actions
+      SET status = $1,
+          approved_by_id = $2,
+          approved_at = $3
+      WHERE id = $4 AND organization_id = $5
+      RETURNING *;
+    `;
+    const res = await db.query(text, [status, approved_by_id, approved_at, id, organization_id]);
+    return res.rows[0] || null;
   }
 };
 

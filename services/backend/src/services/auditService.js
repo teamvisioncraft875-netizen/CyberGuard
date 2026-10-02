@@ -17,7 +17,9 @@ const AUDIT_ACTIONS = Object.freeze({
   GUARDIAN_LINK_CREATED: 'guardian:link_created',
   GUARDIAN_LINK_ACCEPTED: 'guardian:link_accepted',
   GUARDIAN_LINK_DECLINED: 'guardian:link_declined',
-  GUARDIAN_LINK_REVOKED: 'guardian:link_revoked'
+  GUARDIAN_LINK_REVOKED: 'guardian:link_revoked',
+  RESPONSE_ACTION_APPROVED: 'response_action:approved',
+  RESPONSE_ACTION_REJECTED: 'response_action:rejected'
 });
 
 /**
