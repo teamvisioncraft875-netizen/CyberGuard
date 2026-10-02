@@ -26,6 +26,11 @@ For endpoints requiring authentication:
 Authorization: Bearer <jwt_token>
 ```
 
+### Redis Caching Policies
+To maintain sub-second response times and preserve external threat intelligence quotas:
+- **External Threat Intelligence APIs:** API calls to external services are cached for 24 hours to reduce quota usage (Key format: `api_cache:<service>:<identifier>`, TTL: 86,400s).
+- **Session Refresh Tokens:** Refresh tokens are cached for 7 days for faster validation (Key format: `refresh_token:<tokenHash>`, TTL: 604,800s). In the event of logout or revocation, cache entries are immediately invalidated.
+
 ---
 
 ## 1. Authentication Endpoints
@@ -36,50 +41,51 @@ Register a new user as an individual, employee, or organization admin.
 | Property | Specification |
 |---|---|
 | **Method** | `POST` |
-| **Path** | `/api/auth/signup` |
+| **Path** | `/api/v1/auth/signup` *(also available at `/api/auth/signup`)* |
 | **Auth Requirement** | Public |
-| **Description** | Creates user account and returns authentication token with initial profile. |
+| **Description** | Creates user account, generates short-lived access token (15m), issues long-lived refresh token (7d), and sets HTTP-only `refreshToken` cookie. |
 
 **Request Body:**
 ```json
 {
   "email": "analyst@enterprise.com",
   "password": "SecurePassword123!",
-  "full_name": "Jane Doe",
-  "role": "individual", // Enum: "individual" | "employee" | "admin"
-  "organization_id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c" // UUID, optional (required for employees)
+  "role": "individual", // Enum: "individual" | "employee"
+  "organization_name": "Acme Corp" // Required if role is "employee"
 }
 ```
 
 **Response (`201 Created`):**
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "a9b8c7d6e5f4...64-char-hex...",
   "user": {
     "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
     "email": "analyst@enterprise.com",
-    "full_name": "Jane Doe",
     "role": "individual",
     "organization_id": null,
     "created_at": "2026-09-09T08:00:00Z"
   }
 }
 ```
+*Note: Also sets an HTTP-only, Secure, SameSite=Strict cookie named `refreshToken` with 7 days expiration.*
 
 **Errors:**
-- `400 Bad Request`: Malformed email, weak password, or duplicate account (`{ "error": "EMAIL_EXISTS", "message": "Email already registered" }`).
+- `400 Bad Request`: Malformed email, weak password (<8 characters), or missing organization name for employees.
+- `409 Conflict`: Email already registered (`{ "error": "EMAIL_ALREADY_EXISTS" }`).
 
 ---
 
 ### 1.2 User Login
-Authenticate user credentials and receive a JWT session token.
+Authenticate user credentials and receive access and refresh tokens.
 
 | Property | Specification |
 |---|---|
 | **Method** | `POST` |
-| **Path** | `/api/auth/login` |
+| **Path** | `/api/v1/auth/login` *(also available at `/api/auth/login`)* |
 | **Auth Requirement** | Public |
-| **Description** | Validates email and password; generates JWT bearer token. |
+| **Description** | Validates email and bcrypt password hash; returns short-lived access token (15m), issues long-lived refresh token (7d), and sets HTTP-only `refreshToken` cookie. |
 
 **Request Body:**
 ```json
@@ -92,23 +98,82 @@ Authenticate user credentials and receive a JWT session token.
 **Response (`200 OK`):**
 ```json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "a9b8c7d6e5f4...64-char-hex...",
   "user": {
     "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
     "email": "analyst@enterprise.com",
-    "full_name": "Jane Doe",
     "role": "admin",
-    "organization_id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c"
+    "organization_id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
+    "created_at": "2026-09-09T08:00:00Z"
   }
+}
+```
+*Note: Also sets an HTTP-only, Secure, SameSite=Strict cookie named `refreshToken` with 7 days expiration.*
+
+**Errors:**
+- `400 Bad Request`: Missing email or password (`{ "error": "MISSING_CREDENTIALS" }`).
+- `401 Unauthorized`: Invalid email or password (`{ "error": "INVALID_CREDENTIALS" }`).
+
+---
+
+### 1.3 Refresh Access Token (`POST /api/v1/auth/refresh`)
+Obtain a new short-lived access token without requiring the user to re-enter credentials.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/auth/refresh` *(also available at `/api/auth/refresh`)* |
+| **Auth Requirement** | Public (no Bearer token needed; authenticated via refresh token) |
+| **Description** | Validates SHA-256 hashed refresh token from HTTP-only cookie or request body. If valid and not expired/revoked, returns a new 15-minute access token. |
+
+**Request Body (optional if cookie is present):**
+```json
+{
+  "refreshToken": "a9b8c7d6e5f4...64-char-hex..." // Optional: web clients send via HTTP-only cookie
+}
+```
+
+**Response (`200 OK`):**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
 **Errors:**
-- `401 Unauthorized`: Invalid email or password (`{ "error": "INVALID_CREDENTIALS", "message": "Invalid email or password" }`).
+- `401 Unauthorized`: Refresh token missing, invalid, revoked, or expired (`{ "error": "REFRESH_TOKEN_INVALID", "message": "Please login again" }`).
 
 ---
 
-### 1.3 Get Current User Profile (`GET /api/v1/auth/me`)
+### 1.4 User Logout (`POST /api/v1/auth/logout`)
+Terminate the user session, revoke all refresh tokens in the database, and clear cookies.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/auth/logout` *(also available at `/api/auth/logout`)* |
+| **Auth Requirement** | Requires JWT (`Authorization: Bearer <access_token>`) |
+| **Description** | Revokes all refresh tokens belonging to the authenticated user and clears the `refreshToken` HTTP-only cookie. |
+
+**Request Headers:**
+```http
+Authorization: Bearer <jwt_token>
+```
+
+**Response (`200 OK`):**
+```json
+{
+  "message": "Logged out"
+}
+```
+
+**Errors:**
+- `401 Unauthorized`: Missing or invalid bearer token.
+
+---
+
+### 1.5 Get Current User Profile (`GET /api/v1/auth/me`)
 Retrieve authenticated user profile and organizational context.
 
 | Property | Specification |
@@ -130,7 +195,6 @@ Authorization: Bearer <jwt_token>
 {
   "id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
   "email": "analyst@enterprise.com",
-  "full_name": "Jane Doe",
   "role": "admin",
   "organization_id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
   "created_at": "2026-09-09T08:00:00Z"
@@ -138,7 +202,7 @@ Authorization: Bearer <jwt_token>
 ```
 
 **Errors:**
-- `401 Unauthorized`: Missing, expired, or invalid token (`{ "error": "UNAUTHORIZED" | "TOKEN_EXPIRED" | "INVALID_TOKEN", "message": "..." }`).
+- `401 Unauthorized`: Missing, expired, or invalid token (`{ "error": "TOKEN_EXPIRED", "message": "Please call POST /auth/refresh to get a new access token" }`).
 
 ---
 
@@ -211,19 +275,20 @@ Evaluate a website URL for brand impersonation, deceptive registration, and malw
 ---
 
 ### 2.3 Check Suspicious Media (Image / Audio Deepfake)
-Analyze an uploaded image or audio file for synthetic manipulation, generative artifacts, or voice cloning.
+Analyze an uploaded image or audio file for synthetic manipulation, generative artifacts, or voice cloning. In production, clients upload media directly to Supabase Storage via a signed upload URL obtained from `POST /api/v1/media/upload-url` and supply the resulting `file_path` (or resolved `file_url`).
 
 | Property | Specification |
 |---|---|
 | **Method** | `POST` |
-| **Path** | `/api/check/media` |
+| **Path** | `/api/v1/check/media` *(also available at `/api/check/media`)* |
 | **Auth Requirement** | Requires JWT |
-| **Description** | Evaluates image/audio using Vision Transformer (ViT) or voice anti-spoofing models. |
+| **Description** | Evaluates image/audio using Vision Transformer (ViT) or voice anti-spoofing models. Validates that the requested `file_path` resides strictly within the authenticated user's isolated upload directory (`uploads/<user_id>/*`). |
 
 **Request Body:**
 ```json
 {
-  "file_url": "https://storage.cyberguard.internal/uploads/sample-voice-clip.wav",
+  "file_path": "uploads/a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d/1727670000000_a1b2c3.wav", // Preferred: path returned by /media/upload-url
+  "file_url": "https://<supabase-project>.supabase.co/storage/v1/object/authenticated/cyberguard-media/uploads/a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d/1727670000000_a1b2c3.wav", // Optional if file_path is provided
   "media_type": "audio" // Enum: "image" | "audio"
 }
 ```
@@ -231,16 +296,62 @@ Analyze an uploaded image or audio file for synthetic manipulation, generative a
 **Response (`200 OK`):**
 ```json
 {
+  "id": "inc_1727670005000",
   "risk_level": "High", // Enum: "Safe" | "Low" | "Medium" | "High" | "Critical"
+  "risk_score": 85,
   "explanation": "High Risk: Acoustic spectral analysis indicates synthetic voice cloning artifacts consistent with generative voice models.",
-  "recommended_action": "Verify speaker identity via a secondary known channel before taking financial or sensitive action.",
-  "confidence_score": 0.89 // Float between 0.0 and 1.0
+  "recommended_actions": [
+    "Verify speaker identity via a secondary known channel before taking financial or sensitive action."
+  ],
+  "confidence_score": 0.89, // Float between 0.0 and 1.0
+  "signals": {
+    "spectral_centroid": 2450.5,
+    "pitch_jitter_pct": 2.8
+  }
 }
 ```
 
 **Errors:**
-- `400 Bad Request`: Invalid file URL or unsupported `media_type`.
-- `422 Unprocessable Entity`: Media file corrupt or unparseable.
+- `400 Bad Request`: Missing file reference or unsupported `media_type`.
+- `401 Unauthorized`: Missing or invalid bearer token.
+- `403 Forbidden`: `file_path` or `file_url` belongs to another user (`{ "error": "FORBIDDEN", "message": "Access denied: cannot check media belonging to another user" }`).
+- `404 Not Found`: Media file could not be accessed at storage URL.
+- `502 Bad Gateway`: Internal ML service unavailable.
+
+---
+
+### 2.4 Generate Signed Media Upload URL (`POST /api/v1/media/upload-url`)
+Generates a pre-signed, time-limited direct upload URL to Supabase Storage bucket `cyberguard-media`. Clients upload their raw image/audio binary directly to Supabase, bypassing backend gateway bandwidth limits, and subsequently pass the returned `file_path` to `POST /api/v1/check/media`.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/media/upload-url` *(also available at `/api/media/upload-url` and `/api/check/media/upload-url`)* |
+| **Auth Requirement** | Requires JWT (`Authorization: Bearer <jwt_token>`) |
+| **Description** | Issues pre-signed upload URL for Supabase Storage restricted to the authenticated user's isolated path `uploads/<user_id>/<timestamp>_<random_id>.<ext>`. |
+
+**Request Body:**
+```json
+{
+  "media_type": "image", // Enum: "image" | "audio" (required)
+  "file_size_bytes": 1048576, // Positive integer <= 50MB (52,428,800 bytes) (required)
+  "file_name": "suspect_profile.png" // Optional original filename for extension extraction
+}
+```
+
+**Response (`200 OK`):**
+```json
+{
+  "upload_url": "https://awjehrhtxhbugocwqeao.supabase.co/storage/v1/object/upload/sign/cyberguard-media/uploads/a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d/1727670000000_9f2a1b.png?token=663ae704c563decf35c09a9ad1a1ee8f",
+  "file_path": "uploads/a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d/1727670000000_9f2a1b.png",
+  "expiry_seconds": 3600
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Invalid `media_type` (`"media_type must be 'image' or 'audio'"`), missing or non-positive `file_size_bytes`, or `file_size_bytes` exceeds 50MB limit (`{ "error": "FILE_TOO_LARGE" }`).
+- `401 Unauthorized`: Missing or invalid bearer token.
+- `500 Internal Server Error`: Storage provider failure.
 
 ---
 
@@ -656,6 +767,107 @@ Retrieve high-priority security alerts across all active linked dependents.
 
 **Errors:**
 - `401 Unauthorized`: Missing or invalid bearer token.
+
+---
+
+### 6.5 List Guardian Links
+Retrieve all guardian-dependent relationships associated with the authenticated user or organization.
+
+| Property | Specification |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/api/v1/guardian/links` |
+| **Auth Requirement** | Requires JWT (`Authorization: Bearer <jwt_token>`) |
+| **Description** | Returns all guardian links where caller is either guardian or dependent. Admins see all links within their organization. By default, returns active and pending links (excludes revoked unless requested). |
+
+**Query Parameters:**
+- `status` *(optional, string)*: Filter links by status (`active`, `pending`, `revoked`, `all`).
+
+**Response (`200 OK`):**
+```json
+{
+  "links": [
+    {
+      "id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
+      "link_id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
+      "guardian_user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+      "dependent_user_id": "c9d8e7f6-a5b4-3c2d-1e0f-9a8b7c6d5e4f",
+      "status": "pending",
+      "guardian_email": "guardian@family.org",
+      "dependent_email": "dependent@family.org",
+      "created_at": "2026-09-09T08:25:00Z"
+    }
+  ]
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Invalid status filter query parameter (`INVALID_STATUS`).
+- `401 Unauthorized`: Missing or invalid bearer token.
+
+---
+
+### 6.6 Revoke Guardian Link
+Terminate an active or pending guardian-dependent link.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/guardian/link/:id/revoke` |
+| **Auth Requirement** | Requires JWT (`Authorization: Bearer <jwt_token>`) |
+| **Description** | Allows either the guardian or the dependent to immediately revoke a link. Transitions status to `revoked`. Dependent alerts stop broadcasting to the guardian. |
+
+**Path Parameters:**
+- `id` *(required, UUID)*: Primary key UUID of the guardian link.
+
+**Request Body:** None
+
+**Response (`200 OK`):**
+```json
+{
+  "id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
+  "link_id": "b3b2c1a0-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
+  "status": "revoked",
+  "guardian_user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+  "dependent_user_id": "c9d8e7f6-a5b4-3c2d-1e0f-9a8b7c6d5e4f",
+  "created_at": "2026-09-09T08:25:00Z"
+}
+```
+
+**Errors:**
+- `401 Unauthorized`: Missing or invalid bearer token.
+- `404 Not Found`: Link not found, invalid UUID, or caller is not a participant on this link (`NOT_FOUND`).
+
+---
+
+### 6.7 Search User by Email
+Find a user by email to establish a guardian-dependent relationship.
+
+| Property | Specification |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/api/v1/users/search` *(also `/api/v1/guardian/users/search`)* |
+| **Auth Requirement** | Requires JWT (`Authorization: Bearer <jwt_token>`) |
+| **Description** | Searches for a registered user by email before creating a guardian link. Scoped to same organization for enterprise callers, or across individuals for consumer callers. Password hashes and credentials strictly excluded. Rate limited at 30 req / 15 min. |
+
+**Query Parameters:**
+- `email` *(required, string)*: Email address to search for.
+
+**Response (`200 OK`):**
+```json
+{
+  "id": "c9d8e7f6-a5b4-3c2d-1e0f-9a8b7c6d5e4f",
+  "email": "dependent@family.org",
+  "role": "individual",
+  "organization_id": null
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Missing or empty `email` query parameter (`BAD_REQUEST`).
+- `401 Unauthorized`: Missing or invalid bearer token.
+- `404 Not Found`: No user found matching the email address within authorized scope (`NOT_FOUND`).
+- `429 Too Many Requests`: Search rate limit exceeded (`RATE_LIMIT_EXCEEDED`).
 
 ---
 

@@ -13,10 +13,20 @@ const incidentRoutes = require('./routes/incidentRoutes');
 const guardianRoutes = require('./routes/guardianRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const actionRoutes = require('./routes/actionRoutes');
+const userRoutes = require('./routes/userRoutes');
+const mediaRoutes = require('./routes/mediaRoutes');
 
-const { checkLimiter, generalLimiter } = require('./middlewares/rateLimiter');
+const { checkLimiter, generalLimiter, searchLimiter } = require('./middlewares/rateLimiter');
 
 const { initSocket } = require('./config/socket');
+const { connectRedis, isConnected } = require('./config/redis');
+
+// Attempt Redis connection without blocking app startup
+connectRedis().then(() => {
+  console.log(`Redis connected: ${isConnected()}`);
+}).catch(() => {
+  console.log(`Redis connected: false`);
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -24,8 +34,11 @@ const io = initSocket(server);
 
 const PORT = config.PORT || process.env.PORT || 5000;
 
+const cookieParser = require('cookie-parser');
+
 // Standard Middlewares (support multimedia Base64 payloads up to 15 MB)
 app.use(cors());
+app.use(cookieParser());
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ limit: '15mb', extended: true }));
 
@@ -55,6 +68,8 @@ v1Router.use('/incidents', generalLimiter, incidentRoutes);
 v1Router.use('/guardian', generalLimiter, guardianRoutes);
 v1Router.use('/analytics', generalLimiter, analyticsRoutes);
 v1Router.use('/actions', generalLimiter, actionRoutes);
+v1Router.use('/users', searchLimiter, userRoutes);
+v1Router.use('/media', generalLimiter, mediaRoutes);
 
 // Mount versioned and root API routers
 app.use('/api/v1', v1Router);

@@ -146,7 +146,7 @@ async function runPhase5TestSuite() {
     });
     if (phishRes.status !== 200) throw new Error(`Expected 200 for URL check, got ${phishRes.status}`);
     const phishData = await phishRes.json();
-    if (phishData.risk_level !== 'Critical') throw new Error(`Expected Critical, got ${phishData.risk_level}`);
+    if (phishData.risk_level?.toLowerCase() !== 'critical') throw new Error(`Expected Critical, got ${phishData.risk_level}`);
     console.log(`✅ PASS: E2E URL detection returned Critical (brand: ${phishData.signals?.target_brand})`);
 
     // 2b. E2E Network Telemetry

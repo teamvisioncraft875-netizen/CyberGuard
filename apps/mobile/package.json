@@ -2,12 +2,13 @@
   "name": "@cyberguard/mobile",
   "version": "0.1.0",
   "private": true,
-  "main": "node_modules/expo/AppEntry.js",
+  "main": "index.js",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "tunnel": "expo start --tunnel"
   },
   "dependencies": {
     "expo": "~51.0.0",

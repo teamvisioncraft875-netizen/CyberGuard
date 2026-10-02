@@ -23,12 +23,25 @@ if (!process.env.JWT_SECRET) {
   throw new Error('JWT_SECRET is not set');
 }
 
+// Derive default Supabase project URL from SUPABASE_DB_URL if not explicitly specified
+let defaultSupabaseUrl = process.env.SUPABASE_URL;
+if (!defaultSupabaseUrl && process.env.SUPABASE_DB_URL) {
+  const match = process.env.SUPABASE_DB_URL.match(/postgres\.([a-zA-Z0-9_-]+):/);
+  if (match) {
+    defaultSupabaseUrl = `https://${match[1]}.supabase.co`;
+  }
+}
+
 const config = Object.freeze({
   PORT: parseInt(process.env.PORT, 10) || 5000,
   NODE_ENV: process.env.NODE_ENV || 'development',
   JWT_SECRET: process.env.JWT_SECRET,
   SUPABASE_DB_URL: process.env.SUPABASE_DB_URL,
+  SUPABASE_URL: defaultSupabaseUrl || 'https://awjehrhtxhbugocwqeao.supabase.co',
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || '',
+  SUPABASE_STORAGE_BUCKET: process.env.SUPABASE_STORAGE_BUCKET || 'cyberguard-media',
   ML_SERVICE_URL: process.env.ML_SERVICE_URL || 'http://localhost:8000',
+  REDIS_URL: process.env.REDIS_URL || null,
 });
 
 module.exports = config;
