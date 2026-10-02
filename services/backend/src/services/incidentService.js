@@ -82,6 +82,7 @@ async function persistDetectionIncident({
     ? mlResult.risk_score
     : (FALLBACK_SCORES[riskLevel] ?? 50);
 
+  const effectiveUser = user || {};
   let incident = null;
   let dbError = null;
 
@@ -90,8 +91,8 @@ async function persistDetectionIncident({
     incident = await transaction(async (client) => {
       // Insert into incidents
       const newIncident = await Incident.create({
-        user_id: user.id,
-        organization_id: user.organization_id || null,
+        user_id: effectiveUser.id || null,
+        organization_id: effectiveUser.organization_id || null,
         threat_type: threatType,
         source_type: sourceType,
         risk_level: riskLevel,
@@ -132,8 +133,8 @@ async function persistDetectionIncident({
     // Fallback incident record for database-unconfigured environments
     incident = {
       id: `inc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      user_id: user.id,
-      organization_id: user.organization_id || null,
+      user_id: effectiveUser.id || null,
+      organization_id: effectiveUser.organization_id || null,
       threat_type: threatType,
       source_type: sourceType,
       risk_level: riskLevel,
@@ -204,7 +205,7 @@ async function persistDetectionIncident({
     details: mlResult.details || {},
     analysis_confidence: mlResult.confidence ?? mlResult.analysis_confidence ?? (mlResult.signals?.confidence_score != null ? mlResult.signals.confidence_score * 100 : null),
     ml_degraded: mlResult.ml_degraded || mlResult.signals?.ml_degraded || false,
-    user_role: user.role
+    user_role: effectiveUser.role || null
   }).catch((policyErr) => {
     console.error('[PolicyEngine Background Evaluation Error]', policyErr.message);
   });

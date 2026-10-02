@@ -47,7 +47,12 @@ function formatActionEmail(action = {}, incident = {}, policy = null) {
   const isShadow = action.action_mode === 'shadow';
   const isPendingApproval = action.status === 'pending_approval';
 
-  const threatType = incident.threat_type || 'Unknown Threat';
+  const rawThreatType = incident.threat_type || 'Unknown Threat';
+  const threatTypeLabel = rawThreatType === 'exposed_secret'
+    ? 'Exposed Secret'
+    : (rawThreatType.charAt(0).toUpperCase() + rawThreatType.slice(1).replace(/_/g, ' '));
+
+  const threatType = threatTypeLabel;
   const riskScore = incident.risk_score != null ? incident.risk_score : 'N/A';
   const actionType = action.action_type || 'Action';
   const incidentId = incident.id || action.incident_id || 'N/A';
@@ -263,7 +268,7 @@ const notificationService = {
       const { subject, text, html } = formatActionEmail(action, incident, policy);
 
       // 3. Dispatch email
-      return await this.sendAlertEmail(adminEmail, subject, text, html);
+      return await notificationService.sendAlertEmail(adminEmail, subject, text, html);
     } catch (err) {
       console.error('[NotificationService sendActionNotification Error]', err.message);
       return false;
@@ -286,7 +291,7 @@ const notificationService = {
       const subject = `[CYBERGUARD] Response Action ${decision}: ${action.action_type}`;
       const body = `Administrator ${approverUser.email} has ${decision.toLowerCase()} response action ${action.id} (${action.action_type}).\nTimestamp: ${new Date().toISOString()}`;
 
-      return await this.sendAlertEmail(approverUser.email, subject, body);
+      return await notificationService.sendAlertEmail(approverUser.email, subject, body);
     } catch (err) {
       console.error('[NotificationService sendApprovalConfirmation Error]', err.message);
       return false;
