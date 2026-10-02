@@ -5,6 +5,7 @@ const DetectionSignal = require('../models/DetectionSignal');
 const RecommendedAction = require('../models/RecommendedAction');
 const GuardianLink = require('../models/GuardianLink');
 const MitreMapping = require('../models/MitreMapping');
+const PolicyEngine = require('./PolicyEngine');
 
 // Keys representing context/metadata rather than individual detection indicators
 const METADATA_KEYS = new Set(['url', 'file_url', 'media_type', 'model_type', 'source_type']);
@@ -126,6 +127,7 @@ async function persistDetectionIncident({
       return newIncident;
     });
   } catch (err) {
+    console.error('[persistDetectionIncident dbError]', err);
     dbError = err;
     // Fallback incident record for database-unconfigured environments
     incident = {
@@ -192,6 +194,20 @@ async function persistDetectionIncident({
   } catch (wsErr) {
     console.error('[WebSocket Notification Error]', wsErr.message);
   }
+
+  // 3. Automated Response Layer — Policy Engine Evaluation (Phase 1B: SHADOW MODE)
+  // Evaluates applicable response policies and records proposed actions in shadow mode.
+  // Fire-and-forget: will never delay or fail the detection incident response.
+  PolicyEngine.evaluateAndProposeActions({
+    ...incident,
+    signals: mlResult.signals || {},
+    details: mlResult.details || {},
+    analysis_confidence: mlResult.confidence ?? mlResult.analysis_confidence ?? (mlResult.signals?.confidence_score != null ? mlResult.signals.confidence_score * 100 : null),
+    ml_degraded: mlResult.ml_degraded || mlResult.signals?.ml_degraded || false,
+    user_role: user.role
+  }).catch((policyErr) => {
+    console.error('[PolicyEngine Background Evaluation Error]', policyErr.message);
+  });
 
   if (dbError && process.env.NODE_ENV !== 'test' && process.env.STRICT_DB === 'true') {
     throw dbError;

@@ -16,6 +16,7 @@ const actionRoutes = require('./routes/actionRoutes');
 const userRoutes = require('./routes/userRoutes');
 const mediaRoutes = require('./routes/mediaRoutes');
 const auditRoutes = require('./routes/auditRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const { checkLimiter, generalLimiter, searchLimiter } = require('./middlewares/rateLimiter');
 
@@ -72,6 +73,7 @@ v1Router.use('/actions', generalLimiter, actionRoutes);
 v1Router.use('/users', searchLimiter, userRoutes);
 v1Router.use('/media', generalLimiter, mediaRoutes);
 v1Router.use('/audit-logs', auditRoutes);
+v1Router.use('/admin', adminRoutes);
 
 // Mount versioned and root API routers
 app.use('/api/v1', v1Router);
