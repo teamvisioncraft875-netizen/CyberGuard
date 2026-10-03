@@ -17,6 +17,7 @@ const FirewallRule = {
     status = 'pending',
     created_by_id = null,
     expires_at = null,
+    source_command_id = null,
     result = {}
   }) {
     const text = `
@@ -30,10 +31,11 @@ const FirewallRule = {
         status,
         created_by_id,
         expires_at,
+        source_command_id,
         result,
         created_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
       RETURNING *;
     `;
     const params = [
@@ -46,6 +48,7 @@ const FirewallRule = {
       status,
       created_by_id,
       expires_at,
+      source_command_id,
       JSON.stringify(result || {})
     ];
     const res = await db.query(text, params);
@@ -94,7 +97,7 @@ const FirewallRule = {
 
     const querySql = `
       SELECT id, agent_id, organization_id, rule_type, target_ip, target_domain,
-             rule_id_local, status, created_by_id, created_at, expires_at, deleted_at, result
+             rule_id_local, status, created_by_id, source_command_id, created_at, expires_at, deleted_at, result
       FROM public.agent_firewall_rules
       WHERE ${whereClause}
       ORDER BY created_at DESC

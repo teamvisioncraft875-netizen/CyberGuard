@@ -1,4 +1,5 @@
 const agentService = require('../services/agentService');
+const db = require('../config/db');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const VALID_COMMAND_STATUSES = new Set(['completed', 'failed', 'received_not_executed']);
@@ -304,6 +305,33 @@ const agentController = {
         });
       }
 
+      // Phase C Integration: If command is firewall-related, record/sync in agent_firewall_rules
+      try {
+        const cmdRes = await db.query(
+          `SELECT command_type, target_data FROM public.agent_commands WHERE id = $1;`,
+          [command_id]
+        );
+        if (cmdRes.rows && cmdRes.rows.length > 0) {
+          const cmdRow = cmdRes.rows[0];
+          if (['block_ip', 'block_domain', 'temporary_block_ip'].includes(cmdRow.command_type)) {
+            const firewallService = require('../services/firewallService');
+            const targetData = typeof cmdRow.target_data === 'string'
+              ? JSON.parse(cmdRow.target_data)
+              : (cmdRow.target_data || {});
+
+            await firewallService.createFirewallRuleFromCommandResult(
+              device_id,
+              cmdRow.command_type,
+              targetData,
+              result || {},
+              command_id
+            );
+          }
+        }
+      } catch (fwSyncErr) {
+        console.warn('[agentController] Warning: Failed to sync firewall rule from command result:', fwSyncErr.message);
+      }
+
       return res.status(200).json({
         success: true
       });
@@ -351,5 +379,7 @@ const agentController = {
     }
   }
 };
+
+agentController.updateCommandResult = agentController.recordCommandResult;
 
 module.exports = agentController;

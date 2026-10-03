@@ -521,6 +521,120 @@ const firewallService = {
       deleted: true,
       rule_id
     };
+  },
+
+  /**
+   * Records or updates a firewall rule based on an agent command execution report.
+   *
+   * @param {string} agent_id - Device UUID
+   * @param {'block_ip'|'block_domain'|'temporary_block_ip'} command_type
+   * @param {Object} target_data - { ip_address } or { domain }
+   * @param {Object} execution_result - Result dict from agent { success, rule_name, error, etc. }
+   * @param {string} [source_command_id=null] - Link to public.agent_commands.id
+   * @returns {Promise<{ rule_id: string, status: string, rule: Object }>}
+   */
+  async createFirewallRuleFromCommandResult(
+    agent_id,
+    command_type,
+    target_data,
+    execution_result = {},
+    source_command_id = null
+  ) {
+    if (!agent_id || !UUID_REGEX.test(agent_id)) {
+      throw new Error('Valid agent_id UUID is required');
+    }
+
+    const normalizedRuleType = command_type === 'block_domain' ? 'block_domain' : 'block_ip';
+    const target_ip = target_data?.ip_address || target_data?.ip || (normalizedRuleType === 'block_ip' ? target_data?.target : null) || null;
+    const target_domain = target_data?.domain || (normalizedRuleType === 'block_domain' ? target_data?.target : null) || null;
+
+    const isSuccess = Boolean(execution_result?.success === true || (execution_result && execution_result.success !== false && !execution_result.error));
+    const status = isSuccess ? 'active' : 'failed';
+    const rule_id_local = execution_result?.rule_name || null;
+
+    // Resolve organization_id for device
+    const devRes = await db.query(
+      `SELECT organization_id FROM public.devices WHERE id = $1;`,
+      [agent_id]
+    );
+
+    if (!devRes.rows || devRes.rows.length === 0) {
+      throw new Error(`Device not found: ${agent_id}`);
+    }
+    const organization_id = devRes.rows[0].organization_id;
+
+    // Check if an existing rule row matches this target in 'pending' status
+    let rule = null;
+    const existingRes = await db.query(
+      `SELECT * FROM public.agent_firewall_rules
+       WHERE agent_id = $1 
+         AND (
+           ($2::uuid IS NOT NULL AND source_command_id = $2)
+           OR (target_ip = $3 AND target_ip IS NOT NULL)
+           OR (target_domain = $4 AND target_domain IS NOT NULL)
+         )
+         AND status = 'pending'
+       ORDER BY created_at DESC LIMIT 1;`,
+      [agent_id, source_command_id, target_ip, target_domain]
+    );
+
+    if (existingRes.rows && existingRes.rows.length > 0) {
+      const existingId = existingRes.rows[0].id;
+      const updateRes = await db.query(
+        `UPDATE public.agent_firewall_rules
+         SET status = $1,
+             rule_id_local = COALESCE($2, rule_id_local),
+             source_command_id = COALESCE($3, source_command_id),
+             result = result || $4::jsonb
+         WHERE id = $5
+         RETURNING *;`,
+        [
+          status,
+          rule_id_local,
+          source_command_id,
+          JSON.stringify(execution_result),
+          existingId
+        ]
+      );
+      rule = updateRes.rows[0];
+    } else {
+      rule = await FirewallRule.create({
+        agent_id,
+        organization_id,
+        rule_type: normalizedRuleType,
+        target_ip,
+        target_domain,
+        rule_id_local,
+        status,
+        created_by_id: null, // created by agent execution
+        source_command_id,
+        result: execution_result
+      });
+    }
+
+    // Audit log
+    await auditService.log({
+      organization_id,
+      user_id: null,
+      actor_type: 'agent',
+      action: AUDIT_ACTIONS.FIREWALL_RULE_CREATED,
+      resource_type: 'firewall_rule',
+      resource_id: rule.id,
+      details: {
+        rule_type: normalizedRuleType,
+        target: target_ip || target_domain,
+        status: rule.status,
+        success: isSuccess,
+        source_command_id,
+        agent_id
+      }
+    });
+
+    return {
+      rule_id: rule.id,
+      status: rule.status,
+      rule
+    };
   }
 };
 
