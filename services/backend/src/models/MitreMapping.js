@@ -34,6 +34,10 @@ const THREAT_TO_MITRE = Object.freeze({
   technical_threat: Object.freeze({
     technique_id: 'T1071',
     technique_name: 'Application Layer Protocol Anomaly'
+  }),
+  exposed_secret: Object.freeze({
+    technique_id: 'T1552',
+    technique_name: 'Unsecured Credentials'
   })
 });
 

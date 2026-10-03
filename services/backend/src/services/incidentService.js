@@ -5,6 +5,7 @@ const DetectionSignal = require('../models/DetectionSignal');
 const RecommendedAction = require('../models/RecommendedAction');
 const GuardianLink = require('../models/GuardianLink');
 const MitreMapping = require('../models/MitreMapping');
+const PolicyEngine = require('./PolicyEngine');
 
 // Keys representing context/metadata rather than individual detection indicators
 const METADATA_KEYS = new Set(['url', 'file_url', 'media_type', 'model_type', 'source_type']);
@@ -81,6 +82,7 @@ async function persistDetectionIncident({
     ? mlResult.risk_score
     : (FALLBACK_SCORES[riskLevel] ?? 50);
 
+  const effectiveUser = user || {};
   let incident = null;
   let dbError = null;
 
@@ -89,8 +91,8 @@ async function persistDetectionIncident({
     incident = await transaction(async (client) => {
       // Insert into incidents
       const newIncident = await Incident.create({
-        user_id: user.id,
-        organization_id: user.organization_id || null,
+        user_id: effectiveUser.id || null,
+        organization_id: effectiveUser.organization_id || null,
         threat_type: threatType,
         source_type: sourceType,
         risk_level: riskLevel,
@@ -126,12 +128,13 @@ async function persistDetectionIncident({
       return newIncident;
     });
   } catch (err) {
+    console.error('[persistDetectionIncident dbError]', err);
     dbError = err;
     // Fallback incident record for database-unconfigured environments
     incident = {
       id: `inc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-      user_id: user.id,
-      organization_id: user.organization_id || null,
+      user_id: effectiveUser.id || null,
+      organization_id: effectiveUser.organization_id || null,
       threat_type: threatType,
       source_type: sourceType,
       risk_level: riskLevel,
@@ -192,6 +195,20 @@ async function persistDetectionIncident({
   } catch (wsErr) {
     console.error('[WebSocket Notification Error]', wsErr.message);
   }
+
+  // 3. Automated Response Layer — Policy Engine Evaluation (Phase 1B: SHADOW MODE)
+  // Evaluates applicable response policies and records proposed actions in shadow mode.
+  // Fire-and-forget: will never delay or fail the detection incident response.
+  PolicyEngine.evaluateAndProposeActions({
+    ...incident,
+    signals: mlResult.signals || {},
+    details: mlResult.details || {},
+    analysis_confidence: mlResult.confidence ?? mlResult.analysis_confidence ?? (mlResult.signals?.confidence_score != null ? mlResult.signals.confidence_score * 100 : null),
+    ml_degraded: mlResult.ml_degraded || mlResult.signals?.ml_degraded || false,
+    user_role: effectiveUser.role || null
+  }).catch((policyErr) => {
+    console.error('[PolicyEngine Background Evaluation Error]', policyErr.message);
+  });
 
   if (dbError && process.env.NODE_ENV !== 'test' && process.env.STRICT_DB === 'true') {
     throw dbError;

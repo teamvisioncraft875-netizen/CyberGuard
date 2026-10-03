@@ -355,6 +355,107 @@ Generates a pre-signed, time-limited direct upload URL to Supabase Storage bucke
 
 ---
 
+### 2.5 Check Leaked Secrets & Credentials (`POST /api/v1/check/secret`)
+Scans raw text strings, code snippets, logs, configuration files, and environment variable dumps for leaked API keys, tokens, database credentials, and private keys.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/check/secret` *(also available at `/api/check/secret`)* |
+| **Auth Requirement** | Public (Optional JWT `Authorization: Bearer <token>` to associate incident with tenant) |
+| **Rate Limit** | 20 requests per 15 minutes per IP |
+| **Description** | Scans input string for exposed credentials, patterns (AWS, GitHub, Stripe, Slack, DB passwords, SSH/RSA private keys, certificates), and high-entropy secrets. Returns sanitized detection results and recommendations without exposing raw secrets. Automatically creates an `exposed_secret` incident if secrets are detected. |
+
+**Request Body:**
+```json
+{
+  "input": "export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE\nexport AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+  "context": "CI/CD deployment log snippet" // Optional description of source
+}
+```
+
+**Response (`200 OK` - Secrets Detected):**
+```json
+{
+  "risk_level": "Critical", // Enum: "Safe" | "Low" | "Medium" | "High" | "Critical"
+  "risk_score": 95,
+  "explanation": "Found 2 exposed secrets: AWS_KEY, AWS_SECRET",
+  "detected_secrets": [
+    {
+      "secret_type": "AWS_KEY",
+      "severity": "critical",
+      "location": {
+        "line": 1,
+        "column": 27
+      }
+    },
+    {
+      "secret_type": "AWS_SECRET",
+      "severity": "critical",
+      "location": {
+        "line": 2,
+        "column": 30
+      }
+    }
+  ],
+  "signals": {
+    "secret_types": [
+      "AWS_KEY",
+      "AWS_SECRET"
+    ],
+    "count": 2,
+    "max_severity": "critical",
+    "detections": [
+      {
+        "secret_type": "AWS_KEY",
+        "location": {
+          "line": 1,
+          "column": 27
+        },
+        "severity": "critical",
+        "excerpt": "AWS_KEY=AKIA***[REDACTED]"
+      },
+      {
+        "secret_type": "AWS_SECRET",
+        "location": {
+          "line": 2,
+          "column": 30
+        },
+        "severity": "critical",
+        "excerpt": "AWS_SECRET=wJal***[REDACTED]"
+      }
+    ]
+  },
+  "recommended_actions": [
+    "Immediately revoke and rotate the exposed credentials.",
+    "Check cloud/service provider audit logs for unauthorized access.",
+    "Remove sensitive variables from code, commits, and plaintext configuration files."
+  ]
+}
+```
+
+**Response (`200 OK` - No Secrets Detected):**
+```json
+{
+  "risk_level": "Safe",
+  "risk_score": 5,
+  "explanation": "No exposed secrets detected",
+  "detected_secrets": [],
+  "signals": {
+    "secret_types": [],
+    "count": 0,
+    "max_severity": "none"
+  },
+  "recommended_actions": []
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Input is missing or not a string (`{ "error": "MISSING_INPUT", "message": "Field 'input' is required and must be a string" }`).
+- `429 Too Many Requests`: Rate limit exceeded (20 requests per 15 minutes per IP).
+
+---
+
 ## 3. Login & System Telemetry Ingestion (Guard App → Gateway)
 
 These endpoints are called by the desktop sensor agent ("Guard App") to report login activity and operating system behavioral anomalies.
@@ -1206,5 +1307,256 @@ Retrieve paginated audit log events strictly scoped to the authenticated admin's
 - `403 Forbidden`: Authenticated user lacks `admin` role (`{ "error": "FORBIDDEN" }`).
 - `429 Too Many Requests`: General rate limit exceeded.
 - `500 Internal Server Error`: Database query failure (`{ "error": "INTERNAL_SERVER_ERROR" }`).
+
+---
+
+## 11. Automated Response Layer Endpoints (Phase 1B: Shadow Mode)
+
+Automated response orchestration and policy management. In Phase 1B, the policy engine operates in strict **Shadow Mode**: proposed actions are evaluated, matched against tenant policies, guardrailed, and logged to `response_actions` with `status='proposed'` and `action_mode='shadow'`. No disruptive actions are executed.
+
+### 11.1 List Response Actions
+Retrieve paginated response actions (proposed, pending approval, executed, etc.) scoped to the authenticated admin's organization.
+
+| Property | Specification |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/api/v1/admin/response-actions` |
+| **Auth Requirement** | Bearer JWT (Admin role only: `roleCheck(['admin'])`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Returns proposed or executed response actions for the caller's organization with optional status and incident filters. |
+
+**Query Parameters:**
+| Parameter | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `incident_id` | UUID | No | — | Filter by specific incident ID |
+| `status` | String | No | — | Filter by status (`proposed`, `pending_approval`, `approved`, `rejected`, `executed`, `failed`, `expired`, `rolled_back`) |
+| `from` | ISO8601 String | No | — | Lower bound created_at timestamp |
+| `to` | ISO8601 String | No | — | Upper bound created_at timestamp |
+| `limit` | Integer | No | `25` | Maximum number of records to return (capped at 100) |
+| `offset` | Integer | No | `0` | Number of records to skip |
+
+**Response (`200 OK`):**
+```json
+{
+  "success": true,
+  "total": 1,
+  "limit": 25,
+  "offset": 0,
+  "actions": [
+    {
+      "id": "e47ac10b-58cc-4372-a567-0e02b2c3d480",
+      "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+      "incident_id": "3c8340d8-118e-4a69-9da8-7cfa8c95029e",
+      "policy_id": "8d09bf3c-4e89-48ce-8dbe-268e24c2cecb",
+      "action_type": "notify_admin",
+      "action_mode": "shadow",
+      "status": "proposed",
+      "requested_by_id": null,
+      "approved_by_id": null,
+      "approved_at": null,
+      "target": {
+        "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+        "incident_id": "3c8340d8-118e-4a69-9da8-7cfa8c95029e"
+      },
+      "result": null,
+      "created_at": "2026-10-03T00:30:00.000Z",
+      "scheduled_at": null,
+      "executed_at": null,
+      "expires_at": null
+    }
+  ]
+}
+```
+
+**Errors:**
+- `401 Unauthorized`: Missing or invalid JWT (`{ "error": "UNAUTHORIZED" }`).
+- `403 Forbidden`: Authenticated user lacks `admin` role or organization membership (`{ "error": "FORBIDDEN" }`).
+- `500 Internal Server Error`: Server failure retrieving actions.
+
+---
+
+### 11.2 Create Response Policy
+Create a new automated response policy for the authenticated administrator's organization.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/admin/response-policies` |
+| **Auth Requirement** | Bearer JWT (Admin role only: `roleCheck(['admin'])`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Configures automated evaluation rules for incoming incidents based on threat type, risk score threshold, and optional target filters. |
+
+**Request Body:**
+```json
+{
+  "name": "High Severity Phishing Response Policy",
+  "enabled": true,
+  "rules": [
+    {
+      "threat_type": "phishing",
+      "min_score": 70,
+      "action_type": "notify_admin",
+      "action_mode": "shadow",
+      "requires_approval": false,
+      "auto_execute_after_mins": 0,
+      "target_filter": {
+        "user_roles": ["employee", "admin"]
+      }
+    }
+  ]
+}
+```
+
+**Response (`201 Created`):**
+```json
+{
+  "success": true,
+  "policy": {
+    "id": "8d09bf3c-4e89-48ce-8dbe-268e24c2cecb",
+    "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+    "name": "High Severity Phishing Response Policy",
+    "enabled": true,
+    "created_by_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "rules": [
+      {
+        "threat_type": "phishing",
+        "min_score": 70,
+        "action_type": "notify_admin",
+        "action_mode": "shadow",
+        "requires_approval": false,
+        "auto_execute_after_mins": 0,
+        "target_filter": {
+          "user_roles": ["employee", "admin"]
+        }
+      }
+    ],
+    "created_at": "2026-10-03T00:30:00.000Z",
+    "updated_at": "2026-10-03T00:30:00.000Z"
+  }
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Missing policy name or invalid rules format (`{ "error": "VALIDATION_ERROR", "message": "..." }`).
+- `401 Unauthorized`: Missing or invalid JWT.
+- `403 Forbidden`: Authenticated user lacks `admin` role or organization membership.
+- `500 Internal Server Error`: Failed to create policy in database.
+
+---
+
+### 11.3 Approve or Reject Response Action
+Allows organization administrators to approve or reject a proposed or pending response action.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/admin/actions/:id/approve` *(also available at `/api/v1/admin/response-actions/:id/approve`)* |
+| **Auth Requirement** | Bearer JWT (Admin role only: `roleCheck(['admin'])`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Updates the response action status to `'approved'` or `'rejected'`, sets `approved_by_id` and `approved_at`, emits an append-only audit log entry, and dispatches a confirmation email to the approver. |
+
+**Request Body:**
+```json
+{
+  "approved": true // boolean: true to approve, false to reject
+}
+```
+
+**Response (`200 OK`):**
+```json
+{
+  "success": true,
+  "action": {
+    "id": "e47ac10b-58cc-4372-a567-0e02b2c3d480",
+    "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+    "incident_id": "3c8340d8-118e-4a69-9da8-7cfa8c95029e",
+    "policy_id": "8d09bf3c-4e89-48ce-8dbe-268e24c2cecb",
+    "action_type": "notify_admin",
+    "action_mode": "shadow",
+    "status": "approved",
+    "requested_by_id": null,
+    "approved_by_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "approved_at": "2026-10-03T01:15:00.000Z",
+    "target": {
+      "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+      "incident_id": "3c8340d8-118e-4a69-9da8-7cfa8c95029e"
+    },
+    "result": null,
+    "created_at": "2026-10-03T00:30:00.000Z",
+    "scheduled_at": null,
+    "executed_at": null,
+    "expires_at": null
+  }
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Missing or non-boolean `approved` field (`{ "error": "VALIDATION_ERROR" }`).
+- `401 Unauthorized`: Missing or invalid JWT.
+---
+
+### 11.4 Execute Response Action (`POST /api/v1/admin/actions/:id/execute`)
+Triggers immediate live execution of an approved or scheduled response action.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/admin/actions/:id/execute` *(also available at `/api/v1/admin/response-actions/:id/execute`)* |
+| **Auth Requirement** | Bearer JWT (Admin role only: `roleCheck(['admin'])`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Executes a live response action (session revocation, IP block, domain block, device suspension, or forced password reset). Updates action status to `'executed'`, sets `executed_at`, increments attempts, persists execution output in `result`, and emits an append-only audit log entry. |
+
+**Guardrails Enforced:**
+1. **Approval Status**: Action status must be `'approved'` or `'scheduled'`. Any other status (`'proposed'`, `'executed'`, `'failed'`) is rejected with `400 Bad Request`.
+2. **Live Execution Mode**: Action mode must be `'live'`. Actions in `'shadow'` mode are strictly prohibited from live execution and rejected with `400 Bad Request`.
+3. **Protected Targets**: Target IPs or domains in protected infrastructure ranges (e.g. `127.0.0.1`, RFC 1918 private subnets, internal hostnames) cannot be blocked; rejected with `400 Bad Request`.
+4. **Retry Limit Cap**: Maximum of 3 execution attempts. Exceeded retries are capped and rejected.
+5. **Strict Tenant Isolation**: Admins can only execute actions within their own organization. Cross-tenant access returns `404 Not Found` (never `403`) to avoid resource existence enumeration.
+
+**Request Body:** None (or empty `{}`)
+
+**Response (`200 OK`):**
+```json
+{
+  "success": true,
+  "action": {
+    "id": "e47ac10b-58cc-4372-a567-0e02b2c3d480",
+    "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+    "incident_id": "3c8340d8-118e-4a69-9da8-7cfa8c95029e",
+    "policy_id": "8d09bf3c-4e89-48ce-8dbe-268e24c2cecb",
+    "action_type": "revoke_session",
+    "action_mode": "live",
+    "status": "executed",
+    "requested_by_id": null,
+    "approved_by_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "approved_at": "2026-10-03T01:15:00.000Z",
+    "target": {
+      "user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+    },
+    "result": {
+      "revoked_tokens": 2,
+      "user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+    },
+    "created_at": "2026-10-03T00:30:00.000Z",
+    "scheduled_at": null,
+    "executed_at": "2026-10-03T02:00:00.000Z",
+    "expires_at": null
+  },
+  "result": {
+    "revoked_tokens": 2,
+    "user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+  }
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Execution guardrail rejected (`{ "error": "EXECUTION_GUARD_REJECTED", "message": "Cannot execute action in 'shadow' mode. Only 'live' mode actions can be executed." }`).
+- `401 Unauthorized`: Missing or invalid JWT.
+- `403 Forbidden`: Authenticated user lacks `admin` role (`{ "error": "FORBIDDEN" }`).
+- `404 Not Found`: Response action does not exist or belongs to another organization (`{ "error": "NOT_FOUND", "message": "Response action not found" }`).
+- `500 Internal Server Error`: Execution failed unexpectedly (`{ "error": "EXECUTION_FAILED", "message": "..." }`).
+
+
+
 
 

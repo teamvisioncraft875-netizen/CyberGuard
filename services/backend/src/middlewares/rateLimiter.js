@@ -73,9 +73,24 @@ const searchLimiter = rateLimit({
   handler: rateLimitHandler
 });
 
+/**
+ * Secret Check Limiter: 20 requests per 15 minutes per IP.
+ * Lower limit for scan-heavy secret and credential exposure scanning (/check/secret).
+ */
+const secretCheckLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  statusCode: 429,
+  skip: () => process.env.SKIP_RATE_LIMIT === 'true',
+  handler: rateLimitHandler
+});
+
 module.exports = {
   authLimiter,
   checkLimiter,
   generalLimiter,
-  searchLimiter
+  searchLimiter,
+  secretCheckLimiter
 };

@@ -20,6 +20,7 @@
     "express": "^4.19.2",
     "express-rate-limit": "^8.7.0",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "^10.0.13",
     "pg": "^8.11.5",
     "redis": "^6.2.1",
     "socket.io": "^4.7.5"
