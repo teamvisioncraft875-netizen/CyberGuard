@@ -1728,7 +1728,35 @@ Fetches queued commands that the backend has assigned to this device.
       "executed_at": null,
       "result": {}
     }
-  ]
+  ],
+  "protected_targets": {
+    "protected_ips": [
+      "127.0.0.1",
+      "0.0.0.0",
+      "::1",
+      "::",
+      "8.8.8.8",
+      "8.8.4.4",
+      "1.1.1.1",
+      "1.0.0.1",
+      "9.9.9.9"
+    ],
+    "protected_ip_ranges": [
+      "127.0.0.0/8",
+      "10.0.0.0/8",
+      "172.16.0.0/12",
+      "192.168.0.0/16",
+      "169.254.0.0/16",
+      "0.0.0.0/8",
+      "224.0.0.0/4",
+      "240.0.0.0/4",
+      "255.255.255.255/32"
+    ],
+    "protected_domains": [
+      "localhost",
+      "cyberguard.local"
+    ]
+  }
 }
 ```
 
@@ -1746,7 +1774,7 @@ Reports the output or error status of an executed command.
 | **Path** | `/api/v1/agents/:device_id/commands/:command_id/result` |
 | **Auth Requirement** | Agent Credentials (`credential_id` + `credential_secret` via body or headers) |
 | **Rate Limit** | Agent limiter (100 req / 15m per `device_id`) |
-| **Description** | Updates the command status to `'completed'` or `'failed'`, stores the result payload, and records `executed_at = NOW()`. |
+| **Description** | Updates the command status to `'completed'`, `'failed'`, or `'received_not_executed'`, stores the result payload, and records `executed_at = NOW()`. |
 
 **Request Body:**
 ```json
@@ -1804,6 +1832,237 @@ Retrieves the real-time status and heartbeat freshness of a device.
 
 **Errors:**
 - `404 Not Found`: Device does not exist or belongs to another organization (`{ "error": "NOT_FOUND", "message": "Device not found" }`).
+
+---
+
+## 9. Firewall Integration APIs (Phase C.1 Foundation)
+
+The Firewall Integration APIs manage host-level network containment policies, validation safeguards, and lifecycle tracking.
+
+> **Operational Lifecycle Note:**
+> - In **Phase C.1**, all rules are created in `status: "pending"`. No host firewall modifications are performed yet.
+> - In **Phase C.2**, the Enterprise Agent receives the approved rule, applies it via host OS utilities (`netsh advfirewall`, `nftables`, or `iptables`), and transitions status to `"active"`.
+> - **Never-Block Guarantee:** All target IPs and domains are defensively checked against the `protected_targets` list (RFC 1918 private ranges, loopback, backend API IPs, core DNS). Any request targeting a protected address is immediately rejected with `400 Bad Request`.
+
+---
+
+### 9.1 List Firewall Rules (`GET /api/v1/admin/firewall-rules`)
+Retrieves paginated firewall rules scoped to the authenticated admin's organization.
+
+| Property | Specification |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/api/v1/admin/firewall-rules` |
+| **Auth Requirement** | Bearer JWT (Role: `admin`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Returns org-scoped list of firewall rules with multi-tenant isolation. |
+
+**Query Parameters:**
+- `agent_id` *(optional, UUID)*: Filter by target device ID.
+- `status` *(optional, string)*: Filter by status (`pending`, `active`, `pending_delete`, `deleted`).
+- `rule_type` *(optional, string)*: Filter by rule type (`block_ip`, `block_domain`).
+- `limit` *(optional, integer, default: 50, max: 100)*.
+- `offset` *(optional, integer, default: 0)*.
+
+**Response (`200 OK`):**
+```json
+{
+  "total": 1,
+  "limit": 50,
+  "offset": 0,
+  "rules": [
+    {
+      "id": "a57bb816-0158-45ec-977d-78ea0e80a524",
+      "agent_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+      "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+      "rule_type": "block_ip",
+      "target_ip": "203.0.113.42",
+      "target_domain": null,
+      "rule_id_local": null,
+      "status": "pending",
+      "created_by_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+      "created_at": "2026-10-03T16:00:00.000Z",
+      "expires_at": null,
+      "deleted_at": null,
+      "result": {
+        "validation": "passed",
+        "initiated_at": "2026-10-03T16:00:00.000Z"
+      }
+    }
+  ]
+}
+```
+
+---
+
+### 9.2 Validate Candidate Rule Target (`POST /api/v1/admin/firewall-rules/validate`)
+Pre-validates a target IP or domain without persisting a rule.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/admin/firewall-rules/validate` |
+| **Auth Requirement** | Bearer JWT (Role: `admin`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Validates syntax, format, and verifies that the target does not collide with protected IP ranges (RFC 1918, 127.0.0.0/8), backend endpoints, or protected domains. |
+
+**Request Body (IP Block Example):**
+```json
+{
+  "rule_type": "block_ip",
+  "target_data": {
+    "ip_address": "203.0.113.42"
+  }
+}
+```
+
+**Response (`200 OK` - Valid Target):**
+```json
+{
+  "valid": true,
+  "error_if_invalid": null,
+  "error": null,
+  "target_ip": "203.0.113.42",
+  "target_domain": null
+}
+```
+
+**Response (`200 OK` - Protected Target Rejected):**
+```json
+{
+  "valid": false,
+  "error_if_invalid": "Target IP 127.0.0.1 is in protected list and cannot be blocked",
+  "error": "Target IP 127.0.0.1 is in protected list and cannot be blocked",
+  "target_ip": null,
+  "target_domain": null
+}
+```
+
+---
+
+### 9.3 Create Firewall Rule (`POST /api/v1/admin/firewall-rules`)
+Creates a new firewall containment rule in `status: "pending"`.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/admin/firewall-rules` |
+| **Auth Requirement** | Bearer JWT (Role: `admin`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Validates input against protected target lists and persists an immutable rule record with `status: "pending"`. Logs audit event `firewall_rule_created`. |
+
+**Request Body:**
+```json
+{
+  "agent_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "rule_type": "block_ip",
+  "target_data": {
+    "ip_address": "203.0.113.42"
+  }
+}
+```
+
+**Response (`201 Created`):**
+```json
+{
+  "success": true,
+  "rule_id": "a57bb816-0158-45ec-977d-78ea0e80a524",
+  "status": "pending",
+  "rule": {
+    "id": "a57bb816-0158-45ec-977d-78ea0e80a524",
+    "agent_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+    "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+    "rule_type": "block_ip",
+    "target_ip": "203.0.113.42",
+    "target_domain": null,
+    "status": "pending",
+    "created_at": "2026-10-03T16:00:00.000Z"
+  },
+  "validation_result": {
+    "valid": true,
+    "target_ip": "203.0.113.42"
+  }
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Validation failure (target is protected, wildcard domain, or malformed syntax).
+  ```json
+  {
+    "error": "VALIDATION_FAILED",
+    "message": "Target IP 127.0.0.1 is in protected list and cannot be blocked"
+  }
+  ```
+
+---
+
+### 9.4 Revoke Firewall Rule (`DELETE /api/v1/admin/firewall-rules/:rule_id`)
+Marks an existing firewall rule as `'pending_delete'` for host revocation.
+
+| Property | Specification |
+|---|---|
+| **Method** | `DELETE` |
+| **Path** | `/api/v1/admin/firewall-rules/:rule_id` |
+| **Auth Requirement** | Bearer JWT (Role: `admin`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Verifies organization ownership and sets `status = 'pending_delete'`. Logs audit event `firewall_rule_deleted`. |
+
+**Response (`200 OK`):**
+```json
+{
+  "deleted": true,
+  "rule_id": "a57bb816-0158-45ec-977d-78ea0e80a524"
+}
+```
+
+**Errors:**
+- `404 Not Found`: Rule ID does not exist or belongs to another organization.
+
+---
+
+### 9.5 Download Protected Targets List (`GET /api/v1/agents/:device_id/protected-targets`)
+Endpoint for agents to retrieve the central protected target catalog.
+
+| Property | Specification |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/api/v1/agents/:device_id/protected-targets` |
+| **Auth Requirement** | Open / General Limiter (consumed by enrolled agents) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Returns arrays of protected IP addresses, CIDR ranges, and domains that the agent must never block under any circumstance. |
+
+**Response (`200 OK`):**
+```json
+{
+  "protected_ips": [
+    "127.0.0.1",
+    "0.0.0.0",
+    "::1",
+    "::",
+    "8.8.8.8",
+    "8.8.4.4",
+    "1.1.1.1",
+    "1.0.0.1",
+    "9.9.9.9"
+  ],
+  "protected_ip_ranges": [
+    "127.0.0.0/8",
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16",
+    "169.254.0.0/16",
+    "0.0.0.0/8",
+    "224.0.0.0/4",
+    "240.0.0.0/4",
+    "255.255.255.255/32"
+  ],
+  "protected_domains": [
+    "localhost",
+    "cyberguard.local"
+  ]
+}
+```
+
 
 
 

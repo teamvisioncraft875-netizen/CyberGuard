@@ -32,7 +32,12 @@ router.get('/:device_id/commands', agentLimiter, agentController.getCommands);
 // 4. Command execution result (authenticated via agent credential_id + credential_secret)
 router.post('/:device_id/commands/:command_id/result', agentLimiter, agentController.recordCommandResult);
 
+const firewallController = require('../controllers/firewallController');
+
 // 5. Device status view (Admin or Agent)
 router.get('/:device_id/status', generalLimiter, optionalJwt, agentController.getStatus);
+
+// 6. Protected targets (agent safe list download)
+router.get('/:device_id/protected-targets', generalLimiter, firewallController.getProtectedTargets);
 
 module.exports = router;

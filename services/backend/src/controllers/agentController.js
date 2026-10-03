@@ -221,8 +221,8 @@ const agentController = {
     }
 
     try {
-      const commands = await agentService.getCommandsForDevice(device_id, credential_id.trim(), credential_secret.trim());
-      if (commands === null) {
+      const commandsResult = await agentService.getCommandsWithProtectedTargets(device_id, credential_id.trim(), credential_secret.trim());
+      if (commandsResult === null) {
         return res.status(401).json({
           error: 'UNAUTHORIZED',
           message: 'Invalid agent credentials'
@@ -230,7 +230,8 @@ const agentController = {
       }
 
       return res.status(200).json({
-        commands
+        commands: commandsResult.commands,
+        protected_targets: commandsResult.protected_targets
       });
     } catch (err) {
       console.error('[agentController.getCommands error]', err.message);

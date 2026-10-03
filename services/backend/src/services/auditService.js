@@ -20,7 +20,9 @@ const AUDIT_ACTIONS = Object.freeze({
   GUARDIAN_LINK_REVOKED: 'guardian:link_revoked',
   RESPONSE_ACTION_APPROVED: 'response_action:approved',
   RESPONSE_ACTION_REJECTED: 'response_action:rejected',
-  TELEMETRY_SYSTEM_EVENT: 'telemetry:system_event'
+  TELEMETRY_SYSTEM_EVENT: 'telemetry:system_event',
+  FIREWALL_RULE_CREATED: 'firewall_rule_created',
+  FIREWALL_RULE_DELETED: 'firewall_rule_deleted'
 });
 
 /**

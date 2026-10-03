@@ -43,6 +43,8 @@ def validate_ip_address(ip_str: str) -> bool:
 def validate_domain_name(domain_str: str) -> bool:
     """Validates domain name syntax."""
     clean_domain = domain_str.strip().lower()
+    if clean_domain in ("localhost", "cyberguard.local"):
+        return True
     return bool(DOMAIN_REGEX.match(clean_domain))
 
 
@@ -155,6 +157,93 @@ def report_command_result(
         return False
 
 
+# Cached protected targets list
+_cached_protected_targets: Optional[Dict[str, Any]] = None
+
+
+def fetch_protected_targets(
+    config: AgentConfig,
+    cred_mgr: Optional[CredentialManager] = None
+) -> Dict[str, Any]:
+    """
+    Downloads safe target lists from GET /api/v1/agents/:device_id/protected-targets.
+    Caches the list locally and falls back to safe built-in defaults if network call fails.
+    """
+    global _cached_protected_targets
+
+    device_id = cred_mgr.device_id if cred_mgr else config.device_id
+    if not device_id:
+        return {
+            "protected_ips": ["127.0.0.1", "0.0.0.0", "::1"],
+            "protected_ip_ranges": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "169.254.0.0/16"],
+            "protected_domains": ["localhost", "cyberguard.local"]
+        }
+
+    url = f"{config.backend_url}/api/v1/agents/{device_id}/protected-targets"
+    try:
+        response = requests.get(url, timeout=10)
+        if response.status_code == 200:
+            _cached_protected_targets = response.json()
+            return _cached_protected_targets
+    except Exception as e:
+        logger.warning(f"Could not refresh protected targets list: {e}. Using cached/fallback defaults.")
+
+    if _cached_protected_targets:
+        return _cached_protected_targets
+
+    return {
+        "protected_ips": ["127.0.0.1", "0.0.0.0", "::1"],
+        "protected_ip_ranges": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "169.254.0.0/16"],
+        "protected_domains": ["localhost", "cyberguard.local"]
+    }
+
+
+def is_ip_protected(ip_str: str, protected_targets: Dict[str, Any]) -> bool:
+    """Checks whether an IP address is protected against blocking."""
+    clean_ip = ip_str.strip()
+    try:
+        ip_obj = ipaddress.ip_address(clean_ip)
+    except ValueError:
+        return False
+
+    # Check loopback, link-local, multicast, unspecified
+    if (
+        ip_obj.is_loopback
+        or ip_obj.is_link_local
+        or ip_obj.is_multicast
+        or ip_obj.is_unspecified
+    ):
+        return True
+
+    # Check static protected IPs list
+    if clean_ip in protected_targets.get("protected_ips", []):
+        return True
+
+    # Check CIDR ranges (RFC 1918, 127/8, link-local, etc.)
+    for cidr in protected_targets.get("protected_ip_ranges", []):
+        try:
+            if ip_obj in ipaddress.ip_network(cidr, strict=False):
+                return True
+        except ValueError:
+            continue
+
+    return False
+
+
+def is_domain_protected(domain_str: str, protected_targets: Dict[str, Any]) -> bool:
+    """Checks whether a domain name is protected against blocking."""
+    clean_domain = domain_str.strip().lower().rstrip(".")
+    if clean_domain in ("localhost", "cyberguard.local"):
+        return True
+
+    for prot in protected_targets.get("protected_domains", []):
+        prot_lower = prot.strip().lower().rstrip(".")
+        if clean_domain == prot_lower or clean_domain.endswith(f".{prot_lower}"):
+            return True
+
+    return False
+
+
 def process_command(
     config: AgentConfig,
     command: Dict[str, Any],
@@ -162,8 +251,8 @@ def process_command(
 ) -> None:
     """
     Validates and dispatches a single command.
-    CRITICAL: Phase B strictly forbids live firewall/kernel modification.
-    All block actions are safely logged and reported as received_not_executed.
+    CRITICAL: Phase B/C.1 strictly forbids live firewall/kernel modification.
+    All block actions are verified against protected lists and reported safely.
     """
     command_id = command.get("id")
     command_type = command.get("command_type")
@@ -228,7 +317,7 @@ def process_command(
         )
 
     elif command_type in ("temporary_block_ip", "block_ip"):
-        target_ip = target_data.get("ip") or target_data.get("target_ip") or target_data.get("target")
+        target_ip = target_data.get("ip") or target_data.get("target_ip") or target_data.get("target") or target_data.get("ip_address")
         if not target_ip or not validate_ip_address(str(target_ip)):
             err_msg = f"Invalid target IP address: '{target_ip}'"
             logger.warning(f"Command {command_id} validation failed: {err_msg}")
@@ -236,15 +325,33 @@ def process_command(
                 config,
                 command_id,
                 status="failed",
-                result={"error_message": err_msg},
+                result={"error_message": err_msg, "can_execute": False},
                 cred_mgr=cred_mgr
             )
             return
 
-        # PHASE B SAFE GUARD: Log safely, do NOT execute iptables/netsh
+        # Defensive Check: Validate against protected targets list
+        protected_targets = fetch_protected_targets(config, cred_mgr=cred_mgr)
+        if is_ip_protected(str(target_ip), protected_targets):
+            err_msg = f"Target IP '{target_ip}' is in protected list and cannot be blocked"
+            logger.warning(f"Command {command_id} rejected defensively: {err_msg}")
+            report_command_result(
+                config,
+                command_id,
+                status="failed",
+                result={
+                    "error_message": err_msg,
+                    "reason": "target_in_protected_list",
+                    "can_execute": False
+                },
+                cred_mgr=cred_mgr
+            )
+            return
+
+        # Validated and safe: mark can_execute=true (Phase C.2 will perform OS rule execution)
         logger.info(
-            f"[FIREWALL ACTION QUEUED] Command {command_id} received target IP '{target_ip}'. "
-            "Execution withheld: Firewall integration pending in Phase C."
+            f"[FIREWALL ACTION VALIDATED] Command {command_id} target IP '{target_ip}' validated. "
+            "can_execute=True. Execution deferred to Phase C.2."
         )
 
         report_command_result(
@@ -255,6 +362,7 @@ def process_command(
                 "reason": "firewall_integration_pending",
                 "action": command_type,
                 "target_ip": str(target_ip),
+                "can_execute": True,
                 "duration_minutes": target_data.get("duration_minutes", 60),
             },
             cred_mgr=cred_mgr
@@ -262,22 +370,53 @@ def process_command(
 
     elif command_type == "block_domain":
         target_domain = target_data.get("domain") or target_data.get("target_domain") or target_data.get("target")
-        if not target_domain or not validate_domain_name(str(target_domain)):
-            err_msg = f"Invalid target domain name: '{target_domain}'"
+        if not target_domain:
+            err_msg = "Target domain is missing"
             logger.warning(f"Command {command_id} validation failed: {err_msg}")
             report_command_result(
                 config,
                 command_id,
                 status="failed",
-                result={"error_message": err_msg},
+                result={"error_message": err_msg, "can_execute": False},
                 cred_mgr=cred_mgr
             )
             return
 
-        # PHASE B SAFE GUARD: Log safely, do NOT execute DNS sinkhole/hosts
+        domain_str = str(target_domain).strip()
+        if "*" in domain_str or not validate_domain_name(domain_str):
+            err_msg = f"Invalid target domain name: '{target_domain}' (wildcards not allowed)"
+            logger.warning(f"Command {command_id} validation failed: {err_msg}")
+            report_command_result(
+                config,
+                command_id,
+                status="failed",
+                result={"error_message": err_msg, "can_execute": False},
+                cred_mgr=cred_mgr
+            )
+            return
+
+        # Defensive Check: Validate against protected targets list
+        protected_targets = fetch_protected_targets(config, cred_mgr=cred_mgr)
+        if is_domain_protected(domain_str, protected_targets):
+            err_msg = f"Target domain '{target_domain}' is in protected list and cannot be blocked"
+            logger.warning(f"Command {command_id} rejected defensively: {err_msg}")
+            report_command_result(
+                config,
+                command_id,
+                status="failed",
+                result={
+                    "error_message": err_msg,
+                    "reason": "target_in_protected_list",
+                    "can_execute": False
+                },
+                cred_mgr=cred_mgr
+            )
+            return
+
+        # Validated and safe: mark can_execute=true (Phase C.2 will perform OS rule execution)
         logger.info(
-            f"[FIREWALL ACTION QUEUED] Command {command_id} received target domain '{target_domain}'. "
-            "Execution withheld: Firewall integration pending in Phase C."
+            f"[FIREWALL ACTION VALIDATED] Command {command_id} target domain '{target_domain}' validated. "
+            "can_execute=True. Execution deferred to Phase C.2."
         )
 
         report_command_result(
@@ -288,6 +427,7 @@ def process_command(
                 "reason": "firewall_integration_pending",
                 "action": command_type,
                 "target_domain": str(target_domain),
+                "can_execute": True,
             },
             cred_mgr=cred_mgr
         )

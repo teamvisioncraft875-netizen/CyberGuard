@@ -363,6 +363,27 @@ const agentService = {
   },
 
   /**
+   * Fetches pending commands together with the latest protected IP/domain targets list.
+   *
+   * @param {string} device_id
+   * @param {string} credential_id
+   * @param {string} credential_secret
+   * @returns {Promise<{ commands: Array<Object>, protected_targets: Object }|null>}
+   */
+  async getCommandsWithProtectedTargets(device_id, credential_id, credential_secret) {
+    const commands = await this.getCommandsForDevice(device_id, credential_id, credential_secret);
+    if (commands === null) return null;
+
+    const firewallService = require('./firewallService');
+    const protected_targets = firewallService.getProtectedTargets();
+
+    return {
+      commands,
+      protected_targets
+    };
+  },
+
+  /**
    * Records the execution result of an agent command.
    *
    * @param {string} device_id
