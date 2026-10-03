@@ -258,6 +258,38 @@ async function execute(action, actor_type = 'system_policy') {
       return { success: false, error: errMsg };
     }
 
+    // Phase C Integration: If action is firewall-related (block_ip, block_domain), queue agent command
+    if (['block_ip', 'block_domain', 'temporary_block_ip'].includes(action.action_type)) {
+      try {
+        const agentCommandService = require('./agentCommandService');
+        const targetDeviceId = action.target_device_id || target.target_device_id || target.device_id;
+        
+        let targetDevice = null;
+        if (targetDeviceId) {
+          const devRes = await db.query('SELECT * FROM public.devices WHERE id = $1;', [targetDeviceId]);
+          targetDevice = devRes.rows[0] || null;
+        } else if (target.user_id) {
+          const devRes = await db.query(
+            `SELECT * FROM public.devices 
+             WHERE user_id = $1 AND organization_id = $2 AND status != 'disabled' 
+             ORDER BY last_heartbeat DESC NULLS LAST LIMIT 1;`,
+            [target.user_id, action.organization_id]
+          );
+          targetDevice = devRes.rows[0] || null;
+        }
+
+        if (targetDevice && targetDevice.status !== 'disabled') {
+          const cmdResult = await agentCommandService.createAgentCommandFromResponseAction(action, targetDevice.id);
+          if (cmdResult && cmdResult.success) {
+            executionResult.agent_command_id = cmdResult.command_id;
+            executionResult.target_device_id = targetDevice.id;
+          }
+        }
+      } catch (cmdErr) {
+        console.warn('[executionService] Warning: Failed to enqueue agent command for firewall action:', cmdErr.message);
+      }
+    }
+
     // Success update
     if (action.id) {
       try {

@@ -23,6 +23,8 @@ SUPPORTED_COMMAND_TYPES = {
     "temporary_block_ip",
     "block_ip",
     "block_domain",
+    "unblock_ip",
+    "unblock_domain",
 }
 
 # Domain name regex pattern (RFC 1035 / RFC 1123 compliant subset)
@@ -389,6 +391,44 @@ def process_command(
                 command_id,
                 status="failed",
                 result=exec_result,
+                cred_mgr=cred_mgr
+            )
+
+    elif command_type in ("unblock_ip", "unblock_domain"):
+        fw_exec = executor or get_firewall_executor()
+        target = (
+            target_data.get("ip_address")
+            or target_data.get("ip")
+            or target_data.get("domain")
+            or target_data.get("target")
+        )
+        if not target:
+            report_command_result(
+                config,
+                command_id,
+                status="failed",
+                result={"error": "missing_target", "message": "Target IP or domain required for unblock"},
+                cred_mgr=cred_mgr
+            )
+            return
+
+        rollback_res = fw_exec.rollback_rule(str(target))
+        if rollback_res.get("success"):
+            logger.info(f"[FIREWALL] Successfully unblocked/rolled back target: {target}")
+            report_command_result(
+                config,
+                command_id,
+                status="completed",
+                result=rollback_res,
+                cred_mgr=cred_mgr
+            )
+        else:
+            logger.warning(f"[FIREWALL] Rollback failed for target {target}: {rollback_res.get('error')}")
+            report_command_result(
+                config,
+                command_id,
+                status="failed",
+                result=rollback_res,
                 cred_mgr=cred_mgr
             )
 

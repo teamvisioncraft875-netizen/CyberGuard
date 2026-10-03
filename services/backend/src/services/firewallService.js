@@ -351,6 +351,32 @@ const firewallService = {
         }
       });
 
+      // Queue command for agent execution
+      try {
+        await db.query(
+          `INSERT INTO public.agent_commands (
+            device_id,
+            organization_id,
+            command_type,
+            target_data,
+            status,
+            requested_by_id,
+            can_execute,
+            requires_approval,
+            created_at
+          ) VALUES ($1, $2, $3, $4, 'pending', $5, true, false, NOW());`,
+          [
+            agent_id,
+            organization_id,
+            rule_type,
+            JSON.stringify(enrichedTargetData),
+            created_by_id
+          ]
+        );
+      } catch (cmdErr) {
+        console.warn('[firewallService] Warning: Failed to queue agent command:', cmdErr.message);
+      }
+
       // Audit log: firewall_rule_created
       await auditService.log({
         organization_id,
@@ -440,6 +466,37 @@ const firewallService = {
 
     if (!updated) {
       return { success: false, deleted: false, error: 'Failed to update rule status' };
+    }
+
+    // Queue unblock command for agent
+    try {
+      const rollbackType = existing.rule_type === 'block_domain' ? 'unblock_domain' : 'unblock_ip';
+      const rollbackTargetData = existing.rule_type === 'block_domain'
+        ? { domain: existing.target_domain }
+        : { ip_address: existing.target_ip };
+
+      await db.query(
+        `INSERT INTO public.agent_commands (
+          device_id,
+          organization_id,
+          command_type,
+          target_data,
+          status,
+          requested_by_id,
+          can_execute,
+          requires_approval,
+          created_at
+        ) VALUES ($1, $2, $3, $4, 'pending', $5, true, false, NOW());`,
+        [
+          existing.agent_id,
+          organization_id,
+          rollbackType,
+          JSON.stringify(rollbackTargetData),
+          deleted_by_id
+        ]
+      );
+    } catch (cmdErr) {
+      console.warn('[firewallService] Warning: Failed to queue rollback command for agent:', cmdErr.message);
     }
 
     // Audit log: firewall_rule_deleted

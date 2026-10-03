@@ -402,23 +402,9 @@ const agentService = {
     const cleanStatus = status === 'failed' ? 'failed' : 'completed';
 
     try {
-      const query = `
-        UPDATE public.agent_commands
-        SET status = $1,
-            result = $2,
-            executed_at = NOW()
-        WHERE id = $3
-          AND device_id = $4
-        RETURNING id;
-      `;
-      const res = await db.query(query, [
-        cleanStatus,
-        typeof result === 'string' ? result : JSON.stringify(result || {}),
-        command_id,
-        device_id
-      ]);
-
-      return Boolean(res.rows && res.rows.length > 0);
+      const agentCommandService = require('./agentCommandService');
+      const updateRes = await agentCommandService.updateAgentCommandStatus(command_id, cleanStatus, result);
+      return Boolean(updateRes && updateRes.success);
     } catch (err) {
       console.error('[agentService.recordCommandResult DB error]', err.message);
       return false;
