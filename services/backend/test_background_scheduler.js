@@ -182,7 +182,7 @@ async function runSchedulerTests() {
     );
 
     // Pause scheduler during seeding so all 15 actions are inserted before processing
-    schedulerService.stopScheduler();
+    await schedulerService.stopScheduler();
 
     const batch15Ids = [];
     for (let i = 1; i <= 15; i++) {
@@ -255,7 +255,7 @@ async function runSchedulerTests() {
     // Step 4: Kill scheduler (stopScheduler), create due action, confirm NOT executed
     // ──────────────────────────────────────────────────────────────────────────
     console.log('\n--- Step 4: Graceful Shutdown (stopScheduler) ---');
-    schedulerService.stopScheduler();
+    await schedulerService.stopScheduler();
 
     const actionWhileStopped = await createAction({
       org_id: orgB.id,
@@ -321,7 +321,7 @@ async function runSchedulerTests() {
     console.log('════════════════════════════════════════════════════════════════════════\n');
   } finally {
     // Teardown
-    schedulerService.stopScheduler();
+    await schedulerService.stopScheduler();
 
     console.log('--- Teardown: Cleaning Test Records ---');
     if (createdActionIds.length > 0) {

@@ -74,6 +74,8 @@ async function refreshHourlyCounts() {
  * Never throws an unhandled error.
  */
 async function processDueActions() {
+  if (!isRunning) return;
+
   if (isProcessing) {
     console.log('[schedulerService] Previous cycle is still running. Skipping overlapping run.');
     return;
@@ -85,6 +87,7 @@ async function processDueActions() {
   try {
     // 1. Sync recent execution stats
     await refreshHourlyCounts();
+    if (!isRunning) return;
 
     // 2. Query response_actions WHERE status IN ('scheduled', 'approved') AND scheduled_at <= NOW()
     const dueQuery = `
@@ -97,7 +100,7 @@ async function processDueActions() {
     `;
     const { rows: dueActions } = await db.query(dueQuery);
 
-    if (!dueActions || dueActions.length === 0) {
+    if (!dueActions || dueActions.length === 0 || !isRunning) {
       isProcessing = false;
       return;
     }
@@ -116,6 +119,8 @@ async function processDueActions() {
 
     // 4. Process each organization batch with circuit breaker (max 10 executions/hour)
     for (const [orgId, orgActions] of Object.entries(actionsByOrg)) {
+      if (!isRunning) break;
+
       let executedLastHour = await countOrgExecutionsLastHour(orgId === 'unassigned' ? null : orgId);
       actionsExecutedThisHour[orgId] = executedLastHour;
 
@@ -127,6 +132,11 @@ async function processDueActions() {
       }
 
       for (const action of orgActions) {
+        if (!isRunning) {
+          console.log('[schedulerService] Scheduler stopped during processing. Aborting execution loop.');
+          break;
+        }
+
         if (executedLastHour >= MAX_EXECUTIONS_PER_HOUR) {
           console.warn(
             `[schedulerService] [CIRCUIT BREAKER] Org ${orgId} reached execution limit of ${MAX_EXECUTIONS_PER_HOUR}/hour during batch. Skipping remaining action(s).`
@@ -170,28 +180,39 @@ function startScheduler(cronPattern = '* * * * *') {
     return cronTask;
   }
 
+  isRunning = true;
+
   // Refresh hourly counts at startup
   refreshHourlyCounts().catch(() => {});
 
   cronTask = cron.schedule(cronPattern, async () => {
+    if (!isRunning) return;
     await processDueActions();
   });
 
-  isRunning = true;
   console.log(`[schedulerService] Background scheduler started (runs every 60 seconds with pattern "${cronPattern}")`);
   return cronTask;
 }
 
 /**
  * Stops the background scheduler for graceful shutdown.
+ *
+ * @param {boolean} [waitForDrain=true]
  */
-function stopScheduler() {
+async function stopScheduler(waitForDrain = true) {
+  isRunning = false;
   if (cronTask) {
     cronTask.stop();
     cronTask = null;
   }
-  isRunning = false;
   console.log('[schedulerService] Background scheduler stopped');
+
+  if (waitForDrain && isProcessing) {
+    const start = Date.now();
+    while (isProcessing && Date.now() - start < 4000) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
 }
 
 /**
