@@ -117,7 +117,9 @@ const firewallController = {
       if (!result.valid) {
         return res.status(400).json({
           error: 'VALIDATION_FAILED',
+          error_type: 'validation_failed',
           message: result.error,
+          error_message: result.error,
           validation_result: result.validation_result
         });
       }
@@ -125,7 +127,9 @@ const firewallController = {
       if (!result.success) {
         return res.status(500).json({
           error: 'RULE_CREATION_FAILED',
-          message: result.error
+          error_type: 'rule_creation_failed',
+          message: result.error,
+          error_message: result.error
         });
       }
 
@@ -174,14 +178,18 @@ const firewallController = {
       if (result.notFound) {
         return res.status(404).json({
           error: 'NOT_FOUND',
-          message: 'Firewall rule not found in your organization'
+          error_type: 'rule_not_found',
+          message: 'Firewall rule not found in your organization',
+          error_message: 'Firewall rule not found in your organization'
         });
       }
 
       if (!result.success) {
         return res.status(500).json({
           error: 'DELETE_FAILED',
-          message: result.error || 'Failed to revoke firewall rule'
+          error_type: 'rule_deletion_failed',
+          message: result.error || 'Failed to revoke firewall rule',
+          error_message: result.error || 'Failed to revoke firewall rule'
         });
       }
 
@@ -284,9 +292,25 @@ const firewallController = {
       // 4. Input validation (IP/domain format and protected target check)
       const validation = firewallService.validateFirewallInput(command_type, target_data);
       if (!validation.valid) {
+        await auditService.log({
+          organization_id: orgId,
+          user_id: adminUserId,
+          actor_type: 'admin',
+          action: AUDIT_ACTIONS.FIREWALL_RULE_CREATION_FAILED,
+          resource_type: 'firewall_rule',
+          details: {
+            rule_type: command_type,
+            target: target_data?.ip_address || target_data?.domain || target_data?.ip || target_data?.target || null,
+            agent_id,
+            error_type: 'validation_failed',
+            error_message: validation.error
+          }
+        });
         return res.status(400).json({
           error: 'VALIDATION_FAILED',
+          error_type: 'validation_failed',
           message: validation.error,
+          error_message: validation.error,
           validation_result: validation
         });
       }
@@ -298,9 +322,25 @@ const firewallController = {
       );
 
       if (!devRes.rows || devRes.rows.length === 0) {
+        await auditService.log({
+          organization_id: orgId,
+          user_id: adminUserId,
+          actor_type: 'admin',
+          action: AUDIT_ACTIONS.FIREWALL_RULE_CREATION_FAILED,
+          resource_type: 'firewall_rule',
+          details: {
+            rule_type: command_type,
+            target: target_data?.ip_address || target_data?.domain || null,
+            agent_id,
+            error_type: 'device_not_found',
+            error_message: `Agent ${agent_id} not found`
+          }
+        });
         return res.status(404).json({
           error: 'NOT_FOUND',
-          message: `Agent ${agent_id} not found`
+          error_type: 'device_not_found',
+          message: `Agent ${agent_id} not found`,
+          error_message: `Agent ${agent_id} not found`
         });
       }
 
@@ -308,25 +348,73 @@ const firewallController = {
 
       // Org boundary check
       if (device.organization_id !== orgId) {
+        await auditService.log({
+          organization_id: orgId,
+          user_id: adminUserId,
+          actor_type: 'admin',
+          action: AUDIT_ACTIONS.FIREWALL_RULE_CREATION_FAILED,
+          resource_type: 'firewall_rule',
+          details: {
+            rule_type: command_type,
+            target: target_data?.ip_address || target_data?.domain || null,
+            agent_id,
+            error_type: 'device_not_found',
+            error_message: `Agent ${agent_id} not found in your organization`
+          }
+        });
         return res.status(404).json({
           error: 'NOT_FOUND',
-          message: `Agent ${agent_id} not found in your organization`
+          error_type: 'device_not_found',
+          message: `Agent ${agent_id} not found in your organization`,
+          error_message: `Agent ${agent_id} not found in your organization`
         });
       }
 
       // Disabled check -> 409
       if (device.status === 'disabled') {
+        await auditService.log({
+          organization_id: orgId,
+          user_id: adminUserId,
+          actor_type: 'admin',
+          action: AUDIT_ACTIONS.FIREWALL_RULE_CREATION_FAILED,
+          resource_type: 'firewall_rule',
+          details: {
+            rule_type: command_type,
+            target: target_data?.ip_address || target_data?.domain || null,
+            agent_id,
+            error_type: 'agent_disabled',
+            error_message: 'Agent is disabled and cannot receive commands'
+          }
+        });
         return res.status(409).json({
           error: 'AGENT_DISABLED',
-          message: 'Agent is disabled and cannot receive commands'
+          error_type: 'agent_disabled',
+          message: 'Agent is disabled and cannot receive commands',
+          error_message: 'Agent is disabled and cannot receive commands'
         });
       }
 
       // Online check -> 404
       if (device.status !== 'online') {
+        await auditService.log({
+          organization_id: orgId,
+          user_id: adminUserId,
+          actor_type: 'admin',
+          action: AUDIT_ACTIONS.FIREWALL_RULE_CREATION_FAILED,
+          resource_type: 'firewall_rule',
+          details: {
+            rule_type: command_type,
+            target: target_data?.ip_address || target_data?.domain || null,
+            agent_id,
+            error_type: 'agent_offline',
+            error_message: `Agent is ${device.status || 'offline'} and cannot receive commands`
+          }
+        });
         return res.status(404).json({
           error: 'AGENT_OFFLINE',
-          message: `Agent is ${device.status || 'offline'} and cannot receive commands`
+          error_type: 'agent_offline',
+          message: `Agent is ${device.status || 'offline'} and cannot receive commands`,
+          error_message: `Agent is ${device.status || 'offline'} and cannot receive commands`
         });
       }
 

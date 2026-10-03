@@ -152,18 +152,28 @@ class FirewallExecutor:
             return {
                 "success": False,
                 "error": "unsupported_command_type",
-                "message": f"Command type '{command_type}' is not supported by FirewallExecutor"
+                "error_type": "unsupported_command_type",
+                "error_message": f"Command type '{command_type}' is not supported by FirewallExecutor",
+                "message": f"Command type '{command_type}' is not supported by FirewallExecutor",
+                "platform": "windows" if sys.platform == "win32" else "linux",
+                "attempted_action": command_type
             }
 
         # 2. Check privilege elevation
         if not self.can_execute and not self.dry_run:
+            target_hint = raw_target_data.get("ip_address") or raw_target_data.get("ip") or raw_target_data.get("domain") or raw_target_data.get("target") or "unknown"
             logger.warning(
                 f"[FIREWALL] Refusing command {command_type}: Process lacks administrative/root privileges."
             )
             return {
                 "success": False,
                 "error": "insufficient_privileges",
-                "message": "Firewall execution requires administrator rights on Windows or root on Linux"
+                "error_type": "insufficient_privileges",
+                "error_message": "Firewall execution requires administrator rights on Windows or root on Linux",
+                "message": "Firewall execution requires administrator rights on Windows or root on Linux",
+                "platform": "windows" if sys.platform == "win32" else "linux",
+                "attempted_action": command_type,
+                "target": target_hint
             }
 
         # 3. Check rate limiting (max 10 rules per rolling hour)
@@ -173,13 +183,19 @@ class FirewallExecutor:
             self.last_hour_reset = now
 
         if self.hourly_rule_count >= MAX_RULES_PER_HOUR:
+            target_hint = raw_target_data.get("ip_address") or raw_target_data.get("ip") or raw_target_data.get("domain") or raw_target_data.get("target") or "unknown"
             logger.warning(
                 f"[FIREWALL] Rate limit exceeded: {self.hourly_rule_count} rules created in the last hour."
             )
             return {
                 "success": False,
                 "error": "rate_limit_exceeded",
-                "message": "Max 10 rules per hour"
+                "error_type": "rate_limit_exceeded",
+                "error_message": f"Rate limit exceeded: maximum {MAX_RULES_PER_HOUR} rules per rolling hour",
+                "message": "Max 10 rules per hour",
+                "platform": "windows" if sys.platform == "win32" else "linux",
+                "attempted_action": command_type,
+                "target": target_hint
             }
 
         # 4. Extract and validate target data
@@ -192,7 +208,16 @@ class FirewallExecutor:
             )
             val = self._validate_ip(ip)
             if not val["valid"]:
-                return {"success": False, "error": val["error"], "message": val.get("message")}
+                return {
+                    "success": False,
+                    "error": val["error"],
+                    "error_type": val["error"],
+                    "error_message": val.get("message"),
+                    "message": val.get("message"),
+                    "platform": "windows" if sys.platform == "win32" else "linux",
+                    "attempted_action": command_type,
+                    "target": ip
+                }
             target = val["target"]
         else:
             domain = (
@@ -202,7 +227,16 @@ class FirewallExecutor:
             )
             val = self._validate_domain(domain)
             if not val["valid"]:
-                return {"success": False, "error": val["error"], "message": val.get("message")}
+                return {
+                    "success": False,
+                    "error": val["error"],
+                    "error_type": val["error"],
+                    "error_message": val.get("message"),
+                    "message": val.get("message"),
+                    "platform": "windows" if sys.platform == "win32" else "linux",
+                    "attempted_action": command_type,
+                    "target": domain
+                }
             target = val["target"]
 
         # 5. Check against protected list
@@ -213,11 +247,22 @@ class FirewallExecutor:
             return {
                 "success": False,
                 "error": "target_protected",
-                "message": f"Cannot block protected target: {target}"
+                "error_type": "target_protected",
+                "error_message": f"Cannot block protected target: {target}",
+                "message": f"Cannot block protected target: {target}",
+                "platform": "windows" if sys.platform == "win32" else "linux",
+                "reason": "target_in_protected_list",
+                "attempted_action": command_type,
+                "target": target
             }
 
         # 6. Execute OS-level rule
+        platform_name = "windows" if sys.platform == "win32" else "linux"
+        logger.info(f"[FIREWALL] Executing {command_type} {target} ({platform_name})")
         result = self._execute_firewall_rule(command_type, target)
+        result.setdefault("platform", platform_name)
+        result.setdefault("attempted_action", command_type)
+        result.setdefault("target", target)
 
         if result.get("success"):
             self.hourly_rule_count += 1
@@ -235,6 +280,14 @@ class FirewallExecutor:
                 "expires_at": time.time() + 86400  # 24 hour default lifetime
             }
             self.active_rules.append(rule_record)
+
+            result.setdefault("firewall_tool", result.get("firewall"))
+            result.setdefault("created_at", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+            logger.info(f"[FIREWALL] Rule created: {result.get('rule_name')} (tool: {result.get('firewall_tool')})")
+        else:
+            err_type = result.get("error_type") or result.get("error")
+            err_msg = result.get("error_message") or result.get("message") or result.get("details")
+            logger.warning(f"[FIREWALL] Execution failed: {err_type} ({err_msg})")
 
         return result
 
@@ -399,15 +452,37 @@ class FirewallExecutor:
                     return {
                         "success": False,
                         "error": "firewall_command_failed",
-                        "details": err_msg
+                        "error_type": "firewall_command_failed",
+                        "error_message": f"Windows firewall command failed: {err_msg}",
+                        "firewall_tool": "windows_defender",
+                        "command_output": err_msg,
+                        "details": err_msg,
+                        "platform": "windows",
+                        "target": target
                     }
 
             except subprocess.TimeoutExpired:
                 logger.error(f"[FIREWALL] Windows firewall command timed out after 10s: {cmd}")
-                return {"success": False, "error": "timeout", "message": "Firewall command timed out after 10s"}
+                return {
+                    "success": False,
+                    "error": "timeout",
+                    "error_type": "timeout",
+                    "error_message": "Windows firewall command timed out after 10s",
+                    "message": "Firewall command timed out after 10s",
+                    "platform": "windows",
+                    "target": target
+                }
             except Exception as e:
                 logger.error(f"[FIREWALL] Windows execution error: {e}")
-                return {"success": False, "error": "execution_error", "details": str(e)}
+                return {
+                    "success": False,
+                    "error": "execution_error",
+                    "error_type": "execution_error",
+                    "error_message": str(e),
+                    "details": str(e),
+                    "platform": "windows",
+                    "target": target
+                }
 
         else:  # block_domain
             logger.info(
@@ -416,7 +491,12 @@ class FirewallExecutor:
             return {
                 "success": False,
                 "error": "domain_blocking_unsupported_windows",
-                "message": "Windows Defender Firewall does not natively support domain name blocking"
+                "error_type": "unsupported_operation",
+                "error_message": "Windows Defender Firewall does not natively support domain name blocking",
+                "message": "Windows Defender Firewall does not natively support domain name blocking",
+                "platform": "windows",
+                "reason": "domain_blocking_requires_dns_interception",
+                "target": target
             }
 
     def _detect_firewall(self) -> Optional[str]:
@@ -460,8 +540,12 @@ class FirewallExecutor:
             logger.error("[FIREWALL] No active Linux firewall tool (ufw, firewalld, iptables) detected")
             return {
                 "success": False,
-                "error": "no_firewall_detected",
-                "message": "No supported Linux firewall utility (ufw, firewalld, iptables) detected"
+                "error": "firewall_tool_not_found",
+                "error_type": "firewall_tool_not_found",
+                "error_message": "No supported Linux firewall utility (ufw, firewalld, iptables) detected",
+                "message": "No supported Linux firewall utility (ufw, firewalld, iptables) detected",
+                "platform": "linux",
+                "target": target
             }
 
         if firewall_tool == "ufw":
@@ -471,7 +555,14 @@ class FirewallExecutor:
         elif firewall_tool == "iptables":
             return self._execute_iptables(command_type, target)
 
-        return {"success": False, "error": "unknown_firewall_tool"}
+        return {
+            "success": False,
+            "error": "firewall_tool_not_found",
+            "error_type": "firewall_tool_not_found",
+            "error_message": f"Unrecognized Linux firewall tool: {firewall_tool}",
+            "platform": "linux",
+            "target": target
+        }
 
     def _execute_ufw(self, command_type: str, target: str) -> Dict[str, Any]:
         """Executes ufw firewall rule without shell execution."""
@@ -480,27 +571,73 @@ class FirewallExecutor:
 
             if self.dry_run:
                 logger.info(f"[FIREWALL DRY-RUN] ufw command: {' '.join(cmd)}")
-                return {"success": True, "firewall": "ufw", "target": target, "dry_run": True}
+                return {
+                    "success": True,
+                    "firewall": "ufw",
+                    "firewall_tool": "ufw",
+                    "target": target,
+                    "platform": "linux",
+                    "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "dry_run": True
+                }
 
             try:
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=10, shell=False)
                 if result.returncode == 0:
                     logger.info(f"[FIREWALL] ufw rule added: deny from {target}")
-                    return {"success": True, "firewall": "ufw", "target": target}
+                    return {
+                        "success": True,
+                        "firewall": "ufw",
+                        "firewall_tool": "ufw",
+                        "target": target,
+                        "platform": "linux",
+                        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                    }
                 else:
                     err_msg = result.stderr.strip() or result.stdout.strip()
                     logger.error(f"[FIREWALL] ufw failed: {err_msg}")
-                    return {"success": False, "error": "ufw_failed", "details": err_msg}
+                    return {
+                        "success": False,
+                        "error": "firewall_command_failed",
+                        "error_type": "firewall_command_failed",
+                        "error_message": f"ufw command returned non-zero exit code: {err_msg}",
+                        "firewall_tool": "ufw",
+                        "command_output": err_msg,
+                        "details": err_msg,
+                        "platform": "linux",
+                        "target": target
+                    }
             except subprocess.TimeoutExpired:
-                return {"success": False, "error": "timeout", "message": "ufw command timed out after 10s"}
+                return {
+                    "success": False,
+                    "error": "timeout",
+                    "error_type": "timeout",
+                    "error_message": "ufw command timed out after 10s",
+                    "message": "ufw command timed out after 10s",
+                    "platform": "linux",
+                    "target": target
+                }
             except Exception as e:
-                return {"success": False, "error": "execution_error", "details": str(e)}
+                return {
+                    "success": False,
+                    "error": "execution_error",
+                    "error_type": "execution_error",
+                    "error_message": str(e),
+                    "details": str(e),
+                    "platform": "linux",
+                    "target": target
+                }
 
         else:
             return {
                 "success": False,
                 "error": "domain_blocking_unsupported_ufw",
-                "message": "ufw does not natively support domain name blocking"
+                "error_type": "unsupported_operation",
+                "error_message": "ufw does not natively support domain name blocking",
+                "message": "ufw does not natively support domain name blocking",
+                "platform": "linux",
+                "reason": "domain_blocking_requires_dns_interception",
+                "target": target
             }
 
     def _execute_firewalld(self, command_type: str, target: str) -> Dict[str, Any]:
@@ -511,27 +648,73 @@ class FirewallExecutor:
 
             if self.dry_run:
                 logger.info(f"[FIREWALL DRY-RUN] firewalld command: {' '.join(cmd)}")
-                return {"success": True, "firewall": "firewalld", "target": target, "dry_run": True}
+                return {
+                    "success": True,
+                    "firewall": "firewalld",
+                    "firewall_tool": "firewalld",
+                    "target": target,
+                    "platform": "linux",
+                    "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    "dry_run": True
+                }
 
             try:
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=10, shell=False)
                 if result.returncode == 0:
                     logger.info(f"[FIREWALL] firewalld rule added: {rule}")
-                    return {"success": True, "firewall": "firewalld", "target": target}
+                    return {
+                        "success": True,
+                        "firewall": "firewalld",
+                        "firewall_tool": "firewalld",
+                        "target": target,
+                        "platform": "linux",
+                        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                    }
                 else:
                     err_msg = result.stderr.strip() or result.stdout.strip()
                     logger.error(f"[FIREWALL] firewalld failed: {err_msg}")
-                    return {"success": False, "error": "firewalld_failed", "details": err_msg}
+                    return {
+                        "success": False,
+                        "error": "firewall_command_failed",
+                        "error_type": "firewall_command_failed",
+                        "error_message": f"firewall-cmd returned non-zero exit code: {err_msg}",
+                        "firewall_tool": "firewalld",
+                        "command_output": err_msg,
+                        "details": err_msg,
+                        "platform": "linux",
+                        "target": target
+                    }
             except subprocess.TimeoutExpired:
-                return {"success": False, "error": "timeout", "message": "firewall-cmd timed out after 10s"}
+                return {
+                    "success": False,
+                    "error": "timeout",
+                    "error_type": "timeout",
+                    "error_message": "firewall-cmd timed out after 10s",
+                    "message": "firewall-cmd timed out after 10s",
+                    "platform": "linux",
+                    "target": target
+                }
             except Exception as e:
-                return {"success": False, "error": "execution_error", "details": str(e)}
+                return {
+                    "success": False,
+                    "error": "execution_error",
+                    "error_type": "execution_error",
+                    "error_message": str(e),
+                    "details": str(e),
+                    "platform": "linux",
+                    "target": target
+                }
 
         else:
             return {
                 "success": False,
                 "error": "domain_blocking_requires_setup",
-                "message": "firewalld domain blocking via DNS requires advanced configuration"
+                "error_type": "unsupported_operation",
+                "error_message": "firewalld domain blocking via DNS requires advanced configuration",
+                "message": "firewalld domain blocking via DNS requires advanced configuration",
+                "platform": "linux",
+                "reason": "domain_blocking_requires_dns_interception",
+                "target": target
             }
 
     def _execute_iptables(self, command_type: str, target: str) -> Dict[str, Any]:
@@ -544,7 +727,10 @@ class FirewallExecutor:
                 return {
                     "success": True,
                     "firewall": "iptables",
+                    "firewall_tool": "iptables",
                     "target": target,
+                    "platform": "linux",
+                    "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                     "warning": "rules_lost_on_reboot",
                     "dry_run": True
                 }
@@ -556,23 +742,57 @@ class FirewallExecutor:
                     return {
                         "success": True,
                         "firewall": "iptables",
+                        "firewall_tool": "iptables",
                         "target": target,
+                        "platform": "linux",
+                        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                         "warning": "rules_lost_on_reboot"
                     }
                 else:
                     err_msg = result.stderr.strip() or result.stdout.strip()
                     logger.error(f"[FIREWALL] iptables failed: {err_msg}")
-                    return {"success": False, "error": "iptables_failed", "details": err_msg}
+                    return {
+                        "success": False,
+                        "error": "firewall_command_failed",
+                        "error_type": "firewall_command_failed",
+                        "error_message": f"iptables returned non-zero exit code: {err_msg}",
+                        "firewall_tool": "iptables",
+                        "command_output": err_msg,
+                        "details": err_msg,
+                        "platform": "linux",
+                        "target": target
+                    }
             except subprocess.TimeoutExpired:
-                return {"success": False, "error": "timeout", "message": "iptables timed out after 10s"}
+                return {
+                    "success": False,
+                    "error": "timeout",
+                    "error_type": "timeout",
+                    "error_message": "iptables timed out after 10s",
+                    "message": "iptables timed out after 10s",
+                    "platform": "linux",
+                    "target": target
+                }
             except Exception as e:
-                return {"success": False, "error": "execution_error", "details": str(e)}
+                return {
+                    "success": False,
+                    "error": "execution_error",
+                    "error_type": "execution_error",
+                    "error_message": str(e),
+                    "details": str(e),
+                    "platform": "linux",
+                    "target": target
+                }
 
         else:
             return {
                 "success": False,
                 "error": "domain_blocking_unsupported_iptables",
-                "message": "iptables domain blocking requires DNS interception"
+                "error_type": "unsupported_operation",
+                "error_message": "iptables domain blocking requires DNS interception",
+                "message": "iptables domain blocking requires DNS interception",
+                "platform": "linux",
+                "reason": "domain_blocking_requires_dns_interception",
+                "target": target
             }
 
     def delete_firewall_rule(
@@ -697,19 +917,49 @@ class FirewallExecutor:
                     return {
                         "success": False,
                         "error": "rule_not_found",
+                        "error_type": "rule_not_found",
+                        "error_message": f"Rule {resolved_rule_name} not found on host",
                         "message": f"Firewall rule '{resolved_rule_name}' not found",
-                        "details": err_msg
+                        "command_output": err_msg,
+                        "details": err_msg,
+                        "platform": "windows",
+                        "rule_id_local": resolved_rule_name,
+                        "target": target
                     }
                 logger.error(f"[FIREWALL] Windows rule deletion failed: {err_msg}")
                 return {
                     "success": False,
                     "error": "deletion_failed",
-                    "details": err_msg
+                    "error_type": "firewall_command_failed",
+                    "error_message": f"Windows firewall deletion command failed: {err_msg}",
+                    "command_output": err_msg,
+                    "details": err_msg,
+                    "platform": "windows",
+                    "rule_id_local": resolved_rule_name,
+                    "target": target
                 }
         except subprocess.TimeoutExpired:
-            return {"success": False, "error": "timeout", "message": "PowerShell deletion command timed out after 10s"}
+            return {
+                "success": False,
+                "error": "timeout",
+                "error_type": "timeout",
+                "error_message": "PowerShell deletion command timed out after 10s",
+                "message": "PowerShell deletion command timed out after 10s",
+                "platform": "windows",
+                "rule_id_local": resolved_rule_name,
+                "target": target
+            }
         except Exception as e:
-            return {"success": False, "error": "execution_error", "details": str(e)}
+            return {
+                "success": False,
+                "error": "execution_error",
+                "error_type": "execution_error",
+                "error_message": str(e),
+                "details": str(e),
+                "platform": "windows",
+                "rule_id_local": resolved_rule_name,
+                "target": target
+            }
 
     def _delete_linux(self, rule_id_local: Optional[str], target: Optional[str]) -> Dict[str, Any]:
         """Deletes Linux firewall rule via ufw, firewalld, or iptables."""
@@ -763,12 +1013,36 @@ class FirewallExecutor:
                 return {
                     "success": False,
                     "error": "deletion_failed",
-                    "details": err_msg
+                    "error_type": "firewall_command_failed",
+                    "error_message": f"Linux {tool} rule deletion command failed: {err_msg}",
+                    "command_output": err_msg,
+                    "details": err_msg,
+                    "platform": "linux",
+                    "rule_id_local": rule_id_local,
+                    "target": resolved_target
                 }
         except subprocess.TimeoutExpired:
-            return {"success": False, "error": "timeout", "message": f"{tool} deletion timed out after 10s"}
+            return {
+                "success": False,
+                "error": "timeout",
+                "error_type": "timeout",
+                "error_message": f"{tool} deletion timed out after 10s",
+                "message": f"{tool} deletion timed out after 10s",
+                "platform": "linux",
+                "rule_id_local": rule_id_local,
+                "target": resolved_target
+            }
         except Exception as e:
-            return {"success": False, "error": "execution_error", "details": str(e)}
+            return {
+                "success": False,
+                "error": "execution_error",
+                "error_type": "execution_error",
+                "error_message": str(e),
+                "details": str(e),
+                "platform": "linux",
+                "rule_id_local": rule_id_local,
+                "target": resolved_target
+            }
 
     def rollback_rule(
         self,

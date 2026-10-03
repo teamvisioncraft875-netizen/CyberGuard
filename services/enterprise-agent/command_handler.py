@@ -405,8 +405,8 @@ def process_command(
 
         if exec_result.get("success"):
             logger.info(
-                f"[FIREWALL] Rule execution succeeded: {command_type} -> "
-                f"{exec_result.get('target')} (firewall: {exec_result.get('firewall')})"
+                f"[FIREWALL] Rule created: {exec_result.get('rule_name')} -> "
+                f"{exec_result.get('target')} (firewall: {exec_result.get('firewall_tool') or exec_result.get('firewall')})"
             )
             report_command_result(
                 config,
@@ -416,9 +416,10 @@ def process_command(
                 cred_mgr=cred_mgr
             )
         else:
+            err_type = exec_result.get("error_type") or exec_result.get("error")
+            err_msg = exec_result.get("error_message") or exec_result.get("message") or exec_result.get("details")
             logger.warning(
-                f"[FIREWALL] Rule execution failed for command {command_id}: "
-                f"{exec_result.get('error')} — {exec_result.get('message')}"
+                f"[FIREWALL] Execution failed: {err_type} ({err_msg}) for command {command_id}"
             )
             report_command_result(
                 config,
@@ -451,8 +452,7 @@ def process_command(
 
         if del_res.get("success"):
             logger.info(
-                f"[FIREWALL] Rule deletion succeeded for command {command_id}: "
-                f"rule_id_local={del_res.get('rule_id_local')}, target={del_res.get('target')}"
+                f"[FIREWALL] Rule deleted: rule_id_local={del_res.get('rule_id_local')}, target={del_res.get('target')}"
             )
             report_command_result(
                 config,
@@ -462,9 +462,10 @@ def process_command(
                 cred_mgr=cred_mgr
             )
         else:
+            del_err_type = del_res.get("error_type") or del_res.get("error")
+            del_err_msg = del_res.get("error_message") or del_res.get("message") or del_res.get("details")
             logger.warning(
-                f"[FIREWALL] Rule deletion failed for command {command_id}: "
-                f"{del_res.get('error')} — {del_res.get('message') or del_res.get('details')}"
+                f"[FIREWALL] Deletion failed: {del_err_type} ({del_err_msg}) for command {command_id}"
             )
             report_command_result(
                 config,

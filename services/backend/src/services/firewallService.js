@@ -342,6 +342,20 @@ const firewallService = {
     // Perform strict validation
     const validation = this.validateFirewallInput(rule_type, enrichedTargetData);
     if (!validation.valid) {
+      await auditService.log({
+        organization_id,
+        user_id: created_by_id,
+        actor_type: created_by_id ? 'admin' : 'system_policy',
+        action: AUDIT_ACTIONS.FIREWALL_RULE_CREATION_FAILED,
+        resource_type: 'firewall_rule',
+        details: {
+          rule_type,
+          target: enrichedTargetData.ip_address || enrichedTargetData.domain || enrichedTargetData.target || null,
+          agent_id,
+          error_type: 'validation_failed',
+          error_message: validation.error
+        }
+      });
       return {
         success: false,
         valid: false,
@@ -472,6 +486,18 @@ const firewallService = {
 
     const existing = await FirewallRule.findById(rule_id, organization_id);
     if (!existing) {
+      await auditService.log({
+        organization_id,
+        user_id: deleted_by_id,
+        actor_type: 'admin',
+        action: AUDIT_ACTIONS.FIREWALL_RULE_DELETION_FAILED,
+        resource_type: 'firewall_rule',
+        resource_id: rule_id,
+        details: {
+          error_type: 'rule_not_found',
+          error_message: `Rule ${rule_id} not found`
+        }
+      });
       return { success: false, deleted: false, notFound: true, error: 'Firewall rule not found' };
     }
 
@@ -483,6 +509,18 @@ const firewallService = {
     );
 
     if (!updated) {
+      await auditService.log({
+        organization_id,
+        user_id: deleted_by_id,
+        actor_type: 'admin',
+        action: AUDIT_ACTIONS.FIREWALL_RULE_DELETION_FAILED,
+        resource_type: 'firewall_rule',
+        resource_id: rule_id,
+        details: {
+          error_type: 'execution_error',
+          error_message: 'Failed to update rule status to pending_delete'
+        }
+      });
       return { success: false, deleted: false, error: 'Failed to update rule status' };
     }
 
@@ -580,15 +618,37 @@ const firewallService = {
 
     const isSuccess = status === 'completed' && Boolean(
       execution_result?.success === true ||
-      (execution_result && execution_result.success !== false && !execution_result.error)
+      (execution_result && execution_result.success !== false && !execution_result.error && !execution_result.error_type)
     );
     const newStatus = isSuccess ? 'deleted' : 'failed';
     const deletedAt = isSuccess ? new Date().toISOString() : null;
 
     const ruleId = target_data?.rule_id && UUID_REGEX.test(target_data.rule_id) ? target_data.rule_id : null;
-    const ruleIdLocal = target_data?.rule_id_local || execution_result?.rule_id_local || null;
+    const ruleIdLocal = target_data?.rule_id_local || execution_result?.rule_id_local || execution_result?.rule_name || null;
     const target = target_data?.target_ip_or_domain || target_data?.target || target_data?.ip_address || target_data?.domain || null;
     const originalCmdId = target_data?.original_command_id && UUID_REGEX.test(target_data.original_command_id) ? target_data.original_command_id : null;
+
+    const errorType = execution_result?.error_type || execution_result?.error || (isSuccess ? null : 'rule_not_found');
+    const errorMessage = execution_result?.error_message || execution_result?.message || (isSuccess ? null : 'Firewall rule deletion failed on agent');
+
+    const formattedResult = isSuccess ? {
+      success: true,
+      rule_id_local: ruleIdLocal,
+      target,
+      deleted_at: deletedAt,
+      agent_deletion_report: execution_result,
+      agent_deletion_status: status,
+      updated_at: new Date().toISOString()
+    } : {
+      success: false,
+      error_type: errorType,
+      error_message: errorMessage,
+      rule_id_local: ruleIdLocal,
+      target,
+      agent_deletion_report: execution_result,
+      agent_deletion_status: status,
+      updated_at: new Date().toISOString()
+    };
 
     const query = `
       UPDATE public.agent_firewall_rules
@@ -609,11 +669,7 @@ const firewallService = {
     const res = await db.query(query, [
       newStatus,
       deletedAt,
-      JSON.stringify({
-        agent_deletion_report: execution_result,
-        agent_deletion_status: status,
-        updated_at: new Date().toISOString()
-      }),
+      JSON.stringify(formattedResult),
       agent_id,
       ruleId,
       ruleIdLocal,
@@ -624,23 +680,50 @@ const firewallService = {
     if (res.rows && res.rows.length > 0) {
       const updatedRule = res.rows[0];
 
-      // Audit log
+      // Audit log: success or failure
       await auditService.log({
         organization_id: updatedRule.organization_id,
         user_id: null,
-        actor_type: 'agent',
-        action: isSuccess ? AUDIT_ACTIONS.FIREWALL_RULE_DELETED : AUDIT_ACTIONS.FIREWALL_RULE_REVOCATION_FAILED,
+        actor_type: 'admin',
+        action: isSuccess ? AUDIT_ACTIONS.FIREWALL_RULE_DELETED : AUDIT_ACTIONS.FIREWALL_RULE_DELETION_FAILED,
         resource_type: 'firewall_rule',
         resource_id: updatedRule.id,
-        details: {
-          status: newStatus,
-          rule_id_local: updatedRule.rule_id_local,
-          execution_result,
-          agent_id
+        details: isSuccess ? {
+          rule_type: updatedRule.rule_type,
+          target: updatedRule.target_ip || updatedRule.target_domain,
+          agent_id,
+          rule_id_local: updatedRule.rule_id_local || ruleIdLocal,
+          result: 'success'
+        } : {
+          rule_type: updatedRule.rule_type,
+          target: updatedRule.target_ip || updatedRule.target_domain,
+          agent_id,
+          rule_id_local: updatedRule.rule_id_local || ruleIdLocal,
+          error_type: errorType,
+          error_message: errorMessage,
+          result: 'failed'
         }
       });
 
       return updatedRule;
+    } else {
+      // If no matching rule was found to update
+      await auditService.log({
+        organization_id: null,
+        user_id: null,
+        actor_type: 'admin',
+        action: AUDIT_ACTIONS.FIREWALL_RULE_DELETION_FAILED,
+        resource_type: 'firewall_rule',
+        resource_id: ruleId,
+        details: {
+          agent_id,
+          target,
+          rule_id_local: ruleIdLocal,
+          error_type: errorType || 'rule_not_found',
+          error_message: errorMessage || `Rule ${ruleId || ruleIdLocal || target} not found for deletion`,
+          result: 'failed'
+        }
+      });
     }
 
     return null;
@@ -671,9 +754,12 @@ const firewallService = {
     const target_ip = target_data?.ip_address || target_data?.ip || (normalizedRuleType === 'block_ip' ? target_data?.target : null) || null;
     const target_domain = target_data?.domain || (normalizedRuleType === 'block_domain' ? target_data?.target : null) || null;
 
-    const isSuccess = Boolean(execution_result?.success === true || (execution_result && execution_result.success !== false && !execution_result.error));
+    const isSuccess = Boolean(
+      execution_result?.success === true ||
+      (execution_result && execution_result.success !== false && !execution_result.error && !execution_result.error_type)
+    );
     const status = isSuccess ? 'active' : 'failed';
-    const rule_id_local = execution_result?.rule_name || null;
+    const rule_id_local = execution_result?.rule_name || execution_result?.rule_id_local || null;
 
     // Resolve organization_id for device
     const devRes = await db.query(
@@ -685,6 +771,53 @@ const firewallService = {
       throw new Error(`Device not found: ${agent_id}`);
     }
     const organization_id = devRes.rows[0].organization_id;
+
+    // Check if original command had a requester (admin vs policy)
+    let requestedById = null;
+    if (source_command_id && UUID_REGEX.test(source_command_id)) {
+      try {
+        const cmdRow = await db.query(
+          `SELECT requested_by_id FROM public.agent_commands WHERE id = $1;`,
+          [source_command_id]
+        );
+        if (cmdRow.rows.length > 0) {
+          requestedById = cmdRow.rows[0].requested_by_id;
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    let storedResult = {};
+    if (isSuccess) {
+      storedResult = {
+        success: true,
+        rule_name: rule_id_local,
+        firewall_tool: execution_result.firewall_tool || execution_result.tool || null,
+        target: target_ip || target_domain || execution_result.target || null,
+        created_at: execution_result.created_at || new Date().toISOString(),
+        ...execution_result
+      };
+      storedResult.success = true;
+    } else {
+      const errorType = execution_result.error_type || execution_result.error || 'execution_error';
+      const errorMessage = execution_result.error_message || execution_result.message || execution_result.details || 'Firewall command execution failed on agent';
+      storedResult = {
+        success: false,
+        error_type: errorType,
+        error_message: errorMessage,
+        platform: execution_result.platform || null,
+        attempted_action: execution_result.attempted_action || command_type,
+        target: target_ip || target_domain || execution_result.target || null,
+        ...execution_result
+      };
+      storedResult.success = false;
+      storedResult.error_type = errorType;
+      storedResult.error_message = errorMessage;
+      if (execution_result.command_output) storedResult.command_output = execution_result.command_output;
+      if (execution_result.reason) storedResult.reason = execution_result.reason;
+      if (execution_result.firewall_tool) storedResult.firewall_tool = execution_result.firewall_tool;
+    }
 
     // Check if an existing rule row matches this target in 'pending' status
     let rule = null;
@@ -708,14 +841,14 @@ const firewallService = {
          SET status = $1,
              rule_id_local = COALESCE($2, rule_id_local),
              source_command_id = COALESCE($3, source_command_id),
-             result = result || $4::jsonb
+             result = $4::jsonb
          WHERE id = $5
          RETURNING *;`,
         [
           status,
           rule_id_local,
           source_command_id,
-          JSON.stringify(execution_result),
+          JSON.stringify(storedResult),
           existingId
         ]
       );
@@ -729,28 +862,44 @@ const firewallService = {
         target_domain,
         rule_id_local,
         status,
-        created_by_id: null, // created by agent execution
+        created_by_id: requestedById,
         source_command_id,
-        result: execution_result
+        result: storedResult
       });
     }
 
     // Audit log
+    const auditAction = isSuccess 
+      ? AUDIT_ACTIONS.FIREWALL_RULE_CREATED 
+      : AUDIT_ACTIONS.FIREWALL_RULE_CREATION_FAILED;
+
+    const auditDetails = isSuccess ? {
+      rule_type: normalizedRuleType,
+      target: target_ip || target_domain,
+      agent_id,
+      source: requestedById ? 'manual' : 'policy_engine',
+      result: 'success',
+      rule_id_local
+    } : {
+      rule_type: normalizedRuleType,
+      target: target_ip || target_domain,
+      agent_id,
+      source: requestedById ? 'manual' : 'policy_engine',
+      error_type: storedResult.error_type,
+      error_message: storedResult.error_message,
+      platform: storedResult.platform,
+      command_output: storedResult.command_output || null,
+      result: 'failed'
+    };
+
     await auditService.log({
       organization_id,
-      user_id: null,
-      actor_type: 'agent',
-      action: AUDIT_ACTIONS.FIREWALL_RULE_CREATED,
+      user_id: requestedById,
+      actor_type: requestedById ? 'admin' : 'system_policy',
+      action: auditAction,
       resource_type: 'firewall_rule',
       resource_id: rule.id,
-      details: {
-        rule_type: normalizedRuleType,
-        target: target_ip || target_domain,
-        status: rule.status,
-        success: isSuccess,
-        source_command_id,
-        agent_id
-      }
+      details: auditDetails
     });
 
     return {

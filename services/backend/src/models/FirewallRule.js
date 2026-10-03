@@ -73,34 +73,46 @@ const FirewallRule = {
    * Lists firewall rules for an organization with optional filtering and pagination.
    */
   async findByOrg(organization_id, { agent_id, status, rule_type, limit = 50, offset = 0 } = {}) {
-    const conditions = ['organization_id = $1'];
+    const conditions = ['r.organization_id = $1'];
     const params = [organization_id];
     let paramIndex = 2;
 
     if (agent_id) {
-      conditions.push(`agent_id = $${paramIndex++}`);
+      conditions.push(`r.agent_id = $${paramIndex++}`);
       params.push(agent_id);
     }
     if (status) {
-      conditions.push(`status = $${paramIndex++}`);
+      conditions.push(`r.status = $${paramIndex++}`);
       params.push(status);
     }
     if (rule_type) {
-      conditions.push(`rule_type = $${paramIndex++}`);
+      conditions.push(`r.rule_type = $${paramIndex++}`);
       params.push(rule_type);
     }
 
     const whereClause = conditions.join(' AND ');
-    const countSql = `SELECT COUNT(*)::int AS total FROM public.agent_firewall_rules WHERE ${whereClause}`;
+    const countSql = `SELECT COUNT(*)::int AS total FROM public.agent_firewall_rules r WHERE ${whereClause}`;
     const countRes = await db.query(countSql, params);
     const total = countRes.rows[0]?.total || 0;
 
     const querySql = `
-      SELECT id, agent_id, organization_id, rule_type, target_ip, target_domain,
-             rule_id_local, status, created_by_id, source_command_id, created_at, expires_at, deleted_at, result
-      FROM public.agent_firewall_rules
+      SELECT r.id, r.agent_id, r.organization_id, r.rule_type, r.target_ip, r.target_domain,
+             COALESCE(r.target_ip, r.target_domain) AS target,
+             d.hostname AS agent_name,
+             r.rule_id_local, r.status, r.created_by_id,
+             u.email AS created_by,
+             r.source_command_id,
+             CASE 
+               WHEN r.created_by_id IS NOT NULL OR cmd.requested_by_id IS NOT NULL THEN 'manual'
+               ELSE 'policy_engine'
+             END AS source,
+             r.created_at, r.expires_at, r.deleted_at, r.result
+      FROM public.agent_firewall_rules r
+      LEFT JOIN public.devices d ON d.id = r.agent_id
+      LEFT JOIN public.agent_commands cmd ON cmd.id = r.source_command_id
+      LEFT JOIN public.users u ON u.id = COALESCE(r.created_by_id, cmd.requested_by_id)
       WHERE ${whereClause}
-      ORDER BY created_at DESC
+      ORDER BY r.created_at DESC
       LIMIT $${paramIndex++} OFFSET $${paramIndex++};
     `;
     params.push(limit, offset);
