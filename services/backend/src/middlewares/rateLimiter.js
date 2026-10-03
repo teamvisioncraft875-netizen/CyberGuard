@@ -87,10 +87,27 @@ const secretCheckLimiter = rateLimit({
   handler: rateLimitHandler
 });
 
+/**
+ * Agent Limiter: 100 requests per 15 minutes per device_id (or IP fallback).
+ * Prevents endpoint exhaustion while allowing multiple distinct agents behind the same corporate NAT/IP.
+ */
+const agentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  keyGenerator: (req) => req.params.device_id || req.ip,
+  validate: { keyGeneratorIpFallback: false },
+  standardHeaders: true,
+  legacyHeaders: false,
+  statusCode: 429,
+  skip: () => process.env.SKIP_RATE_LIMIT === 'true',
+  handler: rateLimitHandler
+});
+
 module.exports = {
   authLimiter,
   checkLimiter,
   generalLimiter,
   searchLimiter,
-  secretCheckLimiter
+  secretCheckLimiter,
+  agentLimiter
 };

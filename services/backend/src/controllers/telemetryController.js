@@ -215,9 +215,10 @@ const telemetryController = {
       });
     }
 
-    // Non-admin always forced to req.user.id, ignoring any client user_id in req.body
-    let userId = req.user?.id;
-    let userOrgId = req.user?.organization_id || null;
+    // Resolve user and organization identities based on Auth source (User JWT vs Agent Device)
+    let userId = req.user?.id || req.agent?.user_id || null;
+    let userOrgId = req.user?.organization_id || req.agent?.organization_id || null;
+    const deviceId = req.agent?.device_id || req.body.device_id || null;
 
     // If admin, verify the target user_id belongs to req.user.organization_id before accepting it
     if (req.user?.role === 'admin' && req.body.user_id) {
@@ -236,6 +237,27 @@ const telemetryController = {
       userId = req.body.user_id;
     }
 
+    // Record audit log for agent device submissions
+    if (req.agent) {
+      try {
+        await auditLog({
+          organization_id: userOrgId,
+          user_id: userId,
+          actor_type: 'device',
+          action: 'telemetry:system_event',
+          resource_type: 'device',
+          resource_id: req.agent.device_id,
+          details: {
+            event_type,
+            telemetry_type: req.body.telemetry_type || event_type
+          },
+          ip_address: req.ip
+        });
+      } catch (aErr) {
+        console.warn('[telemetryController.reportSystemEvent Audit Note]', aErr.message);
+      }
+    }
+
     let mlResult = null;
     try {
       mlResult = await callMlEngine('/internal/analyze/system', {
@@ -252,7 +274,7 @@ const telemetryController = {
     try {
       await TelemetryEvent.create({
         user_id: userId,
-        device_id: req.body.device_id || null,
+        device_id: deviceId,
         event_type,
         payload: details
       });
