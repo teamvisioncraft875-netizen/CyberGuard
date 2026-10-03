@@ -1493,9 +1493,69 @@ Allows organization administrators to approve or reject a proposed or pending re
 **Errors:**
 - `400 Bad Request`: Missing or non-boolean `approved` field (`{ "error": "VALIDATION_ERROR" }`).
 - `401 Unauthorized`: Missing or invalid JWT.
-- `403 Forbidden`: User is not an admin or does not belong to an organization.
-- `404 Not Found`: Response action does not exist or belongs to another organization.
-- `500 Internal Server Error`: Failed to update action in database.
+---
+
+### 11.4 Execute Response Action (`POST /api/v1/admin/actions/:id/execute`)
+Triggers immediate live execution of an approved or scheduled response action.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/admin/actions/:id/execute` *(also available at `/api/v1/admin/response-actions/:id/execute`)* |
+| **Auth Requirement** | Bearer JWT (Admin role only: `roleCheck(['admin'])`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Executes a live response action (session revocation, IP block, domain block, device suspension, or forced password reset). Updates action status to `'executed'`, sets `executed_at`, increments attempts, persists execution output in `result`, and emits an append-only audit log entry. |
+
+**Guardrails Enforced:**
+1. **Approval Status**: Action status must be `'approved'` or `'scheduled'`. Any other status (`'proposed'`, `'executed'`, `'failed'`) is rejected with `400 Bad Request`.
+2. **Live Execution Mode**: Action mode must be `'live'`. Actions in `'shadow'` mode are strictly prohibited from live execution and rejected with `400 Bad Request`.
+3. **Protected Targets**: Target IPs or domains in protected infrastructure ranges (e.g. `127.0.0.1`, RFC 1918 private subnets, internal hostnames) cannot be blocked; rejected with `400 Bad Request`.
+4. **Retry Limit Cap**: Maximum of 3 execution attempts. Exceeded retries are capped and rejected.
+5. **Strict Tenant Isolation**: Admins can only execute actions within their own organization. Cross-tenant access returns `404 Not Found` (never `403`) to avoid resource existence enumeration.
+
+**Request Body:** None (or empty `{}`)
+
+**Response (`200 OK`):**
+```json
+{
+  "success": true,
+  "action": {
+    "id": "e47ac10b-58cc-4372-a567-0e02b2c3d480",
+    "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+    "incident_id": "3c8340d8-118e-4a69-9da8-7cfa8c95029e",
+    "policy_id": "8d09bf3c-4e89-48ce-8dbe-268e24c2cecb",
+    "action_type": "revoke_session",
+    "action_mode": "live",
+    "status": "executed",
+    "requested_by_id": null,
+    "approved_by_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+    "approved_at": "2026-10-03T01:15:00.000Z",
+    "target": {
+      "user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+    },
+    "result": {
+      "revoked_tokens": 2,
+      "user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+    },
+    "created_at": "2026-10-03T00:30:00.000Z",
+    "scheduled_at": null,
+    "executed_at": "2026-10-03T02:00:00.000Z",
+    "expires_at": null
+  },
+  "result": {
+    "revoked_tokens": 2,
+    "user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"
+  }
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Execution guardrail rejected (`{ "error": "EXECUTION_GUARD_REJECTED", "message": "Cannot execute action in 'shadow' mode. Only 'live' mode actions can be executed." }`).
+- `401 Unauthorized`: Missing or invalid JWT.
+- `403 Forbidden`: Authenticated user lacks `admin` role (`{ "error": "FORBIDDEN" }`).
+- `404 Not Found`: Response action does not exist or belongs to another organization (`{ "error": "NOT_FOUND", "message": "Response action not found" }`).
+- `500 Internal Server Error`: Execution failed unexpectedly (`{ "error": "EXECUTION_FAILED", "message": "..." }`).
+
 
 
 
