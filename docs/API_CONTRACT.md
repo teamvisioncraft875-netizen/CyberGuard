@@ -1556,6 +1556,200 @@ Triggers immediate live execution of an approved or scheduled response action.
 - `404 Not Found`: Response action does not exist or belongs to another organization (`{ "error": "NOT_FOUND", "message": "Response action not found" }`).
 - `500 Internal Server Error`: Execution failed unexpectedly (`{ "error": "EXECUTION_FAILED", "message": "..." }`).
 
+---
+
+## 8. Enterprise Agent APIs (Phase A)
+
+Endpoints consumed by Enterprise Guard Agents and Administrators.
+Unlike user-facing endpoints, Agent endpoints authenticate via machine-specific credentials (`credential_id` + `credential_secret`) established during enrollment, completely independent of human 15-minute User JWTs.
+
+### Agent Lifecycle States:
+- `pending`: Pre-enrollment record created with an active single-use enrollment token.
+- `online`: Agent successfully enrolled and actively sending regular heartbeats.
+- `offline`: Heartbeats missed beyond acceptable threshold window.
+- `disabled`: Administratively revoked or compromised device; rejects all heartbeats and command fetching.
+
+---
+
+### 8.1 Enroll Device (`POST /api/v1/agents/enroll`)
+Enrolls a new endpoint device into an organization using a one-time cryptographic enrollment token.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/agents/enroll` *(also available at `/api/agents/enroll`)* |
+| **Auth Requirement** | One-time Enrollment Token (no JWT) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Validates the enrollment token, activates the device row (`status = 'online'`), generates permanent agent credentials (`agent_credentials_id` UUID + 32-byte secret), and stores the bcrypt hash. Returns the plaintext secret **only once**. Clears the enrollment token so it cannot be reused. |
+
+**Request Body:**
+```json
+{
+  "enrollment_token": "a1b2c3d4e5f6...32byteshex...",
+  "hostname": "workstation-042.corp.internal",
+  "os": "Windows 11 Enterprise",
+  "platform": "desktop",
+  "linked_user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+  "agent_version": "1.0.0"
+}
+```
+
+**Response (`201 Created`):**
+```json
+{
+  "device_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "credential_id": "3c8340d8-118e-4a69-9da8-7cfa8c95029e",
+  "credential_secret": "e5f6a1b2c3d4...32byteshex...",
+  "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca"
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Missing enrollment token (`{ "error": "INVALID_PAYLOAD", "message": "enrollment_token is required" }`).
+- `401 Unauthorized`: Token invalid, expired, or already used (`{ "error": "UNAUTHORIZED", "message": "Invalid or expired enrollment token" }`).
+
+---
+
+### 8.2 Agent Heartbeat (`POST /api/v1/agents/:device_id/heartbeat`)
+Periodic heartbeat ping (every 30–60 seconds) dispatched by the background enterprise agent daemon.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/agents/:device_id/heartbeat` |
+| **Auth Requirement** | Agent Credentials (`credential_id` + `credential_secret` via body or `X-Agent-Credential-ID` / `X-Agent-Credential-Secret` headers) |
+| **Rate Limit** | General limiter (60/min per device) |
+| **Description** | Verifies agent credentials via bcrypt comparison against stored hash. Updates `last_heartbeat = NOW()`, confirms `status = 'online'`, and returns the expected interval and count of pending queued commands. |
+
+**Request Body:**
+```json
+{
+  "credential_id": "3c8340d8-118e-4a69-9da8-7cfa8c95029e",
+  "credential_secret": "e5f6a1b2c3d4...32byteshex...",
+  "agent_version": "1.0.0",
+  "network_connections_count": 24
+}
+```
+
+**Response (`200 OK`):**
+```json
+{
+  "status": "online",
+  "next_heartbeat_in_seconds": 60,
+  "commands_pending": 1
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Malformed or invalid `device_id` UUID.
+- `401 Unauthorized`: Missing or invalid credentials, or device is `disabled`.
+
+---
+
+### 8.3 Get Pending Commands (`GET /api/v1/agents/:device_id/commands`)
+Fetches queued commands that the backend has assigned to this device.
+
+| Property | Specification |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/api/v1/agents/:device_id/commands` |
+| **Auth Requirement** | Agent Credentials (`credential_id` + `credential_secret` via query parameters or headers) |
+| **Description** | Returns all commands with `status IN ('pending', 'executing')` assigned to the target device, ordered by `created_at ASC`. |
+
+**Query Parameters:**
+- `credential_id` *(required, UUID)*
+- `credential_secret` *(required, string)*
+
+**Response (`200 OK`):**
+```json
+{
+  "commands": [
+    {
+      "id": "e47ac10b-58cc-4372-a567-0e02b2c3d480",
+      "command_type": "collect_snapshot",
+      "target_data": {},
+      "status": "pending",
+      "created_at": "2026-10-03T11:45:00.000Z",
+      "executed_at": null,
+      "result": {}
+    }
+  ]
+}
+```
+
+**Errors:**
+- `401 Unauthorized`: Invalid agent credentials or device disabled.
+
+---
+
+### 8.4 Record Command Result (`POST /api/v1/agents/:device_id/commands/:command_id/result`)
+Reports the output or error status of an executed command.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/agents/:device_id/commands/:command_id/result` |
+| **Auth Requirement** | Agent Credentials (`credential_id` + `credential_secret` via body or headers) |
+| **Description** | Updates the command status to `'completed'` or `'failed'`, stores the result payload, and records `executed_at = NOW()`. |
+
+**Request Body:**
+```json
+{
+  "credential_id": "3c8340d8-118e-4a69-9da8-7cfa8c95029e",
+  "credential_secret": "e5f6a1b2c3d4...32byteshex...",
+  "status": "completed",
+  "result": {
+    "snapshot_bytes": 1048576,
+    "sha256": "4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a"
+  }
+}
+```
+
+**Response (`200 OK`):**
+```json
+{
+  "success": true
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Invalid UUID format for `device_id` or `command_id`.
+- `401 Unauthorized`: Invalid agent credentials or command does not belong to device.
+
+---
+
+### 8.5 Get Device Status (`GET /api/v1/agents/:device_id/status`)
+Retrieves the real-time status and heartbeat freshness of a device.
+
+| Property | Specification |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/api/v1/agents/:device_id/status` |
+| **Auth Requirement** | Bearer JWT (Admins scoped to organization) OR Agent Credentials |
+| **Description** | Returns device record, current status (`pending`, `online`, `offline`, `disabled`), and `last_heartbeat_age_seconds`. Enforces strict tenant isolation: admins attempting cross-tenant access receive `404 Not Found`. |
+
+**Response (`200 OK`):**
+```json
+{
+  "id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+  "user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+  "device_name": "workstation-042.corp.internal",
+  "hostname": "workstation-042.corp.internal",
+  "os": "Windows 11 Enterprise",
+  "platform": "desktop",
+  "agent_version": "1.0.0",
+  "status": "online",
+  "last_heartbeat": "2026-10-03T11:45:30.000Z",
+  "created_at": "2026-10-03T10:00:00.000Z",
+  "last_heartbeat_age_seconds": 15
+}
+```
+
+**Errors:**
+- `404 Not Found`: Device does not exist or belongs to another organization (`{ "error": "NOT_FOUND", "message": "Device not found" }`).
+
+
 
 
 
