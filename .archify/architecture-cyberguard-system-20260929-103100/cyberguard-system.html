@@ -4980,17 +4980,17 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <div class="pulse-dot"></div>
         <h1>CyberGuard System Architecture</h1>
       </div>
-      <p class="subtitle">Component boundaries, detection pipelines, PostgreSQL persistence, and real-time broadcasts</p>
+      <p class="subtitle">Component boundaries, detection pipelines, automated response layer, and persistence</p>
     </div>
 
-    <script id="archify-source-evidence-data" type="application/json">{"schemaVersion":1,"verified":true,"repository":{"url":"https://github.com/teamvisioncraft875-netizen/CyberGuard","revision":"9bb7148091db897f36bf6a0575761ec09165775d","shortRevision":"9bb7148","label":"teamvisioncraft875-netizen/CyberGuard","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/tree/9bb7148091db897f36bf6a0575761ec09165775d"},"referenceCount":15,"nodes":{"client_web":[{"path":"apps/web/package.json","line":1,"label":"Web Dashboard","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/9bb7148091db897f36bf6a0575761ec09165775d/apps/web/package.json#L1"}],"client_mobile":[{"path":"apps/mobile/package.json","line":1,"label":"Mobile App","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/9bb7148091db897f36bf6a0575761ec09165775d/apps/mobile/package.json#L1"}],"sensor_guard":[{"path":"services/guard-app/main.py","line":1,"label":"Guard Sensor","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/9bb7148091db897f36bf6a0575761ec09165775d/services/guard-app/main.py#L1"}],"rate_limiter":[{"path":"services/backend/src/middlewares/rateLimiter.js","line":18,"label":"Rate Limiters","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/9bb7148091db897f36bf6a0575761ec09165775d/services/backend/src/middlewares/rateLimiter.js#L18"}],"api_gw":[{"path":"services/backend/src/index.js","line":21,"label":"Express App","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/9bb7148091db897f36bf6a0575761ec09165775d/services/backend/src/index.js#L21"}],"auth_mw":[{"path":"services/backend/src/middlewares/auth.js","line":1,"label":"Auth Middleware","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/9bb7148091db897f36bf6a0575761ec09165775d/services/backend/src/middlewares/auth.js#L1"}],"realtime_ws":[{"path":"services/backend/src/config/socket.js","line":14,"label":"Socket.io Init","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/9bb7148091db897f36bf6a0575761ec09165775d/services/backend/src/config/socket.js#L14"}],"client_ml":[{"path":"services/backend/src/utils/mlClient.js","line":1,"label":"ML Client","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/9bb7148091db897f36bf6a0575761ec09165775d/services/backend/src/utils/mlClient.js#L1"}],"ctrl_check":[{"path":"services/backend/src/controllers/checkController.js","line":1,"label":"Check Controller","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/9bb7148091db897f36bf6a0575761ec09165775d/services/backend/src/controllers/checkController.js#L1"}],"svc_incident":[{"path":"services/backend/src/services/incidentService.js","line":1,"label":"Incident Service","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/9bb7148091db897f36bf6a0575761ec09165775d/services/backend/src/services/incidentService.js#L1"}],"ctrl_mgmt":[{"path":"services/backend/src/index.js","line":49,"label":"API Routers","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/9bb7148091db897f36bf6a0575761ec09165775d/services/backend/src/index.js#L49"}],"ml_gw":[{"path":"services/ml-service/app/main.py","line":10,"label":"FastAPI App","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/9bb7148091db897f36bf6a0575761ec09165775d/services/ml-service/app/main.py#L10"}],"eng_text_url":[{"path":"services/ml-service/app/services/url_engine.py","line":1,"label":"URL Engine","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/9bb7148091db897f36bf6a0575761ec09165775d/services/ml-service/app/services/url_engine.py#L1"}],"eng_anomaly":[{"path":"services/ml-service/app/services/login_engine.py","line":1,"label":"Login Anomaly","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/9bb7148091db897f36bf6a0575761ec09165775d/services/ml-service/app/services/login_engine.py#L1"}],"eng_media":[{"path":"services/ml-service/app/main.py","line":15,"label":"Media Analysis","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/9bb7148091db897f36bf6a0575761ec09165775d/services/ml-service/app/main.py#L15"}]}}</script>
+    <script id="archify-source-evidence-data" type="application/json">{"schemaVersion":1,"verified":true,"repository":{"url":"https://github.com/teamvisioncraft875-netizen/CyberGuard","revision":"3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae","shortRevision":"3cf59d7","label":"teamvisioncraft875-netizen/CyberGuard","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/tree/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae"},"referenceCount":21,"nodes":{"client_web":[{"path":"apps/web/package.json","line":1,"label":"Web Dashboard","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/apps/web/package.json#L1"}],"client_mobile":[{"path":"apps/mobile/package.json","line":1,"label":"Mobile App","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/apps/mobile/package.json#L1"}],"sensor_guard":[{"path":"services/guard-app/main.py","line":1,"label":"Guard Sensor","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/guard-app/main.py#L1"}],"rate_limiter":[{"path":"services/backend/src/middlewares/rateLimiter.js","line":18,"label":"Rate Limiters","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/backend/src/middlewares/rateLimiter.js#L18"}],"api_gw":[{"path":"services/backend/src/index.js","line":21,"label":"Express App","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/backend/src/index.js#L21"}],"auth_mw":[{"path":"services/backend/src/middlewares/auth.js","line":1,"label":"Auth Middleware","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/backend/src/middlewares/auth.js#L1"}],"realtime_ws":[{"path":"services/backend/src/config/socket.js","line":14,"label":"Socket.io Init","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/backend/src/config/socket.js#L14"}],"client_ml":[{"path":"services/backend/src/utils/mlClient.js","line":1,"label":"ML Client","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/backend/src/utils/mlClient.js#L1"}],"ctrl_check":[{"path":"services/backend/src/controllers/checkController.js","line":1,"label":"Check Controller","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/backend/src/controllers/checkController.js#L1"}],"svc_incident":[{"path":"services/backend/src/services/incidentService.js","line":1,"label":"Incident Service","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/backend/src/services/incidentService.js#L1"}],"ctrl_mgmt":[{"path":"services/backend/src/index.js","line":49,"label":"API Routers","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/backend/src/index.js#L49"}],"ml_gw":[{"path":"services/ml-service/app/main.py","line":10,"label":"FastAPI App","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/ml-service/app/main.py#L10"}],"eng_text_url":[{"path":"services/ml-service/app/services/url_engine.py","line":1,"label":"URL Engine","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/ml-service/app/services/url_engine.py#L1"}],"eng_anomaly":[{"path":"services/ml-service/app/services/login_engine.py","line":1,"label":"Login Anomaly","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/ml-service/app/services/login_engine.py#L1"}],"eng_media":[{"path":"services/ml-service/app/main.py","line":15,"label":"Media Analysis","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/ml-service/app/main.py#L15"}],"db_redis":[{"path":"services/backend/src/config/redis.js","line":1,"label":"Redis Config","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/backend/src/config/redis.js#L1"}],"eng_policy":[{"path":"services/backend/src/services/PolicyEngine.js","line":1,"label":"Policy Engine","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/backend/src/services/PolicyEngine.js#L1"}],"ctrl_actions":[{"path":"services/backend/src/controllers/actionExecutionController.js","line":1,"label":"Action Execution","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/backend/src/controllers/actionExecutionController.js#L1"}],"svc_execution":[{"path":"services/backend/src/services/executionService.js","line":1,"label":"Execution Service","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/backend/src/services/executionService.js#L1"}],"svc_audit":[{"path":"services/backend/src/services/auditService.js","line":1,"label":"Audit Service","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/backend/src/services/auditService.js#L1"}],"svc_notification":[{"path":"services/backend/src/services/notificationService.js","line":1,"label":"Notification Service","href":"https://github.com/teamvisioncraft875-netizen/CyberGuard/blob/3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae/services/backend/src/services/notificationService.js#L1"}]}}</script>
     <script id="archify-i18n-data" type="application/json">{"locale":"en","messages":{"viewer.kind.frontend":"Frontend","viewer.kind.backend":"Backend","viewer.kind.database":"Database","viewer.kind.cloud":"Cloud","viewer.kind.security":"Security","viewer.kind.messagebus":"Message bus","viewer.kind.external":"External","viewer.kind.neutral":"Neutral","viewer.kind.node":"Node","viewer.kind.start":"Start","viewer.kind.active":"Active","viewer.kind.waiting":"Waiting","viewer.kind.decision":"Decision","viewer.kind.success":"Success","viewer.kind.failure":"Failure","viewer.toolbar.actions":"Diagram actions","viewer.theme.toggle.title":"Toggle theme (T)","viewer.theme.toggle":"Toggle color theme","viewer.theme.dark":"Dark","viewer.theme.light":"Light","viewer.preset.choose.title":"Choose visual style (S cycles)","viewer.preset.choose":"Choose visual style","viewer.preset.style":"Style","viewer.preset.menu":"Visual style","viewer.preset.identity":"Visual identity","viewer.preset.cycles":"to cycle","viewer.preset.classic":"Classic","viewer.preset.classic.short":"Classic","viewer.preset.classic.hint":"Stable technical default","viewer.preset.flow":"Signal Flow","viewer.preset.flow.short":"Flow","viewer.preset.flow.hint":"Motion-forward presentation","viewer.preset.blueprint":"Blueprint","viewer.preset.blueprint.hint":"Engineering review","viewer.preset.editorial":"Editorial","viewer.preset.editorial.hint":"Publication and launch notes","viewer.preset.badge.signalFlow":"SIGNAL FLOW","viewer.preset.badge.blueprint":"BLUEPRINT / REV 01","viewer.preset.badge.editorial":"EDITORIAL / FIELD NOTE","viewer.preset.badge.editorialPlate":"ARCHIFY / PLATE 04","viewer.preset.current":"Visual style: {style}. Choose visual style","viewer.motion.live":"Live","viewer.motion.still":"Still","viewer.motion.pause":"Pause motion","viewer.motion.resume":"Resume motion","viewer.motion.reduced":"Motion paused by reduced-motion preference","viewer.motion.hidden":"Motion paused while this page is hidden","viewer.motion.yielding":"Pause motion; currently yielding to {owner}","viewer.motion.yielding.title":"Live preview enabled · yielding to {owner}","viewer.owner.route":"Route Probe","viewer.owner.lens":"Semantic Lens","viewer.owner.relationship":"Relationship Preview","viewer.owner.intent":"Intent Trace","viewer.owner.focus":"semantic focus","viewer.owner.legend":"legend preview","viewer.owner.reader":"reader interaction","viewer.present.enter":"Enter presentation stage","viewer.present.enter.title":"Presentation stage (F)","viewer.present.exit":"Exit presentation stage","viewer.present.exit.title":"Exit presentation stage (F or Escape)","viewer.present.present":"Present","viewer.present.exit.label":"Exit","viewer.export.button":"Export","viewer.export.button.title":"Export diagram (E)","viewer.export.diagram":"Export diagram","viewer.export.menu":"Export","viewer.export.subtitle":"Portable, clean outputs","viewer.export.share":"Share","viewer.export.shareCard":"Share Card","viewer.export.routeShareCard":"Route Share Card","viewer.export.reachShareCard":"Reach Share Card","viewer.export.copyDiagram":"Copy diagram","viewer.export.clipboardPng":"PNG to clipboard","viewer.export.raster":"Raster images","viewer.export.image":"Image","viewer.export.lossless":"Lossless image","viewer.export.compact":"Compact image","viewer.export.modern":"Modern image","viewer.export.vectorMotion":"Vector and motion","viewer.export.vectorMotion.heading":"Vector \u0026 motion","viewer.export.editable":"Editable vector","viewer.export.svg.auto":"SVG · Auto","viewer.export.svg.auto.hint":"Matches host theme","viewer.export.svg.light":"SVG · Light","viewer.export.svg.light.hint":"Always light","viewer.export.svg.dark":"SVG · Dark","viewer.export.svg.dark.hint":"Always dark","viewer.export.motion6s":"6s motion","viewer.export.unsupported":"Not supported by this browser","viewer.export.clipboardUnsupported":"Clipboard image write not supported by this browser","viewer.export.clipboardUnsupported.short":"Clipboard image write not supported in this browser.","viewer.export.motionUnavailable":"Motion capture unavailable in this browser","viewer.export.webmUnavailable":"WebM unavailable in this browser","viewer.export.failed":"Export failed: {message}","viewer.export.unknownVariant":"Unknown Share Card variant: {variant}","viewer.export.routeRequired":"Trace a route before exporting a Route Share Card","viewer.export.reachRequired":"Trace authored reach before exporting a Reach Share Card","viewer.export.unknown":"unknown","viewer.export.routeFailed":"Route Share Card export failed: {message}","viewer.export.reachFailed":"Reach Share Card export failed: {message}","viewer.export.copyFailed":"Copy failed: {message}","viewer.export.copiedPng":"Copied PNG to clipboard","viewer.export.downloadedRoute":"Downloaded Route Share Card","viewer.export.downloadedReach":"Downloaded Reach Share Card","viewer.export.downloadedWebm":"Downloaded WebM","viewer.export.recording":"Recording 6 seconds of motion…","viewer.export.card.routeSummary.one":"Path: {source} → {target} · {count} step","viewer.export.card.routeSummary.other":"Path: {source} → {target} · {count} steps","viewer.export.card.reachSummary":"Authored {direction} from {origin} · {nodes} · {links} · max {hops}","viewer.export.card.node.one":"{count} node","viewer.export.card.node.other":"{count} nodes","viewer.export.card.link.one":"{count} link","viewer.export.card.link.other":"{count} links","viewer.export.card.hop.one":"{count} hop","viewer.export.card.hop.other":"{count} hops","viewer.export.card.routeBadge":"ARCHIFY · ROUTE · {hops}","viewer.export.card.reachBadge":"ARCHIFY · {direction} REACH","viewer.export.direction.upstream":"Upstream","viewer.export.direction.downstream":"Downstream","viewer.export.error.canvasUnavailable":"Canvas unavailable for {label}","viewer.export.error.contextUnavailable":"2D canvas context unavailable for {label}","viewer.export.error.toBlobUnavailable":"canvas.toBlob unavailable for {label}","viewer.export.error.toBlobNull":"canvas.toBlob returned no data for {label}","viewer.export.error.variantsCombined":"Share Card variants cannot be combined","viewer.export.error.viewerState":"Share Card export could not remove temporary viewer state","viewer.export.error.routeState":"Route Card export could not preserve the resolved route safely","viewer.export.error.reachState":"Reach Card export could not preserve authored reach safely","viewer.export.error.webmRequirements":"WebM motion export requires a trace animation and browser MediaRecorder support","viewer.export.error.mediaRecorder":"MediaRecorder failed","viewer.export.error.emptyWebm":"MediaRecorder produced an empty WebM","viewer.export.error.webmBackground":"SVG background could not be loaded for WebM export","viewer.guide.title":"Explore this system","viewer.focus.selectedNodes":"{count} selected nodes","viewer.guide.eyebrow":"Diagram guide","viewer.guide.close":"Close diagram guide","viewer.guide.inspecting":"Inspecting compiled semantics","viewer.guide.actions":"Diagram exploration actions","viewer.guide.find":"Find any node","viewer.guide.find.hint":"Search labels, responsibilities, kinds, and stable IDs.","viewer.guide.route":"Trace a route","viewer.guide.route.aria":"Trace a directed route","viewer.guide.route.hint":"Ask how two semantic nodes connect in authored direction.","viewer.guide.map":"See the whole system","viewer.guide.map.hint":"Open Semantic Radar with a live viewport and stable nodes.","viewer.guide.lens":"Compare semantic kinds","viewer.guide.lens.hint":"Count roles, reveal their traffic, and compare direct authored links.","viewer.guide.present":"Enter Presentation Stage","viewer.guide.present.hint":"Give the live diagram the viewport without changing export.","viewer.guide.shortcuts":"Additional keyboard shortcuts","viewer.guide.shortcut.export":"Export","viewer.guide.shortcut.theme":"Theme","viewer.guide.shortcut.style":"Style","viewer.guide.shortcut.reset":"Reset","viewer.guide.shortcut.zoomIn":"Zoom in","viewer.guide.shortcut.zoomOut":"Zoom out","viewer.guide.shortcut.close":"Close","viewer.guide.facts":"{nodes} · {relationships}","viewer.guide.fact.node.one":"{count} semantic node","viewer.guide.fact.node.other":"{count} semantic nodes","viewer.guide.fact.relationship.one":"{count} relationship","viewer.guide.fact.relationship.other":"{count} relationships","viewer.guide.open":"Open diagram guide","viewer.finder.title":"Find a node","viewer.finder.close":"Close node finder","viewer.finder.placeholder":"Search labels or IDs","viewer.finder.search":"Search diagram nodes","viewer.finder.results":"Diagram nodes","viewer.finder.empty":"No matching nodes","viewer.finder.result.focus":"Focus {label}","viewer.finder.result.routeStart":"Choose {label} as route start","viewer.finder.result.routeTarget":"Choose {label} as route destination, {links}","viewer.finder.status.empty":"No matching nodes","viewer.finder.status.count.one":"{count} matching node","viewer.finder.status.count.other":"{count} matching nodes","viewer.finder.noun.nodes":"nodes","viewer.finder.link.one":"{count} link","viewer.finder.link.other":"{count} links","viewer.finder.result.focus.one":"Focus {label}, {count} related connection","viewer.finder.result.focus.other":"Focus {label}, {count} related connections","viewer.finder.status.filtered":"{visible} of {available} {noun}","viewer.finder.status.all":"{available} {noun}","viewer.passport.eyebrow":"Semantic passport","viewer.passport.metadata":"Node metadata","viewer.passport.evidence":"Verified source evidence","viewer.passport.verified":"Verified source","viewer.passport.verificationScope":"Verified against local Git at the pinned revision. Remote access has not been checked.","viewer.passport.reach":"Authored reach","viewer.passport.reach.trace":"Trace authored reachability","viewer.passport.upstream":"Upstream","viewer.passport.downstream":"Downstream","viewer.passport.upstream.trace":"Trace upstream authored reachability","viewer.passport.downstream.trace":"Trace downstream authored reachability","viewer.passport.close":"Close semantic passport","viewer.passport.move":"Move semantic passport. Drag, use arrow keys, or press Home to reset.","viewer.passport.copy":"Copy link","viewer.passport.copy.focus":"Copy link to focused node","viewer.passport.relations":"Relations","viewer.passport.relations.show":"Show connected relationships","viewer.passport.relations.hide":"Hide connected relationships","viewer.passport.relations.list":"Connected relationships","viewer.passport.copyRelation":"Copy relation","viewer.passport.copyNode":"Copy node","viewer.passport.copyPinned":"Copy link to pinned relationship","viewer.passport.copySource":"Copy link to source node","viewer.passport.copy.focused.success":"Focused node link copied","viewer.passport.copy.pinned.success":"Pinned relationship link copied","viewer.passport.copy.focused.failed":"Could not copy focused node link","viewer.passport.copy.pinned.failed":"Could not copy pinned relationship link","viewer.passport.relationship.none":"No connected relationships","viewer.passport.relationship.count.one":"{count} relation","viewer.passport.relationship.count.other":"{count} relations","viewer.passport.relationship.show.one":"Show {count} connected relationship","viewer.passport.relationship.show.other":"Show {count} connected relationships","viewer.passport.relationship.summary":"{out} outgoing · {in} incoming{loops}","viewer.passport.relationship.loops":" · {count} loop","viewer.passport.relationship.explorer":"Direct relationship explorer","viewer.passport.relationship.help":"Use arrow keys to explore relationships. Press Enter or Space to pin details; Escape clears.","viewer.passport.relationship.loopsBack":"loops back","viewer.passport.relationship.connectsTo":"connects to","viewer.passport.relationship.connectsFrom":"connects from","viewer.passport.relationship.pinned":"Pinned relationship · {from} → {to} · {label}","viewer.passport.relationship.inspect":"Inspect relationship {index} of {total}: {from} to {to}, {label}. Press Enter for details.","viewer.passport.relationship.group.out":"Outgoing","viewer.passport.relationship.group.in":"Incoming","viewer.passport.relationship.group.loop":"Self loops","viewer.passport.relationship.row":"{group}: {relationship}, {neighbor}","viewer.passport.relationship.direction.out":"OUT →","viewer.passport.relationship.direction.in":"← IN","viewer.passport.relationship.direction.loop":"LOOP","viewer.passport.sourceCount.one":"{count} verified source reference","viewer.passport.sourceCount.other":"{count} verified source references","viewer.passport.sourceMarker":"SRC","viewer.passport.beacon.one":"{count} verified source; focus this node to inspect","viewer.passport.beacon.other":"{count} verified sources; focus this node to inspect","viewer.passport.repository.open":"Open verified repository revision {revision}","viewer.passport.source.open":"Open verified source {path} at revision {revision}","viewer.passport.source.openLink":"Open ↗","viewer.passport.reach.upstream.one":"Trace {count} upstream authored node","viewer.passport.reach.upstream.other":"Trace {count} upstream authored nodes","viewer.passport.reach.downstream.one":"Trace {count} downstream authored node","viewer.passport.reach.downstream.other":"Trace {count} downstream authored nodes","viewer.passport.reach.noUpstream":"No upstream authored nodes","viewer.passport.reach.noDownstream":"No downstream authored nodes","viewer.passport.reach.status":"{direction} · {nodes} nodes · {links} links · max {hops} hops","viewer.route.eyebrow":"Path","viewer.route.start":"Click where the path starts","viewer.route.start.find":"Find start","viewer.route.start.find.aria":"Find a route start","viewer.route.copy":"Copy link","viewer.route.copy.aria":"Copy link to traced route","viewer.route.clear":"Clear","viewer.route.clear.aria":"Clear route probe","viewer.route.traced":"Path","viewer.route.pickTwo":"Click two nodes on the diagram","viewer.route.pickOne":"Click a node on the diagram","viewer.route.controls":"Route journey controls","viewer.route.previous":"Previous route position","viewer.route.play":"Play route journey","viewer.route.pause":"Pause route journey","viewer.route.replay":"Replay route journey","viewer.route.next":"Next route position","viewer.route.journey":"Journey","viewer.route.pause.label":"Pause","viewer.route.replay.label":"Replay","viewer.route.overview":"Overview","viewer.route.overview.aria":"Show complete route overview","viewer.route.instructions":"Click a start, then an end. Paths follow the arrows.","viewer.route.destination":"Where does the path from {label} end?","viewer.route.destination.find":"Find target","viewer.route.destination.find.aria":"Find a reachable route destination","viewer.route.differentDestination":"Choose a different destination","viewer.route.distinct":"Pick two different nodes.","viewer.route.unreachable":"Cannot reach {label} from here","viewer.route.unreachable.detail":"{target} cannot be reached from {source} along the arrows. Pick a highlighted node.","viewer.route.start.instructions":"Next, pick the end. Only nodes you can reach will light up.","viewer.route.copy.success":"Traced route link copied","viewer.route.copy.failed":"Could not copy traced route link","viewer.route.position":"Route position {index} of {total}: {label}","viewer.route.step":"Step {index} of {total} · {phase} · {label}","viewer.route.motionRequired":"Automatic journey requires Live motion","viewer.route.trigger.clear":"Clear traced route","viewer.route.overview.status":"{nodes} · {hops} · shortest path","viewer.route.overview.node.one":"{count} node","viewer.route.overview.node.other":"{count} nodes","viewer.route.overview.hop.one":"{count} step","viewer.route.overview.hop.other":"{count} steps","viewer.route.phase.playing":"Playing","viewer.route.phase.complete":"Complete","viewer.route.phase.inspecting":"Inspecting","viewer.route.destination.count.one":"{count} reachable node is highlighted. Click it.","viewer.route.destination.count.other":"{count} reachable nodes are highlighted. Click one.","viewer.route.noOutgoing":"No arrows lead out of this node. Clear it and pick another start.","viewer.route.result.title":"{source} to {target}","viewer.route.finder.source.title":"Choose route start","viewer.route.finder.source.placeholder":"Search route sources","viewer.route.finder.source.empty":"No matching route sources","viewer.route.finder.source.results":"Nodes that can start a route","viewer.route.finder.source.noun":"route sources","viewer.route.finder.source.badge":"start","viewer.route.finder.target.title":"Destination from {label}","viewer.route.finder.target.placeholder":"Search reachable destinations","viewer.route.finder.target.empty":"No matching reachable destinations","viewer.route.finder.target.results":"Reachable route destinations","viewer.route.finder.target.noun":"reachable destinations","viewer.route.hop.one":"{count} hop","viewer.route.hop.other":"{count} hops","viewer.lens.eyebrow":"Semantic lens","viewer.lens.title":"Compare system roles","viewer.lens.close":"Close semantic lens","viewer.lens.instruction":"Choose up to two semantic kinds. One reveals its real traffic; two compare only direct authored relationships.","viewer.lens.kinds":"Semantic kinds","viewer.lens.choose":"Choose a kind to inspect its nodes and touching relationships.","viewer.lens.copy":"Copy link to semantic lens","viewer.lens.clear":"Clear semantic lens","viewer.lens.open":"Open semantic lens","viewer.lens.openActive":"Open active semantic lens","viewer.lens.legend":"Semantic legend","viewer.lens.legend.inspect.one":"Inspect {label}, {count} node","viewer.lens.legend.inspect.other":"Inspect {label}, {count} nodes","viewer.lens.kind.count.one":"{label}, {count} node","viewer.lens.kind.count.other":"{label}, {count} nodes","viewer.lens.compare.one":"{first} → {second}: {forward} · {second} → {first}: {reverse} · {count} direct relationship","viewer.lens.compare.other":"{first} → {second}: {forward} · {second} → {first}: {reverse} · {count} direct relationships","viewer.lens.single":"{nodes} · {relationships} · connected peers remain visible","viewer.lens.node.one":"{count} {label} node","viewer.lens.node.other":"{count} {label} nodes","viewer.lens.relationship.one":"{count} touching relationship","viewer.lens.relationship.other":"{count} touching relationships","viewer.radar.title":"Semantic radar","viewer.radar.building":"Building overview","viewer.radar.openFull":"Open full semantic radar","viewer.radar.open":"Open radar","viewer.radar.close":"Close semantic radar","viewer.radar.surface":"Diagram overview. Click a node to focus it, or use arrow keys to pan.","viewer.radar.click":"Click node","viewer.radar.drag":"Drag to pan","viewer.radar.space":"Semantic radar needs more MAP space.","viewer.radar.nodes":"Semantic diagram radar nodes","viewer.radar.focus":"Focus {label} from Semantic Radar","viewer.radar.status":"{count} nodes · {viewport}","viewer.radar.fullMap":"{count} nodes · full map","viewer.radar.compacted":"Radar compacted to avoid covering the Semantic Passport or MAP controls.","viewer.radar.cancelWaiting":"Cancel semantic radar waiting for more MAP space","viewer.radar.needsSpace":"Semantic radar needs more visible MAP space","viewer.radar.viewport.full":"full map","viewer.radar.viewport.width":"{percent}% width","viewer.radar.viewport.scale":"{percent}% viewport","viewer.nav.controls":"Diagram view controls","viewer.nav.route":"Trace a directed route","viewer.nav.route.title":"Trace route (R)","viewer.nav.route.short":"PATH","viewer.nav.radar":"Open semantic radar","viewer.nav.radar.title":"Semantic radar (M)","viewer.nav.radar.short":"MAP","viewer.nav.lens":"Open semantic lens","viewer.nav.lens.title":"Semantic lens (L)","viewer.nav.lens.short":"LENS","viewer.nav.find":"Find a node","viewer.nav.find.title":"Find a node (/)","viewer.outline.title":"Node index","viewer.rail.show":"Notes \u0026 index","viewer.rail.controls":"Side panel","viewer.rail.collapse":"Collapse side panel","viewer.rail.bottom":"Move panel below the diagram","viewer.rail.right":"Move panel beside the diagram","viewer.nav.guide":"Open diagram guide","viewer.nav.guide.title":"Diagram guide (?)","viewer.nav.zoomOut":"Zoom out","viewer.nav.zoomOut.title":"Zoom out (-)","viewer.nav.reset":"Reset diagram view","viewer.nav.reset.title":"Reset view (0)","viewer.nav.read":"READ","viewer.nav.zoomIn":"Zoom in","viewer.nav.zoomIn.title":"Zoom in (+)","viewer.nav.camera":"{hint}. Reset diagram view","viewer.nav.camera.title":"{semantic}{hint} · reset view (0)","viewer.nav.camera.semantic":"Semantic camera active · ","viewer.nav.level.map":"MAP","viewer.nav.level.read":"READ","viewer.nav.level.full":"FULL","viewer.nav.level.auto":"AUTO","viewer.nav.detail.map":"Zoom in to reveal relationship labels and node context","viewer.nav.detail.read":"Zoom in again to reveal tags and annotations","viewer.nav.detail.full":"Full diagram detail","viewer.intent.summary":"{label}. {out} outgoing, {in} incoming{loops}. {total} connections. Press Enter for details.","viewer.intent.loops":", {count} self loop","viewer.common.copied":"Copied","viewer.common.copyFailed":"Copy failed","viewer.common.copyLink":"Copy link","viewer.common.clear":"Clear","viewer.common.close":"Close"}}</script>
     <!-- Main Diagram -->
     <div class="diagram-container" data-detail-level="read"
          data-preset-badge-editorial-plate="ARCHIFY / PLATE 04">
-      <svg viewBox="0 0 1576 774" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-animation="trace" data-preset="classic" data-quality-profile="showcase" data-reader-fit="intrinsic-height" data-reader-min-text="7.5" data-reader-primary-text="14">
+      <svg viewBox="0 0 1576 1012" role="img" lang="en" aria-labelledby="archify-diagram-title archify-diagram-description" data-animation="trace" data-preset="classic" data-quality-profile="showcase" data-reader-fit="intrinsic-height" data-reader-min-text="7.5" data-reader-primary-text="14">
         <title id="archify-diagram-title">CyberGuard System Architecture</title>
-        <desc id="archify-diagram-description">Component boundaries, detection pipelines, PostgreSQL persistence, and real-time broadcasts</desc>
+        <desc id="archify-diagram-description">Component boundaries, detection pipelines, automated response layer, and persistence</desc>
         <!-- Definitions -->
         <defs>
           <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
@@ -5020,11 +5020,13 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
         <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="2" data-composition-frame-label="Business Logic &amp; Services" x="554" y="64" width="192" height="490" rx="12" class="c-region" stroke-width="1"/>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="security-group" data-composition-frame-id="3" data-composition-frame-label="ML Inference &amp; Detection" x="864" y="64" width="432" height="360" rx="8" class="c-security-group" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="security-group" data-composition-frame-id="3" data-composition-frame-label="ML Inference &amp; Detection" x="864" y="64" width="432" height="490" rx="8" class="c-security-group" stroke-width="1"/>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="4" data-composition-frame-label="External APIs &amp; Services" x="1344" y="64" width="192" height="490" rx="12" class="c-region" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="4" data-composition-frame-label="External APIs &amp; Services" x="1344" y="64" width="192" height="880" rx="12" class="c-region" stroke-width="1"/>
 
-        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="5" data-composition-frame-label="Data &amp; Persistence Layer" x="294" y="604" width="882" height="102" rx="12" class="c-region" stroke-width="1"/>
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="region" data-composition-frame-id="5" data-composition-frame-label="Data &amp; Persistence Layer" x="294" y="604" width="1052" height="102" rx="12" class="c-region" stroke-width="1"/>
+
+        <rect data-graph-role="structural-frame" data-composition-frame-kind="security-group" data-composition-frame-id="6" data-composition-frame-label="Response &amp; Remediation Layer" x="294" y="734" width="932" height="190" rx="8" class="c-security-group" stroke-width="1"/>
 
         <!-- Connection paths (before components for correct z-order) -->
         <g data-graph-role="automatic-crossover" style="--step:0">
@@ -5068,16 +5070,16 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <path data-edge-from="client_ml" data-edge-to="ml_gw" data-edge-label="POST /internal/analyze/*" data-edge-key="9" data-edge-id="conn-mlclient-mlgw" data-composition-points="730,117;805,117;805,247;880,247" data-composition-crossover="halo" data-composition-independent="true" d="M 730 117 L 797 117 Q 805 117 805 125 L 805 239 Q 805 247 813 247 L 880 247" class="a-emphasis" data-animate="edge" style="--step:9" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:10">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1040 236 L 1072 236 Q 1080 236 1080 228 L 1080 125 Q 1080 117 1088 117 L 1120 117" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="ml_gw" data-edge-to="eng_text_url" data-edge-label="dispatch text/url" data-edge-key="10" data-edge-id="conn-mlgw-texturl" data-composition-points="1040,236;1080,236;1080,117;1120,117" data-composition-crossover="halo" data-composition-independent="true" d="M 1040 236 L 1072 236 Q 1080 236 1080 228 L 1080 125 Q 1080 117 1088 117 L 1120 117" class="a-default" data-animate="edge" style="--step:10" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 946 220 L 946 125 Q 946 117 954 117 L 1120 117" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="ml_gw" data-edge-to="eng_text_url" data-edge-label="dispatch text/url" data-edge-key="10" data-edge-id="conn-mlgw-texturl" data-composition-points="946,220;946,117;1120,117" data-composition-crossover="halo" data-composition-independent="true" d="M 946 220 L 946 125 Q 946 117 954 117 L 1120 117" class="a-default" data-animate="edge" style="--step:10" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:11">
-          <path data-graph-role="automatic-crossover-underlay" d="M 960 274 L 960 290 Q 960 298 968 298 L 1178 298 Q 1186 298 1186 290 L 1186 274" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="ml_gw" data-edge-to="eng_anomaly" data-edge-label="dispatch telemetry" data-edge-key="11" data-edge-id="conn-mlgw-anomaly" data-composition-points="960,274;960,298;1186,298;1186,274" data-composition-crossover="halo" data-composition-independent="true" d="M 960 274 L 960 290 Q 960 298 968 298 L 1178 298 Q 1186 298 1186 290 L 1186 274" class="a-default" data-animate="edge" style="--step:11" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 960 220 L 960 204 Q 960 196 968 196 L 1088 196 Q 1096 196 1096 204 L 1096 239 Q 1096 247 1104 247 L 1120 247" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="ml_gw" data-edge-to="eng_anomaly" data-edge-label="dispatch telemetry" data-edge-key="11" data-edge-id="conn-mlgw-anomaly" data-composition-points="960,220;960,196;1096,196;1096,247;1120,247" data-composition-crossover="halo" data-composition-independent="true" d="M 960 220 L 960 204 Q 960 196 968 196 L 1088 196 Q 1096 196 1096 204 L 1096 239 Q 1096 247 1104 247 L 1120 247" class="a-default" data-animate="edge" style="--step:11" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:12">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1040 258 L 1056 258 Q 1064 258 1064 266 L 1064 362 Q 1064 370 1072 370 L 1120 370" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="ml_gw" data-edge-to="eng_media" data-edge-label="dispatch media" data-edge-key="12" data-edge-id="conn-mlgw-media" data-composition-points="1040,258;1064,258;1064,370;1120,370" data-composition-crossover="halo" data-composition-independent="true" d="M 1040 258 L 1056 258 Q 1064 258 1064 266 L 1064 362 Q 1064 370 1072 370 L 1120 370" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 1040 258 L 1072 258 Q 1080 258 1080 266 L 1080 362 Q 1080 370 1088 370 L 1120 370" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="ml_gw" data-edge-to="eng_media" data-edge-label="dispatch media" data-edge-key="12" data-edge-id="conn-mlgw-media" data-composition-points="1040,258;1080,258;1080,370;1120,370" data-composition-crossover="halo" data-composition-independent="true" d="M 1040 258 L 1072 258 Q 1080 258 1080 266 L 1080 362 Q 1080 370 1088 370 L 1120 370" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:13">
           <path data-graph-role="automatic-crossover-underlay" d="M 1280 117 L 1360 117" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
@@ -5092,16 +5094,16 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <path data-edge-from="svc_incident" data-edge-to="ext_mitre" data-edge-label="ATT&amp;CK taxonomy" data-edge-key="15" data-edge-id="conn-svc-mitre" data-composition-points="643,350;643,326;1336,326;1336,377;1360,377" data-composition-crossover="halo" data-composition-independent="true" d="M 643 350 L 643 334 Q 643 326 651 326 L 1328 326 Q 1336 326 1336 334 L 1336 369 Q 1336 377 1344 377 L 1360 377" class="a-dashed" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:16">
-          <path data-graph-role="automatic-crossover-underlay" d="M 730 377 L 1109 377 Q 1117 377 1117 385 L 1117 499 Q 1117 507 1125 507 L 1360 507" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="svc_incident" data-edge-to="ext_fcm" data-edge-label="push dispatch" data-edge-key="16" data-edge-id="conn-svc-fcm" data-composition-points="730,377;1117,377;1117,507;1360,507" data-composition-crossover="halo" data-composition-independent="true" d="M 730 377 L 1109 377 Q 1117 377 1117 385 L 1117 499 Q 1117 507 1125 507 L 1360 507" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 730 377 L 983.8000000000001 377 Q 991.8000000000001 377 991.8000000000001 385 L 991.8000000000001 529 Q 991.8000000000001 537 999.8000000000001 537 L 1328 537 Q 1336 537 1336 529 L 1336 515 Q 1336 507 1344 507 L 1360 507" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="svc_incident" data-edge-to="ext_fcm" data-edge-label="push dispatch" data-edge-key="16" data-edge-id="conn-svc-fcm" data-composition-points="730,377;991.8000000000001,377;991.8000000000001,537;1336,537;1336,507;1360,507" data-composition-crossover="halo" data-composition-independent="true" d="M 730 377 L 983.8000000000001 377 Q 991.8000000000001 377 991.8000000000001 385 L 991.8000000000001 529 Q 991.8000000000001 537 999.8000000000001 537 L 1328 537 Q 1336 537 1336 529 L 1336 515 Q 1336 507 1344 507 L 1360 507" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:17">
-          <path data-graph-role="automatic-crossover-underlay" d="M 650 404 L 650 469 Q 650 477 658 477 L 822.7 477 Q 830.7 477 830.7 485 L 830.7 638 Q 830.7 646 838.7 646 L 880 646" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="svc_incident" data-edge-to="db_postgres" data-edge-label="atomic 4-table Tx" data-edge-key="17" data-edge-id="conn-svc-db" data-composition-points="650,404;650,477;830.7,477;830.7,646;880,646" data-composition-crossover="halo" data-composition-independent="true" d="M 650 404 L 650 469 Q 650 477 658 477 L 822.7 477 Q 830.7 477 830.7 485 L 830.7 638 Q 830.7 646 838.7 646 L 880 646" class="a-security" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 636 404 L 636 469 Q 636 477 644 477 L 1026 477 Q 1034 477 1034 485 L 1034 630" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="svc_incident" data-edge-to="db_postgres" data-edge-label="atomic 4-table Tx" data-edge-key="17" data-edge-id="conn-svc-db" data-composition-points="636,404;636,477;1034,477;1034,630" data-composition-crossover="halo" data-composition-independent="true" d="M 636 404 L 636 469 Q 636 477 644 477 L 1026 477 Q 1034 477 1034 485 L 1034 630" class="a-security" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:18">
-          <path data-graph-role="automatic-crossover-underlay" d="M 730 507 L 797 507 Q 805 507 805 515 L 805 652 Q 805 660 813 660 L 880 660" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="ctrl_mgmt" data-edge-to="db_postgres" data-edge-label="scoped queries" data-edge-key="18" data-edge-id="conn-mgmt-db" data-composition-points="730,507;805,507;805,660;880,660" data-composition-crossover="halo" data-composition-independent="true" d="M 730 507 L 797 507 Q 805 507 805 515 L 805 652 Q 805 660 813 660 L 880 660" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 730 507 L 836.2 507 Q 844.2 507 844.2 515 L 844.2 652 Q 844.2 660 852.2 660 L 880 660" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="ctrl_mgmt" data-edge-to="db_postgres" data-edge-label="scoped queries" data-edge-key="18" data-edge-id="conn-mgmt-db" data-composition-points="730,507;844.2,507;844.2,660;880,660" data-composition-crossover="halo" data-composition-independent="true" d="M 730 507 L 836.2 507 Q 844.2 507 844.2 515 L 844.2 652 Q 844.2 660 852.2 660 L 880 660" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:19">
           <path data-graph-role="automatic-crossover-underlay" d="M 1200 274 L 1200 339 Q 1200 347 1192 347 L 1028 347 Q 1020 347 1020 355 L 1020 630" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
@@ -5124,12 +5126,64 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <path data-edge-from="ctrl_check" data-edge-to="store_media" data-edge-label="upload media" data-edge-key="23" data-edge-id="conn-check-store" data-composition-points="643,274;643,298;545,298;545,606;400,606;400,630" data-composition-crossover="halo" data-composition-independent="true" d="M 643 274 L 643 290 Q 643 298 635 298 L 553 298 Q 545 298 545 306 L 545 598 Q 545 606 537 606 L 408 606 Q 400 606 400 614 L 400 630" class="a-dashed" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:24">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1200 404 L 1200 573 Q 1200 581 1192 581 L 522 581 Q 514 581 514 589 L 514 650 Q 514 658 506 658 L 490 658" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="eng_media" data-edge-to="store_media" data-edge-label="fetch media bytes" data-edge-key="24" data-edge-id="conn-media-store" data-composition-points="1200,404;1200,581;514,581;514,658;490,658" data-composition-crossover="halo" data-composition-independent="true" d="M 1200 404 L 1200 573 Q 1200 581 1192 581 L 522 581 Q 514 581 514 589 L 514 650 Q 514 658 506 658 L 490 658" class="a-dashed" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 1120 384 L 910.1 384 Q 902.1 384 902.1 392 L 902.1 554 Q 902.1 562 894.1 562 L 522 562 Q 514 562 514 570 L 514 650 Q 514 658 506 658 L 490 658" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="eng_media" data-edge-to="store_media" data-edge-label="fetch media bytes" data-edge-key="24" data-edge-id="conn-media-store" data-composition-points="1120,384;902.1,384;902.1,562;514,562;514,658;490,658" data-composition-crossover="halo" data-composition-independent="true" d="M 1120 384 L 910.1 384 Q 902.1 384 902.1 392 L 902.1 554 Q 902.1 562 894.1 562 L 522 562 Q 514 562 514 570 L 514 650 Q 514 658 506 658 L 490 658" class="a-dashed" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         </g>
         <g data-graph-role="automatic-crossover" style="--step:25">
-          <path data-graph-role="automatic-crossover-underlay" d="M 1006 630 L 1006 614 Q 1006 606 998 606 L 792 606 Q 784 606 784 614 L 784 650 Q 784 658 776 658 L 760 658" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
-          <path data-edge-from="db_postgres" data-edge-to="db_rls" data-edge-label="tenant RLS policy" data-edge-key="25" data-edge-id="conn-db-rls" data-composition-points="1006,630;1006,606;784,606;784,658;760,658" data-composition-crossover="halo" data-composition-independent="true" d="M 1006 630 L 1006 614 Q 1006 606 998 606 L 792 606 Q 784 606 784 614 L 784 650 Q 784 658 776 658 L 760 658" class="a-security" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
+          <path data-graph-role="automatic-crossover-underlay" d="M 880 646 L 760 646" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="db_postgres" data-edge-to="db_rls" data-edge-label="tenant RLS policy" data-edge-key="25" data-edge-id="conn-db-rls" data-composition-points="880,646;760,646" data-composition-crossover="halo" data-composition-independent="true" d="M 880 646 L 760 646" class="a-security" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:26">
+          <path data-graph-role="automatic-crossover-underlay" d="M 960 274 L 960 448 Q 960 456 968 456 L 1192 456 Q 1200 456 1200 464 L 1200 480" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="ml_gw" data-edge-to="eng_secrets" data-edge-label="scan strings" data-edge-key="26" data-edge-id="conn-mlgw-secrets" data-composition-points="960,274;960,456;1200,456;1200,480" data-composition-crossover="halo" data-composition-independent="true" d="M 960 274 L 960 448 Q 960 456 968 456 L 1192 456 Q 1200 456 1200 464 L 1200 480" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:27">
+          <path data-graph-role="automatic-crossover-underlay" d="M 650 404 L 650 461 Q 650 469 642 469 L 520 469 Q 512 469 512 477 L 512 728 Q 512 736 504 736 L 398 736 Q 390 736 390 744 L 390 760" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="svc_incident" data-edge-to="eng_policy" data-edge-label="policy rules" data-edge-key="27" data-edge-id="conn-incident-policy" data-composition-points="650,404;650,469;512,469;512,736;390,736;390,760" data-composition-crossover="halo" data-composition-independent="true" d="M 650 404 L 650 461 Q 650 469 642 469 L 520 469 Q 512 469 512 477 L 512 728 Q 512 736 504 736 L 398 736 Q 390 736 390 744 L 390 760" class="a-security" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:28">
+          <path data-graph-role="automatic-crossover-underlay" d="M 470 787 L 570 787" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="eng_policy" data-edge-to="ctrl_actions" data-edge-label="1. propose" data-edge-key="28" data-edge-id="conn-policy-propose" data-composition-points="470,787;570,787" data-composition-crossover="halo" data-composition-independent="true" d="M 470 787 L 570 787" class="a-security" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:29">
+          <path data-graph-role="automatic-crossover-underlay" d="M 650 534 L 650 592 Q 650 600 642 600 L 554 600 Q 546 600 546 608 L 546 728 Q 546 736 554 736 L 642 736 Q 650 736 650 744 L 650 760" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="ctrl_mgmt" data-edge-to="ctrl_actions" data-edge-label="2. admin approve" data-edge-key="29" data-edge-id="conn-admin-approve" data-composition-points="650,534;650,600;546,600;546,736;650,736;650,760" data-composition-crossover="halo" data-composition-independent="true" d="M 650 534 L 650 592 Q 650 600 642 600 L 554 600 Q 546 600 546 608 L 546 728 Q 546 736 554 736 L 642 736 Q 650 736 650 744 L 650 760" class="a-emphasis" data-animate="edge" style="--step:12" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:30">
+          <path data-graph-role="automatic-crossover-underlay" d="M 730 787 L 830 787" fill="none" stroke="var(--mask)" stroke-width="5.8" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="ctrl_actions" data-edge-to="svc_execution" data-edge-label="3. execute" data-edge-key="30" data-edge-id="conn-actions-exec" data-composition-points="730,787;830,787" data-composition-crossover="halo" data-composition-independent="true" d="M 730 787 L 830 787" class="a-emphasis" data-animate="edge" style="--step:12" stroke-width="1.8" marker-end="url(#arrowhead-emphasis)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:31">
+          <path data-graph-role="automatic-crossover-underlay" d="M 917 760 L 917 744 Q 917 736 925 736 L 1242 736 Q 1250 736 1250 728 L 1250 686" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="svc_execution" data-edge-to="db_redis" data-edge-label="block / revoke" data-edge-key="31" data-edge-id="conn-exec-redis" data-composition-points="917,760;917,736;1250,736;1250,686" data-composition-crossover="halo" data-composition-independent="true" d="M 917 760 L 917 744 Q 917 736 925 736 L 1242 736 Q 1250 736 1250 728 L 1250 686" class="a-security" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:32">
+          <path data-graph-role="automatic-crossover-underlay" d="M 903 760 L 903 731 Q 903 723 911 723 L 1005 723 Q 1013 723 1013 715 L 1013 686" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="svc_execution" data-edge-to="db_postgres" data-edge-label="suspend device" data-edge-key="32" data-edge-id="conn-exec-pg" data-composition-points="903,760;903,723;1013,723;1013,686" data-composition-crossover="halo" data-composition-independent="true" d="M 903 760 L 903 731 Q 903 723 911 723 L 1005 723 Q 1013 723 1013 715 L 1013 686" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:33">
+          <path data-graph-role="automatic-crossover-underlay" d="M 910 814 L 910 830 Q 910 838 918 838 L 1018 838 Q 1026 838 1026 830 L 1026 795 Q 1026 787 1034 787 L 1050 787" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="svc_execution" data-edge-to="svc_audit" data-edge-label="record action" data-edge-key="33" data-edge-id="conn-exec-audit" data-composition-points="910,814;910,838;1026,838;1026,787;1050,787" data-composition-crossover="halo" data-composition-independent="true" d="M 910 814 L 910 830 Q 910 838 918 838 L 1018 838 Q 1026 838 1026 830 L 1026 795 Q 1026 787 1034 787 L 1050 787" class="a-security" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:34">
+          <path data-graph-role="automatic-crossover-underlay" d="M 1130 760 L 1130 731 Q 1130 723 1122 723 L 1035 723 Q 1027 723 1027 715 L 1027 686" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="svc_audit" data-edge-to="db_postgres" data-edge-label="audit log" data-edge-key="34" data-edge-id="conn-audit-db" data-composition-points="1130,760;1130,723;1027,723;1027,686" data-composition-crossover="halo" data-composition-independent="true" d="M 1130 760 L 1130 731 Q 1130 723 1122 723 L 1035 723 Q 1027 723 1027 715 L 1027 686" class="a-security" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-security)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:35">
+          <path data-graph-role="automatic-crossover-underlay" d="M 896 814 L 896 869 Q 896 877 904 877 L 1050 877" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="svc_execution" data-edge-to="svc_notification" data-edge-label="execution alert" data-edge-key="35" data-edge-id="conn-exec-notify" data-composition-points="896,814;896,877;1050,877" data-composition-crossover="halo" data-composition-independent="true" d="M 896 814 L 896 869 Q 896 877 904 877 L 1050 877" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:36">
+          <path data-graph-role="automatic-crossover-underlay" d="M 1210 877 L 1277 877 Q 1285 877 1285 869 L 1285 775 Q 1285 767 1293 767 L 1360 767" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="svc_notification" data-edge-to="ext_email" data-edge-label="admin email" data-edge-key="36" data-edge-id="conn-notify-email" data-composition-points="1210,877;1285,877;1285,767;1360,767" data-composition-crossover="halo" data-composition-independent="true" d="M 1210 877 L 1277 877 Q 1285 877 1285 869 L 1285 775 Q 1285 767 1293 767 L 1360 767" class="a-default" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:37">
+          <path data-graph-role="automatic-crossover-underlay" d="M 990 776 L 1006 776 Q 1014 776 1014 768 L 1014 722 Q 1014 714 1022 714 L 1328 714 Q 1336 714 1336 706 L 1336 645 Q 1336 637 1344 637 L 1360 637" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="svc_execution" data-edge-to="ext_firewall" data-edge-label="blocklist sync" data-edge-key="37" data-edge-id="conn-exec-firewall" data-composition-points="990,776;1014,776;1014,714;1336,714;1336,637;1360,637" data-composition-crossover="halo" data-composition-independent="true" d="M 990 776 L 1006 776 Q 1014 776 1014 768 L 1014 722 Q 1014 714 1022 714 L 1328 714 Q 1336 714 1336 706 L 1336 645 Q 1336 637 1344 637 L 1360 637" class="a-dashed" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
+        </g>
+        <g data-graph-role="automatic-crossover" style="--step:38">
+          <path data-graph-role="automatic-crossover-underlay" d="M 1210 787 L 1328 787 Q 1336 787 1336 795 L 1336 889 Q 1336 897 1344 897 L 1360 897" fill="none" stroke="var(--mask)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" pointer-events="none"/>
+          <path data-edge-from="svc_audit" data-edge-to="ext_siem" data-edge-label="syslog stream" data-edge-key="38" data-edge-id="conn-audit-siem" data-composition-points="1210,787;1336,787;1336,897;1360,897" data-composition-crossover="halo" data-composition-independent="true" d="M 1210 787 L 1328 787 Q 1336 787 1336 795 L 1336 889 Q 1336 897 1344 897 L 1360 897" class="a-dashed" data-animate="edge" style="--step:12" stroke-width="1.5" marker-end="url(#arrowhead-dashed)"/>
         </g>
 
         <!-- Components -->
@@ -5398,6 +5452,125 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <text data-detail="context" x="1020" y="672" class="t-muted" font-size="9" text-anchor="middle">Supabase PostgreSQL tables</text>
         </g>
 
+        <g id="node-db_redis" data-node-id="db_redis" data-node-label="Redis Cache &amp; Blacklist" tabindex="0" role="button" aria-label="Focus Redis Cache &amp; Blacklist, Token &amp; IP blacklist, Data &amp; Persistence Layer" aria-pressed="false" data-node-kind="database" data-node-sublabel="Token &amp; IP blacklist" data-node-context="Data &amp; Persistence Layer">
+          <title>Redis Cache &amp; Blacklist · Token &amp; IP blacklist · Data &amp; Persistence Layer</title>
+          <rect x="1170" y="630" width="160" height="56" rx="6" class="c-mask"/>
+          <rect x="1170" y="630" width="160" height="56" rx="6" class="c-database" data-animate="node" style="--step:12" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="database" class="semantic-sigil s-database" transform="translate(1176 636) scale(0.6875)">
+            <ellipse cx="8" cy="4" rx="5" ry="2"/>
+            <path d="M3 4v8c0 1.1 2.2 2 5 2s5-.9 5-2V4M3 8c0 1.1 2.2 2 5 2s5-.9 5-2"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1250" y="656" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Redis Cache &amp; Blacklist</text>
+        <text data-detail="context" x="1250" y="672" class="t-muted" font-size="9" text-anchor="middle">Token &amp; IP blacklist</text>
+        </g>
+
+        <g id="node-eng_secrets" data-node-id="eng_secrets" data-node-label="Secret Exposure" tabindex="0" role="button" aria-label="Focus Secret Exposure, Pattern regex + entropy, ML Inference &amp; Detection" aria-pressed="false" data-node-kind="security" data-node-sublabel="Pattern regex + entropy" data-node-context="ML Inference &amp; Detection">
+          <title>Secret Exposure · Pattern regex + entropy · ML Inference &amp; Detection</title>
+          <rect x="1120" y="480" width="160" height="54" rx="6" class="c-mask"/>
+          <rect x="1120" y="480" width="160" height="54" rx="6" class="c-security" data-animate="node" style="--step:12" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(1126 486) scale(0.6875)">
+            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
+            <path d="m5.8 8 1.5 1.5 3-3"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1200" y="505" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Secret Exposure</text>
+        <text data-detail="context" x="1200" y="521" class="t-muted" font-size="9" text-anchor="middle">Pattern regex + entropy</text>
+        </g>
+
+        <g id="node-ext_firewall" data-node-id="ext_firewall" data-node-label="Firewall Sync" tabindex="0" role="button" aria-label="Focus Firewall Sync, Blocklist (future), External APIs &amp; Services" aria-pressed="false" data-node-kind="external" data-node-sublabel="Blocklist (future)" data-node-context="External APIs &amp; Services">
+          <title>Firewall Sync · Blocklist (future) · External APIs &amp; Services</title>
+          <rect x="1360" y="610" width="160" height="54" rx="6" class="c-mask"/>
+          <rect x="1360" y="610" width="160" height="54" rx="6" class="c-external" data-animate="node" style="--step:12" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(1366 616) scale(0.6875)">
+            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
+            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1440" y="635" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Firewall Sync</text>
+        <text data-detail="context" x="1440" y="651" class="t-muted" font-size="9" text-anchor="middle">Blocklist (future)</text>
+        </g>
+
+        <g id="node-ext_email" data-node-id="ext_email" data-node-label="Email Provider" tabindex="0" role="button" aria-label="Focus Email Provider, SendGrid / SMTP, External APIs &amp; Services" aria-pressed="false" data-node-kind="external" data-node-sublabel="SendGrid / SMTP" data-node-context="External APIs &amp; Services">
+          <title>Email Provider · SendGrid / SMTP · External APIs &amp; Services</title>
+          <rect x="1360" y="740" width="160" height="54" rx="6" class="c-mask"/>
+          <rect x="1360" y="740" width="160" height="54" rx="6" class="c-external" data-animate="node" style="--step:12" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(1366 746) scale(0.6875)">
+            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
+            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1440" y="765" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Email Provider</text>
+        <text data-detail="context" x="1440" y="781" class="t-muted" font-size="9" text-anchor="middle">SendGrid / SMTP</text>
+        </g>
+
+        <g id="node-eng_policy" data-node-id="eng_policy" data-node-label="Policy Engine" tabindex="0" role="button" aria-label="Focus Policy Engine, Shadow / live rules, Response &amp; Remediation Layer" aria-pressed="false" data-node-kind="cloud" data-node-sublabel="Shadow / live rules" data-node-context="Response &amp; Remediation Layer">
+          <title>Policy Engine · Shadow / live rules · Response &amp; Remediation Layer</title>
+          <rect x="310" y="760" width="160" height="54" rx="6" class="c-mask"/>
+          <rect x="310" y="760" width="160" height="54" rx="6" class="c-cloud" data-animate="node" style="--step:12" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="cloud" class="semantic-sigil s-cloud" transform="translate(316 766) scale(0.6875)">
+            <path d="M4.3 12.5h7.3a2.4 2.4 0 0 0 .2-4.8 4 4 0 0 0-7.5-1.3A3.1 3.1 0 0 0 4.3 12.5Z"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="390" y="785" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Policy Engine</text>
+        <text data-detail="context" x="390" y="801" class="t-muted" font-size="9" text-anchor="middle">Shadow / live rules</text>
+        </g>
+
+        <g id="node-ctrl_actions" data-node-id="ctrl_actions" data-node-label="Response Actions" tabindex="0" role="button" aria-label="Focus Response Actions, Propose / Approve, Response &amp; Remediation Layer" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Propose / Approve" data-node-context="Response &amp; Remediation Layer">
+          <title>Response Actions · Propose / Approve · Response &amp; Remediation Layer</title>
+          <rect x="570" y="760" width="160" height="54" rx="6" class="c-mask"/>
+          <rect x="570" y="760" width="160" height="54" rx="6" class="c-backend" data-animate="node" style="--step:12" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(576 766) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="650" y="785" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Response Actions</text>
+        <text data-detail="context" x="650" y="801" class="t-muted" font-size="9" text-anchor="middle">Propose / Approve</text>
+        </g>
+
+        <g id="node-svc_execution" data-node-id="svc_execution" data-node-label="Execution Service" tabindex="0" role="button" aria-label="Focus Execution Service, Revoke, block, suspend, Response &amp; Remediation Layer" aria-pressed="false" data-node-kind="backend" data-node-sublabel="Revoke, block, suspend" data-node-context="Response &amp; Remediation Layer">
+          <title>Execution Service · Revoke, block, suspend · Response &amp; Remediation Layer</title>
+          <rect x="830" y="760" width="160" height="54" rx="6" class="c-mask"/>
+          <rect x="830" y="760" width="160" height="54" rx="6" class="c-backend" data-animate="node" style="--step:12" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="backend" class="semantic-sigil s-backend" transform="translate(836 766) scale(0.6875)">
+            <path d="M6 3 3 8l3 5M10 3l3 5-3 5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="910" y="785" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Execution Service</text>
+        <text data-detail="context" x="910" y="801" class="t-muted" font-size="9" text-anchor="middle">Revoke, block, suspend</text>
+        </g>
+
+        <g id="node-svc_audit" data-node-id="svc_audit" data-node-label="Audit Logging" tabindex="0" role="button" aria-label="Focus Audit Logging, Immutable audit trail, Response &amp; Remediation Layer" aria-pressed="false" data-node-kind="security" data-node-sublabel="Immutable audit trail" data-node-context="Response &amp; Remediation Layer">
+          <title>Audit Logging · Immutable audit trail · Response &amp; Remediation Layer</title>
+          <rect x="1050" y="760" width="160" height="54" rx="6" class="c-mask"/>
+          <rect x="1050" y="760" width="160" height="54" rx="6" class="c-security" data-animate="node" style="--step:12" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="security" class="semantic-sigil s-security" transform="translate(1056 766) scale(0.6875)">
+            <path d="M8 2.2 13 4v3.5c0 3.1-1.8 5.4-5 6.5-3.2-1.1-5-3.4-5-6.5V4Z"/>
+            <path d="m5.8 8 1.5 1.5 3-3"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1130" y="785" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Audit Logging</text>
+        <text data-detail="context" x="1130" y="801" class="t-muted" font-size="9" text-anchor="middle">Immutable audit trail</text>
+        </g>
+
+        <g id="node-svc_notification" data-node-id="svc_notification" data-node-label="Notification Service" tabindex="0" role="button" aria-label="Focus Notification Service, Email &amp; push alerts, Response &amp; Remediation Layer" aria-pressed="false" data-node-kind="messagebus" data-node-sublabel="Email &amp; push alerts" data-node-context="Response &amp; Remediation Layer">
+          <title>Notification Service · Email &amp; push alerts · Response &amp; Remediation Layer</title>
+          <rect x="1050" y="850" width="160" height="54" rx="6" class="c-mask"/>
+          <rect x="1050" y="850" width="160" height="54" rx="6" class="c-messagebus" data-animate="node" style="--step:12" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="messagebus" class="semantic-sigil s-messagebus" transform="translate(1056 856) scale(0.6875)">
+            <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/>
+            <circle cx="5" cy="4.5" r="1" class="sigil-fill"/>
+            <circle cx="10.5" cy="8" r="1" class="sigil-fill"/>
+            <circle cx="7" cy="11.5" r="1" class="sigil-fill"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1130" y="875" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">Notification Service</text>
+        <text data-detail="context" x="1130" y="891" class="t-muted" font-size="9" text-anchor="middle">Email &amp; push alerts</text>
+        </g>
+
+        <g id="node-ext_siem" data-node-id="ext_siem" data-node-label="SIEM Export" tabindex="0" role="button" aria-label="Focus SIEM Export, Syslog / webhook (future), External APIs &amp; Services" aria-pressed="false" data-node-kind="external" data-node-sublabel="Syslog / webhook (future)" data-node-context="External APIs &amp; Services">
+          <title>SIEM Export · Syslog / webhook (future) · External APIs &amp; Services</title>
+          <rect x="1360" y="870" width="160" height="54" rx="6" class="c-mask"/>
+          <rect x="1360" y="870" width="160" height="54" rx="6" class="c-external" data-animate="node" style="--step:12" stroke-width="1.5"/>
+          <g aria-hidden="true" data-semantic-sigil="external" class="semantic-sigil s-external" transform="translate(1366 876) scale(0.6875)">
+            <rect x="2.5" y="5" width="8.5" height="8" rx="1.5"/>
+            <path d="M8 2.5h5.5V8M13.5 2.5 7.5 8.5"/>
+          </g>
+          <text data-node-label="" data-detail-anchor="" x="1440" y="895" class="t-primary" font-size="11" font-weight="600" text-anchor="middle">SIEM Export</text>
+        <text data-detail="context" x="1440" y="911" class="t-muted" font-size="9" text-anchor="middle">Syslog / webhook (future)</text>
+        </g>
+
         <!-- Connection labels -->
         <g data-detail="context" data-edge-from="client_web" data-edge-to="api_gw" data-edge-label="HTTPS / REST" data-edge-key="0" data-edge-id="conn-web-gw">
           <rect x="226.2" y="156.5" width="67.6" height="14" rx="3" class="c-mask"/>
@@ -5440,16 +5613,16 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <text x="805" y="172" class="t-edge-emphasis" font-size="8" text-anchor="middle">POST /internal/analyze/*</text>
         </g>
         <g data-detail="context" data-edge-from="ml_gw" data-edge-to="eng_text_url" data-edge-label="dispatch text/url" data-edge-key="10" data-edge-id="conn-mlgw-texturl">
-          <rect x="1034.2" y="156.5" width="91.6" height="14" rx="3" class="c-mask"/>
-          <text x="1080" y="166.5" class="t-edge-default" font-size="8" text-anchor="middle">dispatch text/url</text>
+          <rect x="987.2" y="97" width="91.6" height="14" rx="3" class="c-mask"/>
+          <text x="1033" y="107" class="t-edge-default" font-size="8" text-anchor="middle">dispatch text/url</text>
         </g>
         <g data-detail="context" data-edge-from="ml_gw" data-edge-to="eng_anomaly" data-edge-label="dispatch telemetry" data-edge-key="11" data-edge-id="conn-mlgw-anomaly">
-          <rect x="1081.3" y="278" width="96.39999999999999" height="14" rx="3" class="c-mask"/>
-          <text x="1129.5" y="288" class="t-edge-default" font-size="8" text-anchor="middle">dispatch telemetry</text>
+          <rect x="979.8" y="176" width="96.39999999999999" height="14" rx="3" class="c-mask"/>
+          <text x="1028" y="186" class="t-edge-default" font-size="8" text-anchor="middle">dispatch telemetry</text>
         </g>
         <g data-detail="context" data-edge-from="ml_gw" data-edge-to="eng_media" data-edge-label="dispatch media" data-edge-key="12" data-edge-id="conn-mlgw-media">
-          <rect x="1070" y="307" width="77.2" height="14" rx="3" class="c-mask"/>
-          <text x="1108.6" y="317" class="t-edge-default" font-size="8" text-anchor="middle">dispatch media</text>
+          <rect x="1041.4" y="294" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="1080" y="304" class="t-edge-default" font-size="8" text-anchor="middle">dispatch media</text>
         </g>
         <g data-detail="context" data-edge-from="eng_text_url" data-edge-to="ext_threat_intel" data-edge-label="scan reputation" data-edge-key="13" data-edge-id="conn-texturl-threat">
           <rect x="1279" y="97" width="82" height="14" rx="3" class="c-mask"/>
@@ -5460,20 +5633,20 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <text x="1320" y="237" class="t-edge-security" font-size="8" text-anchor="middle">IP threat score</text>
         </g>
         <g data-detail="context" data-edge-from="svc_incident" data-edge-to="ext_mitre" data-edge-label="ATT&amp;CK taxonomy" data-edge-key="15" data-edge-id="conn-svc-mitre">
-          <rect x="948.5" y="306" width="82" height="14" rx="3" class="c-mask"/>
-          <text x="989.5" y="316" class="t-edge-dashed" font-size="8" text-anchor="middle">ATT&amp;CK taxonomy</text>
+          <rect x="775.25" y="306" width="82" height="14" rx="3" class="c-mask"/>
+          <text x="816.25" y="316" class="t-edge-dashed" font-size="8" text-anchor="middle">ATT&amp;CK taxonomy</text>
         </g>
         <g data-detail="context" data-edge-from="svc_incident" data-edge-to="ext_fcm" data-edge-label="push dispatch" data-edge-key="16" data-edge-id="conn-svc-fcm">
-          <rect x="1080.8" y="422" width="72.4" height="14" rx="3" class="c-mask"/>
-          <text x="1117" y="432" class="t-edge-default" font-size="8" text-anchor="middle">push dispatch</text>
+          <rect x="824.7" y="357" width="72.4" height="14" rx="3" class="c-mask"/>
+          <text x="860.9000000000001" y="367" class="t-edge-default" font-size="8" text-anchor="middle">push dispatch</text>
         </g>
         <g data-detail="context" data-edge-from="svc_incident" data-edge-to="db_postgres" data-edge-label="atomic 4-table Tx" data-edge-key="17" data-edge-id="conn-svc-db">
-          <rect x="694.5500000000001" y="457" width="91.6" height="14" rx="3" class="c-mask"/>
-          <text x="740.35" y="467" class="t-edge-security" font-size="8" text-anchor="middle">atomic 4-table Tx</text>
+          <rect x="789.2" y="487" width="91.6" height="14" rx="3" class="c-mask"/>
+          <text x="835" y="497" class="t-edge-security" font-size="8" text-anchor="middle">atomic 4-table Tx</text>
         </g>
         <g data-detail="context" data-edge-from="ctrl_mgmt" data-edge-to="db_postgres" data-edge-label="scoped queries" data-edge-key="18" data-edge-id="conn-mgmt-db">
-          <rect x="721.8" y="538.25" width="77.2" height="14" rx="3" class="c-mask"/>
-          <text x="760.4" y="548.25" class="t-edge-default" font-size="8" text-anchor="middle">scoped queries</text>
+          <rect x="748.5" y="517" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="787.1" y="527" class="t-edge-default" font-size="8" text-anchor="middle">scoped queries</text>
         </g>
         <g data-detail="context" data-edge-from="eng_anomaly" data-edge-to="db_postgres" data-edge-label="read login history" data-edge-key="19" data-edge-id="conn-anomaly-db">
           <rect x="1206" y="303.5" width="96.39999999999999" height="14" rx="3" class="c-mask"/>
@@ -5496,12 +5669,64 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <text x="594" y="288" class="t-edge-dashed" font-size="8" text-anchor="middle">upload media</text>
         </g>
         <g data-detail="context" data-edge-from="eng_media" data-edge-to="store_media" data-edge-label="fetch media bytes" data-edge-key="24" data-edge-id="conn-media-store">
-          <rect x="1206" y="485.5" width="91.6" height="14" rx="3" class="c-mask"/>
-          <text x="1251.8" y="495.5" class="t-edge-dashed" font-size="8" text-anchor="middle">fetch media bytes</text>
+          <rect x="856.3000000000001" y="453" width="91.6" height="14" rx="3" class="c-mask"/>
+          <text x="902.1" y="463" class="t-edge-dashed" font-size="8" text-anchor="middle">fetch media bytes</text>
         </g>
         <g data-detail="context" data-edge-from="db_postgres" data-edge-to="db_rls" data-edge-label="tenant RLS policy" data-edge-key="25" data-edge-id="conn-db-rls">
-          <rect x="849.2" y="586" width="91.6" height="14" rx="3" class="c-mask"/>
-          <text x="895" y="596" class="t-edge-security" font-size="8" text-anchor="middle">tenant RLS policy</text>
+          <rect x="774.2" y="664" width="91.6" height="14" rx="3" class="c-mask"/>
+          <text x="820" y="674" class="t-edge-security" font-size="8" text-anchor="middle">tenant RLS policy</text>
+        </g>
+        <g data-detail="context" data-edge-from="ml_gw" data-edge-to="eng_secrets" data-edge-label="scan strings" data-edge-key="26" data-edge-id="conn-mlgw-secrets">
+          <rect x="1046.2" y="436" width="67.6" height="14" rx="3" class="c-mask"/>
+          <text x="1080" y="446" class="t-edge-default" font-size="8" text-anchor="middle">scan strings</text>
+        </g>
+        <g data-detail="context" data-edge-from="svc_incident" data-edge-to="eng_policy" data-edge-label="policy rules" data-edge-key="27" data-edge-id="conn-incident-policy">
+          <rect x="656" y="429.5" width="67.6" height="14" rx="3" class="c-mask"/>
+          <text x="689.8" y="439.5" class="t-edge-security" font-size="8" text-anchor="middle">policy rules</text>
+        </g>
+        <g data-detail="context" data-edge-from="eng_policy" data-edge-to="ctrl_actions" data-edge-label="1. propose" data-edge-key="28" data-edge-id="conn-policy-propose">
+          <rect x="491" y="767" width="58" height="14" rx="3" class="c-mask"/>
+          <text x="520" y="777" class="t-edge-security" font-size="8" text-anchor="middle">1. propose</text>
+        </g>
+        <g data-detail="context" data-edge-from="ctrl_mgmt" data-edge-to="ctrl_actions" data-edge-label="2. admin approve" data-edge-key="29" data-edge-id="conn-admin-approve">
+          <rect x="554.6" y="580" width="86.8" height="14" rx="3" class="c-mask"/>
+          <text x="598" y="590" class="t-edge-emphasis" font-size="8" text-anchor="middle">2. admin approve</text>
+        </g>
+        <g data-detail="context" data-edge-from="ctrl_actions" data-edge-to="svc_execution" data-edge-label="3. execute" data-edge-key="30" data-edge-id="conn-actions-exec">
+          <rect x="751" y="767" width="58" height="14" rx="3" class="c-mask"/>
+          <text x="780" y="777" class="t-edge-emphasis" font-size="8" text-anchor="middle">3. execute</text>
+        </g>
+        <g data-detail="context" data-edge-from="svc_execution" data-edge-to="db_redis" data-edge-label="block / revoke" data-edge-key="31" data-edge-id="conn-exec-redis">
+          <rect x="1166.8000000000002" y="691.5" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="1205.4" y="701.5" class="t-edge-security" font-size="8" text-anchor="middle">block / revoke</text>
+        </g>
+        <g data-detail="context" data-edge-from="svc_execution" data-edge-to="db_postgres" data-edge-label="suspend device" data-edge-key="32" data-edge-id="conn-exec-pg">
+          <rect x="919.4" y="703" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="958" y="713" class="t-edge-default" font-size="8" text-anchor="middle">suspend device</text>
+        </g>
+        <g data-detail="context" data-edge-from="svc_execution" data-edge-to="svc_audit" data-edge-label="record action" data-edge-key="33" data-edge-id="conn-exec-audit">
+          <rect x="931.8" y="818" width="72.4" height="14" rx="3" class="c-mask"/>
+          <text x="968" y="828" class="t-edge-security" font-size="8" text-anchor="middle">record action</text>
+        </g>
+        <g data-detail="context" data-edge-from="svc_audit" data-edge-to="db_postgres" data-edge-label="audit log" data-edge-key="34" data-edge-id="conn-audit-db">
+          <rect x="1070.8000000000002" y="743.75" width="53.199999999999996" height="14" rx="3" class="c-mask"/>
+          <text x="1097.4" y="753.75" class="t-edge-security" font-size="8" text-anchor="middle">audit log</text>
+        </g>
+        <g data-detail="context" data-edge-from="svc_execution" data-edge-to="svc_notification" data-edge-label="execution alert" data-edge-key="35" data-edge-id="conn-exec-notify">
+          <rect x="932" y="857" width="82" height="14" rx="3" class="c-mask"/>
+          <text x="973" y="867" class="t-edge-default" font-size="8" text-anchor="middle">execution alert</text>
+        </g>
+        <g data-detail="context" data-edge-from="svc_notification" data-edge-to="ext_email" data-edge-label="admin email" data-edge-key="36" data-edge-id="conn-notify-email">
+          <rect x="1253.6" y="802" width="62.8" height="14" rx="3" class="c-mask"/>
+          <text x="1285" y="812" class="t-edge-default" font-size="8" text-anchor="middle">admin email</text>
+        </g>
+        <g data-detail="context" data-edge-from="svc_execution" data-edge-to="ext_firewall" data-edge-label="blocklist sync" data-edge-key="37" data-edge-id="conn-exec-firewall">
+          <rect x="1055.9" y="694" width="77.2" height="14" rx="3" class="c-mask"/>
+          <text x="1094.5" y="704" class="t-edge-dashed" font-size="8" text-anchor="middle">blocklist sync</text>
+        </g>
+        <g data-detail="context" data-edge-from="svc_audit" data-edge-to="ext_siem" data-edge-label="syslog stream" data-edge-key="38" data-edge-id="conn-audit-siem">
+          <rect x="1299.8" y="822" width="72.4" height="14" rx="3" class="c-mask"/>
+          <text x="1336" y="832" class="t-edge-dashed" font-size="8" text-anchor="middle">syslog stream</text>
         </g>
 
         <!-- Boundary labels (foreground masks keep routes out of titles) -->
@@ -5535,36 +5760,41 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <text data-boundary-label="" x="302" y="622.1677429354838" class="t-cloud" font-size="10.16774293548387" font-weight="600">Data &amp; Persistence Layer</text>
         </g>
 
+        <g data-graph-role="structural-frame-label" data-composition-frame-id="6" data-composition-frame-kind="security-group" data-composition-frame-label="Response &amp; Remediation Layer">
+          <rect data-graph-role="structural-frame-label-mask" x="298" y="738" width="180.81808131612902" height="18" rx="3" class="c-mask"/>
+          <text data-boundary-label="" x="302" y="752.1677429354838" class="t-security" font-size="10.16774293548387" font-weight="600">Response &amp; Remediation Layer</text>
+        </g>
+
         <!-- Legend -->
         <g data-legend="" data-legend-bridge="">
-          <text x="40" y="738" class="t-primary" font-size="12" font-weight="650">Legend</text>
-          <g data-legend-semantic-kind="frontend" data-legend-kind="frontend" data-legend-label="Presentation Layer (Blue)" data-legend-x="40" data-legend-baseline="758" data-legend-width="167">
-            <rect x="40" y="749" width="16" height="10" rx="2.5" class="c-frontend" stroke-width="1"/>
-            <text x="62" y="758" class="t-muted" font-size="10" font-weight="500">Presentation Layer (Blue)</text>
+          <text x="40" y="976" class="t-primary" font-size="12" font-weight="650">Legend</text>
+          <g data-legend-semantic-kind="frontend" data-legend-kind="frontend" data-legend-label="Presentation Layer (Blue)" data-legend-x="40" data-legend-baseline="996" data-legend-width="167">
+            <rect x="40" y="987" width="16" height="10" rx="2.5" class="c-frontend" stroke-width="1"/>
+            <text x="62" y="996" class="t-muted" font-size="10" font-weight="500">Presentation Layer (Blue)</text>
           </g>
-          <g data-legend-semantic-kind="backend" data-legend-kind="backend" data-legend-label="API Gateway Layer (Green)" data-legend-x="229" data-legend-baseline="758" data-legend-width="167">
-            <rect x="229" y="749" width="16" height="10" rx="2.5" class="c-backend" stroke-width="1"/>
-            <text x="251" y="758" class="t-muted" font-size="10" font-weight="500">API Gateway Layer (Green)</text>
+          <g data-legend-semantic-kind="backend" data-legend-kind="backend" data-legend-label="API Gateway Layer (Green)" data-legend-x="229" data-legend-baseline="996" data-legend-width="167">
+            <rect x="229" y="987" width="16" height="10" rx="2.5" class="c-backend" stroke-width="1"/>
+            <text x="251" y="996" class="t-muted" font-size="10" font-weight="500">API Gateway Layer (Green)</text>
           </g>
-          <g data-legend-semantic-kind="database" data-legend-kind="database" data-legend-label="Data &amp; Storage Layer (Purple)" data-legend-x="418" data-legend-baseline="758" data-legend-width="187">
-            <rect x="418" y="749" width="16" height="10" rx="2.5" class="c-database" stroke-width="1"/>
-            <text x="440" y="758" class="t-muted" font-size="10" font-weight="500">Data &amp; Storage Layer (Purple)</text>
+          <g data-legend-semantic-kind="database" data-legend-kind="database" data-legend-label="Data &amp; Storage Layer (Purple)" data-legend-x="418" data-legend-baseline="996" data-legend-width="187">
+            <rect x="418" y="987" width="16" height="10" rx="2.5" class="c-database" stroke-width="1"/>
+            <text x="440" y="996" class="t-muted" font-size="10" font-weight="500">Data &amp; Storage Layer (Purple)</text>
           </g>
-          <g data-legend-semantic-kind="cloud" data-legend-kind="cloud" data-legend-label="Business Logic Layer (Yellow)" data-legend-x="627" data-legend-baseline="758" data-legend-width="187">
-            <rect x="627" y="749" width="16" height="10" rx="2.5" class="c-cloud" stroke-width="1"/>
-            <text x="649" y="758" class="t-muted" font-size="10" font-weight="500">Business Logic Layer (Yellow)</text>
+          <g data-legend-semantic-kind="cloud" data-legend-kind="cloud" data-legend-label="Business Logic Layer (Yellow)" data-legend-x="627" data-legend-baseline="996" data-legend-width="187">
+            <rect x="627" y="987" width="16" height="10" rx="2.5" class="c-cloud" stroke-width="1"/>
+            <text x="649" y="996" class="t-muted" font-size="10" font-weight="500">Business Logic Layer (Yellow)</text>
           </g>
-          <g data-legend-semantic-kind="security" data-legend-kind="security" data-legend-label="ML / Detection Layer (Red)" data-legend-x="836" data-legend-baseline="758" data-legend-width="172">
-            <rect x="836" y="749" width="16" height="10" rx="2.5" class="c-security" stroke-width="1"/>
-            <text x="858" y="758" class="t-muted" font-size="10" font-weight="500">ML / Detection Layer (Red)</text>
+          <g data-legend-semantic-kind="security" data-legend-kind="security" data-legend-label="ML / Detection Layer (Red)" data-legend-x="836" data-legend-baseline="996" data-legend-width="172">
+            <rect x="836" y="987" width="16" height="10" rx="2.5" class="c-security" stroke-width="1"/>
+            <text x="858" y="996" class="t-muted" font-size="10" font-weight="500">ML / Detection Layer (Red)</text>
           </g>
-          <g data-legend-semantic-kind="messagebus" data-legend-kind="messagebus" data-legend-label="Real-Time / Socket.io (Orange)" data-legend-x="1030" data-legend-baseline="758" data-legend-width="192">
-            <rect x="1030" y="749" width="16" height="10" rx="2.5" class="c-messagebus" stroke-width="1"/>
-            <text x="1052" y="758" class="t-muted" font-size="10" font-weight="500">Real-Time / Socket.io (Orange)</text>
+          <g data-legend-semantic-kind="messagebus" data-legend-kind="messagebus" data-legend-label="Real-Time / Socket.io (Orange)" data-legend-x="1030" data-legend-baseline="996" data-legend-width="192">
+            <rect x="1030" y="987" width="16" height="10" rx="2.5" class="c-messagebus" stroke-width="1"/>
+            <text x="1052" y="996" class="t-muted" font-size="10" font-weight="500">Real-Time / Socket.io (Orange)</text>
           </g>
-          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="External Integrations (Gray)" data-legend-x="1244" data-legend-baseline="758" data-legend-width="182">
-            <rect x="1244" y="749" width="16" height="10" rx="2.5" class="c-external" stroke-width="1"/>
-            <text x="1266" y="758" class="t-muted" font-size="10" font-weight="500">External Integrations (Gray)</text>
+          <g data-legend-semantic-kind="external" data-legend-kind="external" data-legend-label="External Integrations (Gray)" data-legend-x="1244" data-legend-baseline="996" data-legend-width="182">
+            <rect x="1244" y="987" width="16" height="10" rx="2.5" class="c-external" stroke-width="1"/>
+            <text x="1266" y="996" class="t-muted" font-size="10" font-weight="500">External Integrations (Gray)</text>
           </g>
         </g>
       </svg>
@@ -5788,6 +6018,18 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <li>Atomic transaction inserts across incidents, signals, actions, and MITRE mapping tables</li>
           <li>Row Level Security (RLS) ensures strict tenant and guardian scoping at the database layer</li>
           <li>Socket.io broadcasts instant notifications to user, org, and guardian rooms</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-dot amber"></div>
+          <h3>Response &amp; Remediation Layer [Phase 2]</h3>
+        </div>
+        <ul>
+          <li>Configurable Policy Engine maps threat score to response actions in shadow mode</li>
+          <li>Two-step approval lifecycle: Propose -&gt; Admin Approve -&gt; Live Execution</li>
+          <li>Execution Service revokes tokens, blocks IPs, suspends devices, and logs immutable audit trail</li>
         </ul>
       </div>
     </div>

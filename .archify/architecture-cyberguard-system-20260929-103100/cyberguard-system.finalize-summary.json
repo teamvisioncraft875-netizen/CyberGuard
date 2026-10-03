@@ -7,13 +7,13 @@
   "quality": "showcase",
   "specification": {
     "path": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\candidate.json",
-    "sha256": "c6996fb08867fb27b520c53e50745d6eab6efcbd896ceef23f3336679e549096",
-    "bytes": 13780
+    "sha256": "408b4c5318b21636c8fcf473c2afe91abcab4b5c2f70273ec5c357076e0243f4",
+    "bytes": 22284
   },
   "artifact": {
     "path": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.html",
-    "sha256": "d6445c21c76632fa86e8a66ca6c9cee1e41c3beec3910f67c3de5ae6de805c4f",
-    "bytes": 812511
+    "sha256": "1d03d3f81fd9b6b565c81782d3abcbb538903811d3817bb82e1907f08031fc30",
+    "bytes": 844285
   },
   "gates": {
     "validate": "pass",
@@ -37,18 +37,19 @@
     "installedVersion": "3.0.1",
     "availableVersion": "3.0.1",
     "releaseNotes": null,
-    "checkedAt": "2026-09-29T04:22:18.620Z",
+    "checkedAt": "2026-10-02T21:54:20.311Z",
     "source": "cache",
     "noticeRequired": false,
     "noticeText": null
   },
   "visualReview": "not-requested",
-  "durationMs": 5420,
+  "durationMs": 7402,
   "visualReviewRecommendation": {
     "action": "inspect-route-readability",
     "signals": {
-      "resolvedCrossovers": 18,
-      "routesOverSuggestedBends": 9
+      "resolvedCrossovers": 29,
+      "routesOverSuggestedBends": 13,
+      "routesOverSuggestedStretch": 1
     },
     "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
     "affectedRoutes": {
@@ -122,6 +123,28 @@
         },
         {
           "left": {
+            "id": "conn-gw-mgmt",
+            "from": "api_gw",
+            "to": "ctrl_mgmt",
+            "label": "resource routing",
+            "collectionIndex": 6,
+            "artifactIndex": 7
+          },
+          "right": {
+            "id": "conn-incident-policy",
+            "from": "svc_incident",
+            "to": "eng_policy",
+            "label": "policy rules",
+            "collectionIndex": 27,
+            "artifactIndex": 28
+          },
+          "point": [
+            546,
+            469
+          ]
+        },
+        {
+          "left": {
             "id": "conn-check-svc",
             "from": "ctrl_check",
             "to": "svc_incident",
@@ -145,29 +168,6 @@
         },
         {
           "left": {
-            "id": "conn-mlgw-anomaly",
-            "from": "ml_gw",
-            "to": "eng_anomaly",
-            "label": "dispatch telemetry",
-            "collectionIndex": 11,
-            "artifactIndex": 12
-          },
-          "right": {
-            "id": "conn-mlgw-media",
-            "from": "ml_gw",
-            "to": "eng_media",
-            "label": "dispatch media",
-            "collectionIndex": 12,
-            "artifactIndex": 13
-          },
-          "point": [
-            1064,
-            298
-          ],
-          "sharedNode": "ml_gw"
-        },
-        {
-          "left": {
             "id": "conn-mlgw-media",
             "from": "ml_gw",
             "to": "eng_media",
@@ -184,7 +184,7 @@
             "artifactIndex": 16
           },
           "point": [
-            1064,
+            1080,
             326
           ]
         },
@@ -206,7 +206,7 @@
             "artifactIndex": 20
           },
           "point": [
-            1064,
+            1080,
             347
           ]
         },
@@ -260,6 +260,18 @@
         },
         {
           "relationship": {
+            "id": "conn-mlgw-anomaly",
+            "from": "ml_gw",
+            "to": "eng_anomaly",
+            "label": "dispatch telemetry",
+            "collectionIndex": 11,
+            "artifactIndex": 12
+          },
+          "bends": 3,
+          "stretch": 1.257
+        },
+        {
+          "relationship": {
             "id": "conn-svc-mitre",
             "from": "svc_incident",
             "to": "ext_mitre",
@@ -284,15 +296,15 @@
         },
         {
           "relationship": {
-            "id": "conn-svc-db",
+            "id": "conn-svc-fcm",
             "from": "svc_incident",
-            "to": "db_postgres",
-            "label": "atomic 4-table Tx",
-            "collectionIndex": 17,
-            "artifactIndex": 18
+            "to": "ext_fcm",
+            "label": "push dispatch",
+            "collectionIndex": 16,
+            "artifactIndex": 17
           },
-          "bends": 3,
-          "stretch": 1
+          "bends": 4,
+          "stretch": 1.079
         },
         {
           "relationship": {
@@ -329,18 +341,6 @@
           },
           "bends": 4,
           "stretch": 1
-        },
-        {
-          "relationship": {
-            "id": "conn-media-store",
-            "from": "eng_media",
-            "to": "store_media",
-            "label": "fetch media bytes",
-            "collectionIndex": 24,
-            "artifactIndex": 25
-          },
-          "bends": 3,
-          "stretch": 1
         }
       ],
       "truncated": true
@@ -350,10 +350,10 @@
       "ml_gw has 3 relationships facing its right side, which fits 2 ports: make that side at least 60px, or move some of those neighbours so they face another side of ml_gw.",
       "svc_incident has 3 relationships facing its right side, which fits 2 ports: make that side at least 60px, or move some of those neighbours so they face another side of svc_incident.",
       "db_postgres has 3 relationships facing its left side, which fits 2 ports: make that side at least 60px, or move some of those neighbours so they face another side of db_postgres.",
+      "svc_execution has 4 relationships facing its right side, which fits 2 ports: make that side at least 74px, or move some of those neighbours so they face another side of svc_execution.",
       "client_mobile → api_gw and sensor_guard → api_gw cross next to api_gw: move node client_mobile or sensor_guard so the two reach api_gw from different sides (for example one level with it, one directly above or below it).",
       "sensor_guard → api_gw crosses realtime_ws → client_mobile: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
-      "api_gw → ctrl_mgmt crosses svc_incident → realtime_ws: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
-      "ctrl_check → svc_incident and svc_incident → ext_mitre cross next to svc_incident: move node ctrl_check or ext_mitre so the two reach svc_incident from different sides (for example one level with it, one directly above or below it)."
+      "api_gw → ctrl_mgmt crosses svc_incident → realtime_ws: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor."
     ],
     "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
   }
