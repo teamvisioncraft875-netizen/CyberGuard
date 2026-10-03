@@ -96,11 +96,27 @@ app.use((err, req, res, next) => {
   });
 });
 
+const schedulerService = require('./services/schedulerService');
+
 // Start Server if not imported by tests
 if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, () => {
     console.log(`[CYBERGUARD Gateway] Server listening on port ${PORT}`);
+    schedulerService.startScheduler();
+    console.log('Background scheduler started (runs every 60 seconds)');
   });
+
+  const handleShutdown = (signal) => {
+    console.log(`[CYBERGUARD Gateway] Received ${signal}, shutting down gracefully...`);
+    schedulerService.stopScheduler();
+    server.close(() => {
+      console.log('[CYBERGUARD Gateway] HTTP server closed');
+      process.exit(0);
+    });
+  };
+
+  process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+  process.on('SIGINT', () => handleShutdown('SIGINT'));
 }
 
-module.exports = { app, server, io };
+module.exports = { app, server, io, schedulerService };
