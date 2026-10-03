@@ -1,0 +1,22 @@
+{
+  "model_name": "CYBERGUARD Visual Deepfake Detector (DFDC-Shield 2026)",
+  "model_version": "1.0.0",
+  "model_type": "AttentionPoolingVisualDetector",
+  "input_features": 1024,
+  "input_frames": 20,
+  "backbone": "CLIP ViT-H/14 (laion2b_s32b_b79k)",
+  "normalization": "L2 normalized (unit hypersphere)",
+  "target_mapping": {
+    "genuine": 0,
+    "manipulated": 1
+  },
+  "frozen_threshold": 0.64,
+  "supported_inputs": [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "video/mp4",
+    "tensor/1024_embedding"
+  ]
+}
