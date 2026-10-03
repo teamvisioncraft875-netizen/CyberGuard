@@ -15,6 +15,7 @@ from heartbeat import send_heartbeat
 from collector import collect_system_telemetry
 from telemetry_reporter import report_telemetry
 from command_handler import poll_and_dispatch_commands
+from firewall_executor import FirewallExecutor
 from logger import setup_logger, get_logger
 
 # Initialize agent logger with optional file logging
@@ -25,9 +26,14 @@ logger = get_logger()
 class EnterpriseAgent:
     """Enterprise Agent daemon orchestrator."""
 
-    def __init__(self, config: Optional[AgentConfig] = None):
+    def __init__(
+        self,
+        config: Optional[AgentConfig] = None,
+        firewall_executor: Optional[FirewallExecutor] = None
+    ):
         self.config = config or AgentConfig()
         self.cred_mgr: Optional[CredentialManager] = None
+        self.firewall_executor = firewall_executor or FirewallExecutor()
         self.stop_event = threading.Event()
         self.heartbeat_thread: Optional[threading.Thread] = None
         self.telemetry_thread: Optional[threading.Thread] = None
@@ -37,6 +43,21 @@ class EnterpriseAgent:
     def start(self) -> None:
         """Starts the agent lifecycle: configuration, enrollment, and workers."""
         self.config.log_startup_summary()
+
+        # Step 0: Log privilege status and host firewall capabilities
+        if sys.platform == "win32":
+            priv_label = "Administrator (Elevated)" if self.firewall_executor.is_admin else "Standard User (Non-Elevated)"
+        else:
+            priv_label = "root (Elevated)" if self.firewall_executor.is_root else "Non-Root User"
+
+        logger.info(f"Host Privilege Level: {priv_label}")
+        if self.firewall_executor.can_execute:
+            logger.info("Host Firewall Engine: ACTIVE (host-level containment enabled)")
+        else:
+            logger.warning(
+                "Host Firewall Engine: RESTRICTED. Running with standard privileges — "
+                "firewall block commands will be refused until elevated as admin/root."
+            )
 
         # Step 1: Pre-flight backend check
         is_reachable = self.config.validate_backend()
@@ -117,7 +138,11 @@ class EnterpriseAgent:
                 # If backend informed us commands are waiting, wake up command poller
                 if self.commands_pending_hint > 0:
                     logger.debug(f"Heartbeat signaled {self.commands_pending_hint} commands queued.")
-                    poll_and_dispatch_commands(self.config, cred_mgr=self.cred_mgr)
+                    poll_and_dispatch_commands(
+                        self.config,
+                        cred_mgr=self.cred_mgr,
+                        executor=self.firewall_executor
+                    )
 
                 interval = hb_result.get("next_heartbeat_in_seconds", self.config.heartbeat_interval)
             except Exception as e:
@@ -144,7 +169,11 @@ class EnterpriseAgent:
         logger.info("Command polling loop started.")
         while not self.stop_event.is_set():
             try:
-                poll_and_dispatch_commands(self.config, cred_mgr=self.cred_mgr)
+                poll_and_dispatch_commands(
+                    self.config,
+                    cred_mgr=self.cred_mgr,
+                    executor=self.firewall_executor
+                )
             except Exception as e:
                 logger.error(f"Unhandled error in command polling loop: {e}")
 

@@ -29,6 +29,28 @@ def get_current_user() -> str:
             return "unknown-user"
 
 
+def get_host_ip_addresses() -> List[str]:
+    """Resolves local host IP addresses to prevent self-containment/lockout."""
+    ips = set()
+    try:
+        hostname = socket.gethostname()
+        for info in socket.getaddrinfo(hostname, None):
+            ip = info[4][0]
+            ips.add(ip)
+    except Exception:
+        pass
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ips.add(s.getsockname()[0])
+        s.close()
+    except Exception:
+        pass
+
+    return sorted(list(ips))
+
+
 def get_network_connection_count() -> int:
     """
     Safely counts open network sockets without exposing remote hosts or sensitive socket data.

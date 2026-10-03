@@ -127,6 +127,7 @@ def report_command_result(
         f"{config.backend_url}/api/v1/agents/{device_id}/commands/{command_id}/result"
     )
     payload = {
+        "command_id": command_id,
         "credential_id": credential_id,
         "credential_secret": credential_secret,
         "status": status,
@@ -244,15 +245,44 @@ def is_domain_protected(domain_str: str, protected_targets: Dict[str, Any]) -> b
     return False
 
 
+from firewall_executor import FirewallExecutor, is_admin_windows, is_root_linux
+
+# Default firewall executor singleton
+_default_firewall_executor: Optional[FirewallExecutor] = None
+
+
+def get_firewall_executor(
+    protected_targets: Optional[Dict[str, Any]] = None,
+    dry_run: bool = False
+) -> FirewallExecutor:
+    """Retrieves or lazily instantiates the default host firewall executor."""
+    global _default_firewall_executor
+    if _default_firewall_executor is None:
+        _default_firewall_executor = FirewallExecutor(
+            protected_targets=protected_targets,
+            dry_run=dry_run
+        )
+    elif protected_targets:
+        _default_firewall_executor.update_protected_targets(protected_targets)
+    return _default_firewall_executor
+
+
+def set_firewall_executor(executor: FirewallExecutor) -> None:
+    """Overrides the default firewall executor instance (useful for testing and customization)."""
+    global _default_firewall_executor
+    _default_firewall_executor = executor
+
+
 def process_command(
     config: AgentConfig,
     command: Dict[str, Any],
-    cred_mgr: Optional[CredentialManager] = None
+    cred_mgr: Optional[CredentialManager] = None,
+    executor: Optional[FirewallExecutor] = None
 ) -> None:
     """
     Validates and dispatches a single command.
-    CRITICAL: Phase B/C.1 strictly forbids live firewall/kernel modification.
-    All block actions are verified against protected lists and reported safely.
+    Phase C.2: Dispatches block_ip / block_domain commands to host FirewallExecutor.
+    Reports execution status back to the gateway.
     """
     command_id = command.get("id")
     command_type = command.get("command_type")
@@ -272,12 +302,12 @@ def process_command(
             config,
             command_id,
             status="failed",
-            result={"error_message": err_msg},
+            result={"error_message": err_msg, "error": "unsupported_command_type"},
             cred_mgr=cred_mgr
         )
         return
 
-    # 2. Validate target_data
+    # 2. Validate target_data structure
     target_data = parse_target_data(raw_target_data)
     if raw_target_data is not None and target_data is None:
         err_msg = "Invalid target_data: expected valid JSON object"
@@ -286,13 +316,20 @@ def process_command(
             config,
             command_id,
             status="failed",
-            result={"error_message": err_msg},
+            result={"error_message": err_msg, "error": "invalid_payload"},
             cred_mgr=cred_mgr
         )
         return
 
     if target_data is None:
         target_data = {}
+
+    # Ensure command dictionary contains normalized target_data
+    normalized_command = {
+        "id": command_id,
+        "command_type": command_type,
+        "target_data": target_data
+    }
 
     # 3. Action Dispatcher
     if command_type == "collect_snapshot":
@@ -308,134 +345,58 @@ def process_command(
 
     elif command_type == "refresh_policy":
         logger.info(f"Received policy refresh signal for command {command_id}")
+        # Fetch fresh protected targets on policy refresh
+        fresh_targets = fetch_protected_targets(config, cred_mgr=cred_mgr)
+        fw_exec = executor or get_firewall_executor()
+        fw_exec.update_protected_targets(fresh_targets)
         report_command_result(
             config,
             command_id,
             status="completed",
-            result={"message": "Policy cache refreshed successfully"},
+            result={"message": "Policy cache refreshed successfully", "protected_targets": fresh_targets},
             cred_mgr=cred_mgr
         )
 
-    elif command_type in ("temporary_block_ip", "block_ip"):
-        target_ip = target_data.get("ip") or target_data.get("target_ip") or target_data.get("target") or target_data.get("ip_address")
-        if not target_ip or not validate_ip_address(str(target_ip)):
-            err_msg = f"Invalid target IP address: '{target_ip}'"
-            logger.warning(f"Command {command_id} validation failed: {err_msg}")
+    elif command_type in ("temporary_block_ip", "block_ip", "block_domain"):
+        fw_exec = executor or get_firewall_executor()
+
+        # Refresh protected targets list dynamically from gateway
+        latest_targets = fetch_protected_targets(config, cred_mgr=cred_mgr)
+        fw_exec.update_protected_targets(latest_targets)
+
+        # Execute host firewall rule safely (input validation, rate limiting, and zero shell execution)
+        exec_result = fw_exec.validate_and_execute(normalized_command)
+
+        if exec_result.get("success"):
+            logger.info(
+                f"[FIREWALL] Rule execution succeeded: {command_type} -> "
+                f"{exec_result.get('target')} (firewall: {exec_result.get('firewall')})"
+            )
+            report_command_result(
+                config,
+                command_id,
+                status="completed",
+                result=exec_result,
+                cred_mgr=cred_mgr
+            )
+        else:
+            logger.warning(
+                f"[FIREWALL] Rule execution failed for command {command_id}: "
+                f"{exec_result.get('error')} — {exec_result.get('message')}"
+            )
             report_command_result(
                 config,
                 command_id,
                 status="failed",
-                result={"error_message": err_msg, "can_execute": False},
+                result=exec_result,
                 cred_mgr=cred_mgr
             )
-            return
-
-        # Defensive Check: Validate against protected targets list
-        protected_targets = fetch_protected_targets(config, cred_mgr=cred_mgr)
-        if is_ip_protected(str(target_ip), protected_targets):
-            err_msg = f"Target IP '{target_ip}' is in protected list and cannot be blocked"
-            logger.warning(f"Command {command_id} rejected defensively: {err_msg}")
-            report_command_result(
-                config,
-                command_id,
-                status="failed",
-                result={
-                    "error_message": err_msg,
-                    "reason": "target_in_protected_list",
-                    "can_execute": False
-                },
-                cred_mgr=cred_mgr
-            )
-            return
-
-        # Validated and safe: mark can_execute=true (Phase C.2 will perform OS rule execution)
-        logger.info(
-            f"[FIREWALL ACTION VALIDATED] Command {command_id} target IP '{target_ip}' validated. "
-            "can_execute=True. Execution deferred to Phase C.2."
-        )
-
-        report_command_result(
-            config,
-            command_id,
-            status="received_not_executed",
-            result={
-                "reason": "firewall_integration_pending",
-                "action": command_type,
-                "target_ip": str(target_ip),
-                "can_execute": True,
-                "duration_minutes": target_data.get("duration_minutes", 60),
-            },
-            cred_mgr=cred_mgr
-        )
-
-    elif command_type == "block_domain":
-        target_domain = target_data.get("domain") or target_data.get("target_domain") or target_data.get("target")
-        if not target_domain:
-            err_msg = "Target domain is missing"
-            logger.warning(f"Command {command_id} validation failed: {err_msg}")
-            report_command_result(
-                config,
-                command_id,
-                status="failed",
-                result={"error_message": err_msg, "can_execute": False},
-                cred_mgr=cred_mgr
-            )
-            return
-
-        domain_str = str(target_domain).strip()
-        if "*" in domain_str or not validate_domain_name(domain_str):
-            err_msg = f"Invalid target domain name: '{target_domain}' (wildcards not allowed)"
-            logger.warning(f"Command {command_id} validation failed: {err_msg}")
-            report_command_result(
-                config,
-                command_id,
-                status="failed",
-                result={"error_message": err_msg, "can_execute": False},
-                cred_mgr=cred_mgr
-            )
-            return
-
-        # Defensive Check: Validate against protected targets list
-        protected_targets = fetch_protected_targets(config, cred_mgr=cred_mgr)
-        if is_domain_protected(domain_str, protected_targets):
-            err_msg = f"Target domain '{target_domain}' is in protected list and cannot be blocked"
-            logger.warning(f"Command {command_id} rejected defensively: {err_msg}")
-            report_command_result(
-                config,
-                command_id,
-                status="failed",
-                result={
-                    "error_message": err_msg,
-                    "reason": "target_in_protected_list",
-                    "can_execute": False
-                },
-                cred_mgr=cred_mgr
-            )
-            return
-
-        # Validated and safe: mark can_execute=true (Phase C.2 will perform OS rule execution)
-        logger.info(
-            f"[FIREWALL ACTION VALIDATED] Command {command_id} target domain '{target_domain}' validated. "
-            "can_execute=True. Execution deferred to Phase C.2."
-        )
-
-        report_command_result(
-            config,
-            command_id,
-            status="received_not_executed",
-            result={
-                "reason": "firewall_integration_pending",
-                "action": command_type,
-                "target_domain": str(target_domain),
-                "can_execute": True,
-            },
-            cred_mgr=cred_mgr
-        )
 
 
 def poll_and_dispatch_commands(
     config: AgentConfig,
-    cred_mgr: Optional[CredentialManager] = None
+    cred_mgr: Optional[CredentialManager] = None,
+    executor: Optional[FirewallExecutor] = None
 ) -> int:
     """
     Fetches and processes all pending commands for this device.
@@ -445,5 +406,5 @@ def poll_and_dispatch_commands(
     if commands:
         logger.info(f"Retrieved {len(commands)} pending command(s) from gateway")
         for cmd in commands:
-            process_command(config, cmd, cred_mgr=cred_mgr)
+            process_command(config, cmd, cred_mgr=cred_mgr, executor=executor)
     return len(commands)
