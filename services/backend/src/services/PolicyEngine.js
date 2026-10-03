@@ -78,6 +78,35 @@ class PolicyEngine {
       }
     }
 
+    // Built-in Platform Response Policy for exposed_secret incidents
+    if (incidentThreatType === 'exposed_secret') {
+      const hasNotifyAdmin = applicableRules.some((r) => r.action_type === 'notify_admin');
+      if (!hasNotifyAdmin && incidentScore >= 70) {
+        applicableRules.push({
+          threat_type: 'exposed_secret',
+          min_score: 70,
+          action_type: 'notify_admin',
+          action_mode: 'shadow',
+          requires_approval: false,
+          policy_id: null,
+          policy_name: 'Default Exposed Secret Admin Alert'
+        });
+      }
+
+      const hasNotifyUser = applicableRules.some((r) => r.action_type === 'notify_user');
+      if (!hasNotifyUser && incidentScore >= 85) {
+        applicableRules.push({
+          threat_type: 'exposed_secret',
+          min_score: 85,
+          action_type: 'notify_user',
+          action_mode: 'shadow',
+          requires_approval: false,
+          policy_id: null,
+          policy_name: 'Default Exposed Secret User Alert'
+        });
+      }
+    }
+
     return applicableRules;
   }
 

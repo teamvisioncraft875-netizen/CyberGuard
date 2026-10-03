@@ -355,6 +355,107 @@ Generates a pre-signed, time-limited direct upload URL to Supabase Storage bucke
 
 ---
 
+### 2.5 Check Leaked Secrets & Credentials (`POST /api/v1/check/secret`)
+Scans raw text strings, code snippets, logs, configuration files, and environment variable dumps for leaked API keys, tokens, database credentials, and private keys.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/check/secret` *(also available at `/api/check/secret`)* |
+| **Auth Requirement** | Public (Optional JWT `Authorization: Bearer <token>` to associate incident with tenant) |
+| **Rate Limit** | 20 requests per 15 minutes per IP |
+| **Description** | Scans input string for exposed credentials, patterns (AWS, GitHub, Stripe, Slack, DB passwords, SSH/RSA private keys, certificates), and high-entropy secrets. Returns sanitized detection results and recommendations without exposing raw secrets. Automatically creates an `exposed_secret` incident if secrets are detected. |
+
+**Request Body:**
+```json
+{
+  "input": "export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE\nexport AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+  "context": "CI/CD deployment log snippet" // Optional description of source
+}
+```
+
+**Response (`200 OK` - Secrets Detected):**
+```json
+{
+  "risk_level": "Critical", // Enum: "Safe" | "Low" | "Medium" | "High" | "Critical"
+  "risk_score": 95,
+  "explanation": "Found 2 exposed secrets: AWS_KEY, AWS_SECRET",
+  "detected_secrets": [
+    {
+      "secret_type": "AWS_KEY",
+      "severity": "critical",
+      "location": {
+        "line": 1,
+        "column": 27
+      }
+    },
+    {
+      "secret_type": "AWS_SECRET",
+      "severity": "critical",
+      "location": {
+        "line": 2,
+        "column": 30
+      }
+    }
+  ],
+  "signals": {
+    "secret_types": [
+      "AWS_KEY",
+      "AWS_SECRET"
+    ],
+    "count": 2,
+    "max_severity": "critical",
+    "detections": [
+      {
+        "secret_type": "AWS_KEY",
+        "location": {
+          "line": 1,
+          "column": 27
+        },
+        "severity": "critical",
+        "excerpt": "AWS_KEY=AKIA***[REDACTED]"
+      },
+      {
+        "secret_type": "AWS_SECRET",
+        "location": {
+          "line": 2,
+          "column": 30
+        },
+        "severity": "critical",
+        "excerpt": "AWS_SECRET=wJal***[REDACTED]"
+      }
+    ]
+  },
+  "recommended_actions": [
+    "Immediately revoke and rotate the exposed credentials.",
+    "Check cloud/service provider audit logs for unauthorized access.",
+    "Remove sensitive variables from code, commits, and plaintext configuration files."
+  ]
+}
+```
+
+**Response (`200 OK` - No Secrets Detected):**
+```json
+{
+  "risk_level": "Safe",
+  "risk_score": 5,
+  "explanation": "No exposed secrets detected",
+  "detected_secrets": [],
+  "signals": {
+    "secret_types": [],
+    "count": 0,
+    "max_severity": "none"
+  },
+  "recommended_actions": []
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Input is missing or not a string (`{ "error": "MISSING_INPUT", "message": "Field 'input' is required and must be a string" }`).
+- `429 Too Many Requests`: Rate limit exceeded (20 requests per 15 minutes per IP).
+
+---
+
 ## 3. Login & System Telemetry Ingestion (Guard App → Gateway)
 
 These endpoints are called by the desktop sensor agent ("Guard App") to report login activity and operating system behavioral anomalies.
