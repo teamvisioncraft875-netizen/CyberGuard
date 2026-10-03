@@ -119,6 +119,15 @@ router.delete(
   firewallController.deleteRule
 );
 
+// POST /api/v1/admin/agents/:agent_id/firewall-commands: manually queue firewall command to agent
+router.post(
+  '/agents/:agent_id/firewall-commands',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  firewallController.createManualFirewallCommand
+);
+
 module.exports = router;
 
 

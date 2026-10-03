@@ -22,7 +22,8 @@ const AUDIT_ACTIONS = Object.freeze({
   RESPONSE_ACTION_REJECTED: 'response_action:rejected',
   TELEMETRY_SYSTEM_EVENT: 'telemetry:system_event',
   FIREWALL_RULE_CREATED: 'firewall_rule_created',
-  FIREWALL_RULE_DELETED: 'firewall_rule_deleted'
+  FIREWALL_RULE_DELETED: 'firewall_rule_deleted',
+  FIREWALL_COMMAND_CREATED: 'firewall_command_created'
 });
 
 /**

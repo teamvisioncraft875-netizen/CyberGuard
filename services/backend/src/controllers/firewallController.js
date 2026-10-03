@@ -1,4 +1,7 @@
+const db = require('../config/db');
 const firewallService = require('../services/firewallService');
+const auditService = require('../services/auditService');
+const { AUDIT_ACTIONS } = require('../services/auditService');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -212,6 +215,175 @@ const firewallController = {
       return res.status(500).json({
         error: 'INTERNAL_SERVER_ERROR',
         message: 'Failed to retrieve protected targets'
+      });
+    }
+  },
+
+  /**
+   * POST /api/v1/admin/agents/:agent_id/firewall-commands
+   * Manually sends a firewall command (block_ip or block_domain) to a specific online agent.
+   * Does NOT automatically create an agent_firewall_rules row (created only after execution).
+   */
+  async createManualFirewallCommand(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      const adminUserId = req.user?.id || null;
+
+      if (!orgId) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Admin must belong to an organization'
+        });
+      }
+
+      const { agent_id } = req.params;
+      const { command_type, target_data, reason } = req.body || {};
+
+      // 1. Validate agent_id
+      if (!agent_id || !UUID_REGEX.test(agent_id)) {
+        return res.status(400).json({
+          error: 'INVALID_PAYLOAD',
+          message: 'Valid agent_id UUID is required'
+        });
+      }
+
+      // 2. Validate command_type whitelist
+      const ALLOWED_COMMANDS = ['block_ip', 'block_domain'];
+      if (!command_type || !ALLOWED_COMMANDS.includes(command_type)) {
+        return res.status(400).json({
+          error: 'INVALID_COMMAND_TYPE',
+          message: `command_type must be one of: ${ALLOWED_COMMANDS.join(', ')}`
+        });
+      }
+
+      // 3. Validate target_data presence and required field
+      if (!target_data || typeof target_data !== 'object' || Array.isArray(target_data)) {
+        return res.status(400).json({
+          error: 'INVALID_PAYLOAD',
+          message: 'target_data must be a valid JSON object'
+        });
+      }
+
+      if (command_type === 'block_ip' && !target_data.ip_address && !target_data.ip) {
+        return res.status(400).json({
+          error: 'INVALID_PAYLOAD',
+          message: "target_data must contain 'ip_address' for block_ip command"
+        });
+      }
+
+      if (command_type === 'block_domain' && !target_data.domain) {
+        return res.status(400).json({
+          error: 'INVALID_PAYLOAD',
+          message: "target_data must contain 'domain' for block_domain command"
+        });
+      }
+
+      // 4. Input validation (IP/domain format and protected target check)
+      const validation = firewallService.validateFirewallInput(command_type, target_data);
+      if (!validation.valid) {
+        return res.status(400).json({
+          error: 'VALIDATION_FAILED',
+          message: validation.error,
+          validation_result: validation
+        });
+      }
+
+      // 5. Verify agent exists, belongs to admin's organization, and check status
+      const devRes = await db.query(
+        `SELECT id, organization_id, status, last_heartbeat FROM public.devices WHERE id = $1;`,
+        [agent_id]
+      );
+
+      if (!devRes.rows || devRes.rows.length === 0) {
+        return res.status(404).json({
+          error: 'NOT_FOUND',
+          message: `Agent ${agent_id} not found`
+        });
+      }
+
+      const device = devRes.rows[0];
+
+      // Org boundary check
+      if (device.organization_id !== orgId) {
+        return res.status(404).json({
+          error: 'NOT_FOUND',
+          message: `Agent ${agent_id} not found in your organization`
+        });
+      }
+
+      // Disabled check -> 409
+      if (device.status === 'disabled') {
+        return res.status(409).json({
+          error: 'AGENT_DISABLED',
+          message: 'Agent is disabled and cannot receive commands'
+        });
+      }
+
+      // Online check -> 404
+      if (device.status !== 'online') {
+        return res.status(404).json({
+          error: 'AGENT_OFFLINE',
+          message: `Agent is ${device.status || 'offline'} and cannot receive commands`
+        });
+      }
+
+      // 6. Create agent_commands row
+      const insertRes = await db.query(
+        `INSERT INTO public.agent_commands (
+          device_id,
+          organization_id,
+          command_type,
+          target_data,
+          status,
+          requested_by_id,
+          can_execute,
+          requires_approval,
+          created_at
+        ) VALUES ($1, $2, $3, $4, 'pending', $5, true, false, NOW())
+        RETURNING id, device_id, organization_id, command_type, target_data, status, can_execute, created_at;`,
+        [
+          agent_id,
+          orgId,
+          command_type,
+          JSON.stringify(target_data),
+          adminUserId
+        ]
+      );
+
+      const command = insertRes.rows[0];
+
+      // 7. Audit log
+      try {
+        await auditService.log({
+          organization_id: orgId,
+          actor_type: 'admin',
+          actor_id: adminUserId,
+          action: AUDIT_ACTIONS.FIREWALL_COMMAND_CREATED || 'firewall_command_created',
+          resource_type: 'agent_command',
+          resource_id: command.id,
+          details: {
+            agent_id,
+            command_type,
+            target_data,
+            reason: reason || 'manual testing'
+          }
+        });
+      } catch (auditErr) {
+        console.warn('[firewallController] Warning: Failed to record audit log:', auditErr.message);
+      }
+
+      return res.status(201).json({
+        success: true,
+        command_id: command.id,
+        status: 'pending',
+        agent_id,
+        command
+      });
+    } catch (err) {
+      console.error('[firewallController.createManualFirewallCommand error]', err.message);
+      return res.status(500).json({
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to create firewall command'
       });
     }
   }

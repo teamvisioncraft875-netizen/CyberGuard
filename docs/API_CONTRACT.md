@@ -2063,6 +2063,77 @@ Endpoint for agents to retrieve the central protected target catalog.
 }
 ```
 
+---
+
+### 9.6 Manually Dispatch Firewall Command (`POST /api/v1/admin/agents/:agent_id/firewall-commands`)
+Manually dispatches a firewall command (`block_ip` or `block_domain`) directly to an online agent for testing, demo, or manual remediation without triggering incidents or policy rules.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/admin/agents/:agent_id/firewall-commands` |
+| **Auth Requirement** | Bearer JWT (Role: `admin`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Validates target format and ensures target is not in the protected list. Verifies the target agent belongs to the administrator's organization and is currently online. Enqueues a command with `status: "pending"`, `can_execute: true`, and `requires_approval: false` into `public.agent_commands`. Note: Does NOT automatically create an `agent_firewall_rules` entry; that record is created only after the agent executes the rule and reports back. Logs audit event `firewall_command_created`. |
+
+**Request Body:**
+```json
+{
+  "command_type": "block_ip",
+  "target_data": {
+    "ip_address": "203.0.113.42"
+  },
+  "reason": "manual testing"
+}
+```
+
+**Response (`201 Created`):**
+```json
+{
+  "success": true,
+  "command_id": "cde38f96-295f-4956-b18e-5e1afba2265b",
+  "status": "pending",
+  "agent_id": "3b07b2e1-81ad-496c-b0fa-80a72ba92d8e",
+  "command": {
+    "id": "cde38f96-295f-4956-b18e-5e1afba2265b",
+    "device_id": "3b07b2e1-81ad-496c-b0fa-80a72ba92d8e",
+    "organization_id": "48349eb0-45b0-4417-a2c3-d54bff0b5074",
+    "command_type": "block_ip",
+    "target_data": {
+      "ip_address": "203.0.113.42"
+    },
+    "status": "pending",
+    "can_execute": true,
+    "created_at": "2026-10-03T18:00:00.000Z"
+  }
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Invalid payload, unsupported command type, malformed IP/domain, or target is protected.
+  ```json
+  {
+    "error": "VALIDATION_FAILED",
+    "message": "Target IP 127.0.0.1 is in protected list and cannot be blocked"
+  }
+  ```
+- `403 Forbidden`: Authenticated user is not an administrator or lacks tenant access.
+- `404 Not Found`: Agent does not exist in administrator's organization, or agent is currently offline.
+  ```json
+  {
+    "error": "AGENT_OFFLINE",
+    "message": "Agent is offline and cannot receive commands"
+  }
+  ```
+- `409 Conflict`: Agent status is `disabled`.
+  ```json
+  {
+    "error": "AGENT_DISABLED",
+    "message": "Agent is disabled and cannot receive commands"
+  }
+  ```
+
+
 
 
 
