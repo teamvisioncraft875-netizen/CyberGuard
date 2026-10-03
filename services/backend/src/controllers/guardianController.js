@@ -1,6 +1,7 @@
 const GuardianLink = require('../models/GuardianLink');
 const User = require('../models/User');
 const db = require('../config/db');
+const { auditService, AUDIT_ACTIONS } = require('../services/auditService');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -43,8 +44,24 @@ const guardianController = {
         status: 'pending'
       });
 
+      const linkId = link?.link_id || link?.id;
+      auditService.log({
+        organization_id: req.user?.organization_id || null,
+        user_id: req.user?.id || null,
+        actor_type: req.user?.role === 'admin' ? 'admin' : 'user',
+        action: AUDIT_ACTIONS.GUARDIAN_LINK_CREATED,
+        resource_type: 'guardian_link',
+        resource_id: linkId ? String(linkId) : null,
+        details: {
+          guardian_user_id,
+          dependent_user_id,
+          status: link?.status || 'pending'
+        },
+        ip_address: req.ip
+      });
+
       return res.status(201).json({
-        link_id: link?.link_id || link?.id || 'lnk_' + Date.now(),
+        link_id: linkId || 'lnk_' + Date.now(),
         status: link?.status || 'pending',
         guardian_user_id: link?.guardian_user_id || guardian_user_id,
         dependent_user_id: link?.dependent_user_id || dependent_user_id,
@@ -89,6 +106,23 @@ const guardianController = {
       }
 
       const updated = await GuardianLink.updateStatus(id, 'active');
+
+      auditService.log({
+        organization_id: req.user?.organization_id || null,
+        user_id: req.user?.id || null,
+        actor_type: req.user?.role === 'admin' ? 'admin' : 'user',
+        action: AUDIT_ACTIONS.GUARDIAN_LINK_ACCEPTED,
+        resource_type: 'guardian_link',
+        resource_id: id,
+        details: {
+          guardian_user_id: link.guardian_user_id,
+          dependent_user_id: link.dependent_user_id,
+          previous_status: link.status,
+          new_status: 'active'
+        },
+        ip_address: req.ip
+      });
+
       return res.status(200).json({
         link_id: updated?.link_id || updated?.id || id,
         status: updated?.status || 'active',
@@ -135,6 +169,23 @@ const guardianController = {
       }
 
       const updated = await GuardianLink.updateStatus(id, 'revoked');
+
+      auditService.log({
+        organization_id: req.user?.organization_id || null,
+        user_id: req.user?.id || null,
+        actor_type: req.user?.role === 'admin' ? 'admin' : 'user',
+        action: AUDIT_ACTIONS.GUARDIAN_LINK_DECLINED,
+        resource_type: 'guardian_link',
+        resource_id: id,
+        details: {
+          guardian_user_id: link.guardian_user_id,
+          dependent_user_id: link.dependent_user_id,
+          previous_status: link.status,
+          new_status: 'revoked'
+        },
+        ip_address: req.ip
+      });
+
       return res.status(200).json({
         link_id: updated?.link_id || updated?.id || id,
         status: updated?.status || 'revoked',
@@ -207,6 +258,23 @@ const guardianController = {
       }
 
       const updated = await GuardianLink.updateStatus(id, 'revoked');
+
+      auditService.log({
+        organization_id: req.user?.organization_id || null,
+        user_id: req.user?.id || null,
+        actor_type: req.user?.role === 'admin' ? 'admin' : 'user',
+        action: AUDIT_ACTIONS.GUARDIAN_LINK_REVOKED,
+        resource_type: 'guardian_link',
+        resource_id: id,
+        details: {
+          guardian_user_id: link.guardian_user_id,
+          dependent_user_id: link.dependent_user_id,
+          previous_status: link.status,
+          new_status: 'revoked'
+        },
+        ip_address: req.ip
+      });
+
       return res.status(200).json({
         id: updated?.id || id,
         link_id: updated?.link_id || updated?.id || id,

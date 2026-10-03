@@ -1,4 +1,5 @@
 const RecommendedAction = require('../models/RecommendedAction');
+const auditService = require('../services/auditService');
 
 const VALID_ACTION_STATUSES = Object.freeze(['taken', 'dismissed']);
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -56,6 +57,23 @@ const actionController = {
 
       // Update the action_status column and return the updated row
       const updated = await RecommendedAction.updateStatus(id, action_status);
+
+      auditService.log({
+        organization_id: req.user?.organization_id || null,
+        user_id: req.user?.id,
+        actor_type: req.user?.role === 'admin' ? 'admin' : 'user',
+        action: auditService.AUDIT_ACTIONS.ACTION_STATUS_UPDATED,
+        resource_type: 'action',
+        resource_id: updated.id,
+        details: {
+          previous_status: action.action_status,
+          new_status: updated.action_status,
+          incident_id: action.incident_id,
+          action_type: action.action_type
+        },
+        ip_address: req.ip
+      });
+
       return res.status(200).json(updated);
     } catch (err) {
       console.error('[actionController.updateActionStatus error]', err.message);
