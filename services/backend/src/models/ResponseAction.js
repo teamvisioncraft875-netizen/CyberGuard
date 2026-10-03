@@ -15,7 +15,7 @@ const ResponseAction = {
    * @param {string|null} [params.policy_id]
    * @param {'notify_admin'|'notify_user'|'revoke_session'|'force_password_reset'|'require_mfa'|'block_ip'|'block_domain'|'suspend_device'|'isolate_device'} params.action_type
    * @param {'shadow'|'live'} [params.action_mode='shadow']
-   * @param {'proposed'|'pending_approval'|'approved'|'rejected'|'executed'|'failed'|'expired'|'rolled_back'} [params.status='proposed']
+   * @param {'proposed'|'pending_approval'|'approved'|'scheduled'|'rejected'|'executed'|'failed'|'expired'|'rolled_back'} [params.status='proposed']
    * @param {string|null} [params.requested_by_id]
    * @param {string|null} [params.approved_by_id]
    * @param {Date|string|null} [params.approved_at]
