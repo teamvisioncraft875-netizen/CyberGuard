@@ -486,14 +486,22 @@ const firewallService = {
       return { success: false, deleted: false, error: 'Failed to update rule status' };
     }
 
-    // Queue unblock command for agent
+    // Queue delete_firewall_rule command for agent
+    let commandId = null;
+    let agentNotified = false;
     try {
-      const rollbackType = existing.rule_type === 'block_domain' ? 'unblock_domain' : 'unblock_ip';
-      const rollbackTargetData = existing.rule_type === 'block_domain'
-        ? { domain: existing.target_domain }
-        : { ip_address: existing.target_ip };
+      const targetIpOrDomain = existing.target_ip || existing.target_domain;
+      const deleteTargetData = {
+        rule_id: existing.id,
+        rule_id_local: existing.rule_id_local || null,
+        target_ip_or_domain: targetIpOrDomain,
+        original_command_id: existing.source_command_id || null,
+        target: targetIpOrDomain,
+        ip_address: existing.target_ip || null,
+        domain: existing.target_domain || null
+      };
 
-      await db.query(
+      const cmdInsertRes = await db.query(
         `INSERT INTO public.agent_commands (
           device_id,
           organization_id,
@@ -504,17 +512,22 @@ const firewallService = {
           can_execute,
           requires_approval,
           created_at
-        ) VALUES ($1, $2, $3, $4, 'pending', $5, true, false, NOW());`,
+        ) VALUES ($1, $2, 'delete_firewall_rule', $3, 'pending', $4, true, false, NOW())
+        RETURNING id;`,
         [
           existing.agent_id,
           organization_id,
-          rollbackType,
-          JSON.stringify(rollbackTargetData),
+          JSON.stringify(deleteTargetData),
           deleted_by_id
         ]
       );
+
+      if (cmdInsertRes.rows && cmdInsertRes.rows.length > 0) {
+        commandId = cmdInsertRes.rows[0].id;
+        agentNotified = true;
+      }
     } catch (cmdErr) {
-      console.warn('[firewallService] Warning: Failed to queue rollback command for agent:', cmdErr.message);
+      console.warn('[firewallService] Warning: Failed to queue delete command for agent:', cmdErr.message);
     }
 
     // Audit log: firewall_rule_deleted
@@ -530,6 +543,8 @@ const firewallService = {
         target: existing.target_ip || existing.target_domain,
         previous_status: existing.status,
         status: 'pending_delete',
+        rule_id_local: existing.rule_id_local || null,
+        command_id: commandId,
         agent_id: existing.agent_id
       }
     });
@@ -537,8 +552,98 @@ const firewallService = {
     return {
       success: true,
       deleted: true,
-      rule_id
+      rule_id,
+      status: 'deletion_pending',
+      agent_notified: agentNotified,
+      command_id: commandId
     };
+  },
+
+  /**
+   * Records or updates a firewall rule based on an agent command execution report for deletion.
+   *
+   * @param {string} agent_id - Device UUID
+   * @param {Object} target_data - { rule_id, rule_id_local, target_ip_or_domain, original_command_id }
+   * @param {Object} execution_result - Result dict from agent { success, error, etc. }
+   * @param {'completed'|'failed'} status - Command status reported by agent
+   * @returns {Promise<Object|null>}
+   */
+  async recordFirewallRuleDeletionResult(
+    agent_id,
+    target_data = {},
+    execution_result = {},
+    status = 'completed'
+  ) {
+    if (!agent_id || !UUID_REGEX.test(agent_id)) {
+      throw new Error('Valid agent_id UUID is required');
+    }
+
+    const isSuccess = status === 'completed' && Boolean(
+      execution_result?.success === true ||
+      (execution_result && execution_result.success !== false && !execution_result.error)
+    );
+    const newStatus = isSuccess ? 'deleted' : 'failed';
+    const deletedAt = isSuccess ? new Date().toISOString() : null;
+
+    const ruleId = target_data?.rule_id && UUID_REGEX.test(target_data.rule_id) ? target_data.rule_id : null;
+    const ruleIdLocal = target_data?.rule_id_local || execution_result?.rule_id_local || null;
+    const target = target_data?.target_ip_or_domain || target_data?.target || target_data?.ip_address || target_data?.domain || null;
+    const originalCmdId = target_data?.original_command_id && UUID_REGEX.test(target_data.original_command_id) ? target_data.original_command_id : null;
+
+    const query = `
+      UPDATE public.agent_firewall_rules
+      SET status = $1,
+          deleted_at = COALESCE($2, deleted_at, NOW()),
+          result = result || $3::jsonb
+      WHERE agent_id = $4
+        AND (
+          ($5::uuid IS NOT NULL AND id = $5)
+          OR ($6::text IS NOT NULL AND rule_id_local = $6)
+          OR ($7::uuid IS NOT NULL AND source_command_id = $7)
+          OR (target_ip = $8 AND target_ip IS NOT NULL)
+          OR (target_domain = $8 AND target_domain IS NOT NULL)
+        )
+      RETURNING *;
+    `;
+
+    const res = await db.query(query, [
+      newStatus,
+      deletedAt,
+      JSON.stringify({
+        agent_deletion_report: execution_result,
+        agent_deletion_status: status,
+        updated_at: new Date().toISOString()
+      }),
+      agent_id,
+      ruleId,
+      ruleIdLocal,
+      originalCmdId,
+      target
+    ]);
+
+    if (res.rows && res.rows.length > 0) {
+      const updatedRule = res.rows[0];
+
+      // Audit log
+      await auditService.log({
+        organization_id: updatedRule.organization_id,
+        user_id: null,
+        actor_type: 'agent',
+        action: isSuccess ? AUDIT_ACTIONS.FIREWALL_RULE_DELETED : AUDIT_ACTIONS.FIREWALL_RULE_REVOCATION_FAILED,
+        resource_type: 'firewall_rule',
+        resource_id: updatedRule.id,
+        details: {
+          status: newStatus,
+          rule_id_local: updatedRule.rule_id_local,
+          execution_result,
+          agent_id
+        }
+      });
+
+      return updatedRule;
+    }
+
+    return null;
   },
 
   /**

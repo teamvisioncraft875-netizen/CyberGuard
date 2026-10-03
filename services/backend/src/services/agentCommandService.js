@@ -303,6 +303,17 @@ const agentCommandService = {
             targetDomain
           ]
         );
+      } else if (
+        command.command_type === 'delete_firewall_rule' ||
+        command.command_type === 'unblock_ip' ||
+        command.command_type === 'unblock_domain'
+      ) {
+        await firewallService.recordFirewallRuleDeletionResult(
+          command.device_id,
+          targetData,
+          result,
+          cleanStatus
+        );
       }
 
       return { success: true, command };

@@ -326,6 +326,18 @@ const agentController = {
               result || {},
               command_id
             );
+          } else if (['delete_firewall_rule', 'unblock_ip', 'unblock_domain'].includes(cmdRow.command_type)) {
+            const firewallService = require('../services/firewallService');
+            const targetData = typeof cmdRow.target_data === 'string'
+              ? JSON.parse(cmdRow.target_data)
+              : (cmdRow.target_data || {});
+
+            await firewallService.recordFirewallRuleDeletionResult(
+              device_id,
+              targetData,
+              result || {},
+              status.trim()
+            );
           }
         }
       } catch (fwSyncErr) {

@@ -25,6 +25,7 @@ SUPPORTED_COMMAND_TYPES = {
     "block_domain",
     "unblock_ip",
     "unblock_domain",
+    "delete_firewall_rule",
 }
 
 # Domain name regex pattern (RFC 1035 / RFC 1123 compliant subset)
@@ -427,41 +428,49 @@ def process_command(
                 cred_mgr=cred_mgr
             )
 
-    elif command_type in ("unblock_ip", "unblock_domain"):
+    elif command_type in ("delete_firewall_rule", "unblock_ip", "unblock_domain"):
         fw_exec = executor or get_firewall_executor()
+        rule_id_local = target_data.get("rule_id_local")
         target = (
-            target_data.get("ip_address")
-            or target_data.get("ip")
-            or target_data.get("domain")
+            target_data.get("target_ip_or_domain")
             or target_data.get("target")
+            or target_data.get("ip_address")
+            or target_data.get("domain")
+            or target_data.get("ip")
         )
-        if not target:
-            report_command_result(
-                config,
-                command_id,
-                status="failed",
-                result={"error": "missing_target", "message": "Target IP or domain required for unblock"},
-                cred_mgr=cred_mgr
-            )
-            return
 
-        rollback_res = fw_exec.rollback_rule(str(target))
-        if rollback_res.get("success"):
-            logger.info(f"[FIREWALL] Successfully unblocked/rolled back target: {target}")
+        logger.info(
+            f"[FIREWALL] Executing rule deletion: command_id={command_id}, "
+            f"rule_id_local='{rule_id_local}', target='{target}'"
+        )
+
+        del_res = fw_exec.delete_firewall_rule(
+            rule_id_local=str(rule_id_local) if rule_id_local else None,
+            target=str(target) if target else None
+        )
+
+        if del_res.get("success"):
+            logger.info(
+                f"[FIREWALL] Rule deletion succeeded for command {command_id}: "
+                f"rule_id_local={del_res.get('rule_id_local')}, target={del_res.get('target')}"
+            )
             report_command_result(
                 config,
                 command_id,
                 status="completed",
-                result=rollback_res,
+                result=del_res,
                 cred_mgr=cred_mgr
             )
         else:
-            logger.warning(f"[FIREWALL] Rollback failed for target {target}: {rollback_res.get('error')}")
+            logger.warning(
+                f"[FIREWALL] Rule deletion failed for command {command_id}: "
+                f"{del_res.get('error')} — {del_res.get('message') or del_res.get('details')}"
+            )
             report_command_result(
                 config,
                 command_id,
                 status="failed",
-                result=rollback_res,
+                result=del_res,
                 cred_mgr=cred_mgr
             )
 

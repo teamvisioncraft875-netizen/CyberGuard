@@ -187,7 +187,10 @@ const firewallController = {
 
       return res.status(200).json({
         deleted: true,
-        rule_id: result.rule_id
+        rule_id: result.rule_id,
+        status: result.status || 'deletion_pending',
+        agent_notified: Boolean(result.agent_notified),
+        command_id: result.command_id || null
       });
     } catch (err) {
       console.error('[firewallController.deleteRule error]', err.message);

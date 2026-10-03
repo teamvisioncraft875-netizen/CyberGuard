@@ -575,57 +575,212 @@ class FirewallExecutor:
                 "message": "iptables domain blocking requires DNS interception"
             }
 
-    def rollback_rule(
+    def delete_firewall_rule(
         self,
-        rule_name: Optional[str],
-        target: str,
-        firewall_tool: str
+        rule_id_local: Optional[str] = None,
+        target: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Rolls back a previously established firewall rule.
-        Uses explicit subprocess argument arrays without shell execution.
+        Deletes a host firewall rule across Windows Defender or Linux (ufw, firewalld, iptables).
+        Zero shell execution - arguments passed as an explicit array.
         """
+        # Validate inputs for illegal shell injection characters
+        if rule_id_local and FORBIDDEN_METACHARS_REGEX.search(str(rule_id_local)):
+            return {
+                "success": False,
+                "error": "invalid_rule_identifier",
+                "message": "rule_id_local contains forbidden characters"
+            }
+        if target and FORBIDDEN_METACHARS_REGEX.search(str(target)):
+            return {
+                "success": False,
+                "error": "invalid_target_format",
+                "message": "target contains forbidden characters"
+            }
+
+        if not rule_id_local and not target:
+            return {
+                "success": False,
+                "error": "missing_identifiers",
+                "message": "Either rule_id_local or target is required for firewall deletion"
+            }
+
+        # Check privilege elevation unless dry_run
         if not self.can_execute and not self.dry_run:
+            logger.warning("[FIREWALL] Refusing delete_firewall_rule: Process lacks administrative/root privileges.")
             return {
                 "success": False,
                 "error": "insufficient_privileges",
-                "message": "Firewall rollback requires administrative/root privileges"
+                "message": "Firewall rule deletion requires administrative/root privileges"
             }
 
-        try:
-            if firewall_tool == "windows_defender" and rule_name:
-                cmd = [
-                    "powershell",
-                    "-NoProfile",
-                    "-NonInteractive",
-                    "-Command",
-                    f'Remove-NetFirewallRule -DisplayName "{rule_name}"'
-                ]
-            elif firewall_tool == "ufw":
-                cmd = ["ufw", "delete", "deny", "from", target]
-            elif firewall_tool == "firewalld":
-                rule = f'rule family="ipv4" source address="{target}" reject'
-                cmd = ["firewall-cmd", "--remove-rich-rule", rule]
-            elif firewall_tool == "iptables":
-                cmd = ["iptables", "-D", "INPUT", "-s", target, "-j", "DROP"]
-            else:
-                return {"success": False, "error": "unrecognized_firewall_tool"}
-
-            if self.dry_run:
-                logger.info(f"[FIREWALL DRY-RUN] Rollback command: {' '.join(cmd)}")
-                return {"success": True, "rolled_back": True, "dry_run": True}
-
-            res = subprocess.run(cmd, capture_output=True, text=True, timeout=10, shell=False)
-            if res.returncode == 0:
+        if self.dry_run:
+            logger.info(f"[FIREWALL DRY-RUN] delete_firewall_rule: rule_id_local='{rule_id_local}', target='{target}'")
+            if target:
                 self.blocked_ips.discard(target)
                 self.blocked_domains.discard(target)
-                logger.info(f"[FIREWALL] Successfully rolled back rule for target '{target}'")
-                return {"success": True, "rolled_back": True}
+            self.active_rules = [
+                r for r in self.active_rules
+                if r.get("rule_name") != rule_id_local and r.get("target") != target
+            ]
+            return {
+                "success": True,
+                "deleted": True,
+                "rolled_back": True,
+                "rule_id_local": rule_id_local,
+                "target": target,
+                "dry_run": True
+            }
+
+        if sys.platform == "win32":
+            return self._delete_windows(rule_id_local, target)
+        elif sys.platform.startswith("linux"):
+            return self._delete_linux(rule_id_local, target)
+        else:
+            return {
+                "success": False,
+                "error": "unsupported_platform",
+                "message": f"Platform '{sys.platform}' does not support host firewall deletion"
+            }
+
+    def _delete_windows(self, rule_id_local: Optional[str], target: Optional[str]) -> Dict[str, Any]:
+        """Deletes Windows NetFirewallRule using PowerShell without shell execution."""
+        resolved_rule_name = rule_id_local
+        if not resolved_rule_name and target:
+            for r in self.active_rules:
+                if r.get("target") == target and r.get("rule_name"):
+                    resolved_rule_name = r["rule_name"]
+                    break
+
+        if not resolved_rule_name:
+            return {
+                "success": False,
+                "error": "missing_rule_identifier",
+                "message": "rule_id_local (DisplayName) is required for Windows Defender firewall deletion"
+            }
+
+        if FORBIDDEN_METACHARS_REGEX.search(resolved_rule_name):
+            return {
+                "success": False,
+                "error": "invalid_rule_identifier",
+                "message": "rule_id_local contains forbidden characters"
+            }
+
+        cmd = [
+            "powershell",
+            "-NoProfile",
+            "-NonInteractive",
+            "-Command",
+            f'Get-NetFirewallRule -DisplayName "{resolved_rule_name}" | Remove-NetFirewallRule'
+        ]
+
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=10, shell=False)
+            if res.returncode == 0:
+                logger.info(f"[FIREWALL] Successfully deleted Windows firewall rule: {resolved_rule_name}")
+                if target:
+                    self.blocked_ips.discard(target)
+                    self.blocked_domains.discard(target)
+                self.active_rules = [r for r in self.active_rules if r.get("rule_name") != resolved_rule_name]
+                return {
+                    "success": True,
+                    "deleted": True,
+                    "rolled_back": True,
+                    "rule_id_local": resolved_rule_name,
+                    "target": target,
+                    "firewall": "windows_defender"
+                }
             else:
                 err_msg = res.stderr.strip() or res.stdout.strip()
-                logger.error(f"[FIREWALL] Rollback failed: {err_msg}")
-                return {"success": False, "error": "rollback_failed", "details": err_msg}
-
+                if "No MSFT_NetFirewallRule objects found" in err_msg or "Cannot find" in err_msg:
+                    logger.warning(f"[FIREWALL] Windows rule not found: {resolved_rule_name}")
+                    return {
+                        "success": False,
+                        "error": "rule_not_found",
+                        "message": f"Firewall rule '{resolved_rule_name}' not found",
+                        "details": err_msg
+                    }
+                logger.error(f"[FIREWALL] Windows rule deletion failed: {err_msg}")
+                return {
+                    "success": False,
+                    "error": "deletion_failed",
+                    "details": err_msg
+                }
+        except subprocess.TimeoutExpired:
+            return {"success": False, "error": "timeout", "message": "PowerShell deletion command timed out after 10s"}
         except Exception as e:
-            logger.error(f"[FIREWALL] Error executing rollback: {e}")
-            return {"success": False, "error": "rollback_exception", "details": str(e)}
+            return {"success": False, "error": "execution_error", "details": str(e)}
+
+    def _delete_linux(self, rule_id_local: Optional[str], target: Optional[str]) -> Dict[str, Any]:
+        """Deletes Linux firewall rule via ufw, firewalld, or iptables."""
+        resolved_target = target
+        if not resolved_target and rule_id_local:
+            for r in self.active_rules:
+                if r.get("rule_name") == rule_id_local and r.get("target"):
+                    resolved_target = r["target"]
+                    break
+
+        if not resolved_target:
+            return {
+                "success": False,
+                "error": "missing_target",
+                "message": "Target IP or domain is required for Linux firewall rule deletion"
+            }
+
+        tool = self._detect_firewall() or "iptables"
+
+        if tool == "ufw":
+            cmd = ["ufw", "delete", "deny", "from", resolved_target]
+        elif tool == "firewalld":
+            rule = f'rule family="ipv4" source address="{resolved_target}" reject'
+            cmd = ["firewall-cmd", "--remove-rich-rule", rule]
+        elif tool == "iptables":
+            cmd = ["iptables", "-D", "INPUT", "-s", resolved_target, "-j", "DROP"]
+        else:
+            return {"success": False, "error": "unrecognized_firewall_tool"}
+
+        try:
+            res = subprocess.run(cmd, capture_output=True, text=True, timeout=10, shell=False)
+            if res.returncode == 0:
+                logger.info(f"[FIREWALL] Successfully deleted Linux firewall rule via {tool}: {resolved_target}")
+                self.blocked_ips.discard(resolved_target)
+                self.blocked_domains.discard(resolved_target)
+                self.active_rules = [
+                    r for r in self.active_rules
+                    if r.get("target") != resolved_target and r.get("rule_name") != rule_id_local
+                ]
+                return {
+                    "success": True,
+                    "deleted": True,
+                    "rolled_back": True,
+                    "rule_id_local": rule_id_local,
+                    "target": resolved_target,
+                    "firewall": tool
+                }
+            else:
+                err_msg = res.stderr.strip() or res.stdout.strip()
+                logger.error(f"[FIREWALL] Linux rule deletion failed: {err_msg}")
+                return {
+                    "success": False,
+                    "error": "deletion_failed",
+                    "details": err_msg
+                }
+        except subprocess.TimeoutExpired:
+            return {"success": False, "error": "timeout", "message": f"{tool} deletion timed out after 10s"}
+        except Exception as e:
+            return {"success": False, "error": "execution_error", "details": str(e)}
+
+    def rollback_rule(
+        self,
+        rule_name: Optional[str] = None,
+        target: Optional[str] = None,
+        firewall_tool: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Rolls back a previously established firewall rule.
+        Delegates to delete_firewall_rule while maintaining backward compatibility.
+        """
+        if rule_name and not target and not firewall_tool:
+            # Called with a single positional argument e.g. rollback_rule(target_ip)
+            return self.delete_firewall_rule(rule_id_local=None, target=rule_name)
+        return self.delete_firewall_rule(rule_id_local=rule_name, target=target)

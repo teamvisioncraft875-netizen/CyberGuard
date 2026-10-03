@@ -2043,7 +2043,7 @@ Creates a new firewall containment rule in `status: "pending"`.
 ---
 
 ### 9.4 Revoke Firewall Rule (`DELETE /api/v1/admin/firewall-rules/:rule_id`)
-Marks an existing firewall rule as `'pending_delete'` for host revocation.
+Revokes an existing firewall rule, initiating asynchronous removal on the target enterprise agent's OS firewall.
 
 | Property | Specification |
 |---|---|
@@ -2051,17 +2051,22 @@ Marks an existing firewall rule as `'pending_delete'` for host revocation.
 | **Path** | `/api/v1/admin/firewall-rules/:rule_id` |
 | **Auth Requirement** | Bearer JWT (Role: `admin`) |
 | **Rate Limit** | General limiter (100 req / 15m) |
-| **Description** | Verifies organization ownership and sets `status = 'pending_delete'`. Logs audit event `firewall_rule_deleted`. |
+| **Description** | Verifies organization ownership and sets rule `status = 'pending_delete'`. Automatically creates a `delete_firewall_rule` command in `public.agent_commands` carrying `target_data: { rule_id, rule_id_local, target_ip_or_domain, original_command_id }`. The agent polls the command, purges the local OS rule (Windows Defender / Linux ufw, firewalld, iptables), and reports back via `POST /api/v1/agents/:device_id/commands/:command_id/result`. On agent success, backend marks rule `status = 'deleted'` with `deleted_at = NOW()`; on failure, rule is marked `status = 'failed'`. Rule lifecycle: `active` → `pending_delete` → `deleted` (or `failed`). Logs audit event `firewall_rule_deleted`. |
 
 **Response (`200 OK`):**
 ```json
 {
   "deleted": true,
-  "rule_id": "a57bb816-0158-45ec-977d-78ea0e80a524"
+  "rule_id": "a57bb816-0158-45ec-977d-78ea0e80a524",
+  "status": "deletion_pending",
+  "agent_notified": true,
+  "command_id": "cde38f96-295f-4956-b18e-5e1afba2265b"
 }
 ```
 
 **Errors:**
+- `400 Bad Request`: Invalid or missing rule_id UUID format.
+- `403 Forbidden`: Authenticated user is not an administrator or lacks tenant access.
 - `404 Not Found`: Rule ID does not exist or belongs to another organization.
 
 ---
