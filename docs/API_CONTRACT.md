@@ -1835,6 +1835,52 @@ Retrieves the real-time status and heartbeat freshness of a device.
 
 ---
 
+### 8.7 Download Live Protected Targets List (`GET /api/v1/agents/:device_id/protected-targets`)
+Public endpoint enabling enterprise agents to download the central catalog of protected IP addresses, CIDR ranges, and domains that must never be blocked.
+
+| Property | Specification |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/api/v1/agents/:device_id/protected-targets` |
+| **Auth Requirement** | None (Public endpoint; protected targets catalog is non-sensitive) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Returns arrays of protected IP addresses, RFC 1918 private CIDR ranges, core DNS servers, backend endpoint IP(s) dynamically extracted from configuration, and an `updated_at` timestamp. Agents consume this endpoint on daemon startup and periodically (every 1 hour) to ensure host firewalls never disrupt legitimate management traffic or critical network infrastructure. |
+
+**Response (`200 OK`):**
+```json
+{
+  "protected_ips": [
+    "127.0.0.1",
+    "0.0.0.0",
+    "::1",
+    "::",
+    "8.8.8.8",
+    "8.8.4.4",
+    "1.1.1.1",
+    "1.0.0.1",
+    "9.9.9.9"
+  ],
+  "protected_ip_ranges": [
+    "127.0.0.0/8",
+    "10.0.0.0/8",
+    "172.16.0.0/12",
+    "192.168.0.0/16",
+    "169.254.0.0/16",
+    "0.0.0.0/8",
+    "224.0.0.0/4",
+    "240.0.0.0/4",
+    "255.255.255.255/32"
+  ],
+  "protected_domains": [
+    "localhost",
+    "cyberguard.local"
+  ],
+  "updated_at": "2026-10-03T18:15:00.000Z"
+}
+```
+
+---
+
 ## 9. Firewall Integration APIs (Phase C.1 Foundation)
 
 The Firewall Integration APIs manage host-level network containment policies, validation safeguards, and lifecycle tracking.

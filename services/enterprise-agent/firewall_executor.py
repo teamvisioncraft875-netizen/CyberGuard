@@ -130,9 +130,14 @@ class FirewallExecutor:
         )
 
     def update_protected_targets(self, new_targets: Dict[str, Any]) -> None:
-        """Refreshes the protected targets list received from backend gateway."""
+        """Refreshes the protected targets list received live from backend gateway."""
         if isinstance(new_targets, dict):
             self.protected_targets = new_targets
+            logger.info(
+                f"[FIREWALL] Protected targets updated from gateway: {len(new_targets.get('protected_ips', []))} IPs, "
+                f"{len(new_targets.get('protected_ip_ranges', []))} CIDRs, "
+                f"{len(new_targets.get('protected_domains', []))} domains"
+            )
 
     def validate_and_execute(self, command: Dict[str, Any]) -> Dict[str, Any]:
         """

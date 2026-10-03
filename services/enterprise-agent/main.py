@@ -14,7 +14,7 @@ from enrollment import enroll_or_load, EnrollmentError
 from heartbeat import send_heartbeat
 from collector import collect_system_telemetry
 from telemetry_reporter import report_telemetry
-from command_handler import poll_and_dispatch_commands
+from command_handler import poll_and_dispatch_commands, fetch_protected_targets
 from firewall_executor import FirewallExecutor
 from logger import setup_logger, get_logger
 
@@ -79,6 +79,9 @@ class EnterpriseAgent:
             logger.info(
                 f"Agent enrolled as device_id={self.config.device_id}, waiting for commands..."
             )
+            # Fetch live protected targets list from backend on startup
+            live_targets = fetch_protected_targets(self.config, cred_mgr=self.cred_mgr)
+            self.firewall_executor.update_protected_targets(live_targets)
         except EnrollmentError as e:
             logger.error(f"Agent enrollment failure: {e}")
             sys.exit(1)

@@ -377,6 +377,28 @@ const agentController = {
         message: 'Failed to retrieve device status'
       });
     }
+  },
+
+  /**
+   * GET /api/v1/agents/:device_id/protected-targets
+   * Public endpoint for agents to fetch live protected targets list for validation.
+   * No auth required so agents can retrieve live safe targets on startup and periodically.
+   */
+  async getProtectedTargets(req, res) {
+    try {
+      const firewallService = require('../services/firewallService');
+      const targets = firewallService.getProtectedTargets();
+      return res.status(200).json(targets);
+    } catch (err) {
+      console.error('[agentController.getProtectedTargets error]', err.message);
+      // Graceful fallback: return safe static baseline list
+      return res.status(200).json({
+        protected_ips: ['127.0.0.1', '0.0.0.0', '::1', '::'],
+        protected_ip_ranges: ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '127.0.0.0/8', '169.254.0.0/16'],
+        protected_domains: ['localhost', 'cyberguard.local'],
+        updated_at: new Date().toISOString()
+      });
+    }
   }
 };
 

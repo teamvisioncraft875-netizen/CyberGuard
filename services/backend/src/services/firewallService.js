@@ -79,19 +79,32 @@ function isIpv4InCidr(ip, cidr) {
 }
 
 /**
- * Extracts backend host and port from configuration.
- * @returns {{ host: string|null, isIp: boolean }}
+ * Extracts backend host and IP from configuration.
+ * Automatically resolves localhost to 127.0.0.1 or extracts literal IP.
+ * @returns {{ host: string|null, ip: string|null, isIp: boolean }}
  */
 function getBackendHostInfo() {
-  const backendUrlStr = process.env.CYBERGUARD_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:5000';
+  const config = require('../config');
+  const backendUrlStr = process.env.CYBERGUARD_BACKEND_URL 
+    || process.env.BACKEND_URL 
+    || (config && (config.BACKEND_URL || config.backend_url))
+    || 'http://localhost:5000';
+
   try {
     const parsed = new URL(backendUrlStr.startsWith('http') ? backendUrlStr : `http://${backendUrlStr}`);
     const hostname = parsed.hostname ? parsed.hostname.toLowerCase() : null;
-    if (!hostname) return { host: null, isIp: false };
-    const ipType = net.isIP(hostname);
-    return { host: hostname, isIp: ipType !== 0 };
+    if (!hostname) return { host: null, ip: null, isIp: false };
+
+    const isIp = net.isIP(hostname) !== 0;
+    let ip = isIp ? hostname : null;
+
+    if (!isIp && hostname === 'localhost') {
+      ip = '127.0.0.1';
+    }
+
+    return { host: hostname, ip, isIp };
   } catch (e) {
-    return { host: null, isIp: false };
+    return { host: null, ip: null, isIp: false };
   }
 }
 
@@ -104,7 +117,7 @@ const firewallService = {
    * Returns list of IPs, CIDR blocks, and domains that should NEVER be blocked.
    * Consumed by backend validations and downloaded by agents.
    *
-   * @returns {{ protected_ips: string[], protected_ip_ranges: string[], protected_domains: string[] }}
+   * @returns {{ protected_ips: string[], protected_ip_ranges: string[], protected_domains: string[], updated_at: string }}
    */
   getProtectedTargets() {
     const backendInfo = getBackendHostInfo();
@@ -119,6 +132,10 @@ const firewallService = {
       }
     }
 
+    if (backendInfo.ip) {
+      protectedIps.add(backendInfo.ip);
+    }
+
     if (process.env.CYBERGUARD_BACKEND_IP) {
       const customIp = process.env.CYBERGUARD_BACKEND_IP.trim();
       if (net.isIP(customIp)) {
@@ -129,7 +146,8 @@ const firewallService = {
     return {
       protected_ips: Array.from(protectedIps),
       protected_ip_ranges: [...PROTECTED_IPV4_CIDRS],
-      protected_domains: Array.from(protectedDomains)
+      protected_domains: Array.from(protectedDomains),
+      updated_at: new Date().toISOString()
     };
   },
 

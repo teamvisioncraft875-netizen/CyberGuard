@@ -160,8 +160,10 @@ def report_command_result(
         return False
 
 
-# Cached protected targets list
+# Cached protected targets list and refresh tracking
 _cached_protected_targets: Optional[Dict[str, Any]] = None
+_last_protected_refresh_time: float = 0.0
+PROTECTED_TARGETS_REFRESH_INTERVAL_SECONDS: float = 3600.0  # 1 hour
 
 
 def fetch_protected_targets(
@@ -170,9 +172,9 @@ def fetch_protected_targets(
 ) -> Dict[str, Any]:
     """
     Downloads safe target lists from GET /api/v1/agents/:device_id/protected-targets.
-    Caches the list locally and falls back to safe built-in defaults if network call fails.
+    No auth required. Caches the list locally and falls back to safe built-in defaults if network call fails.
     """
-    global _cached_protected_targets
+    global _cached_protected_targets, _last_protected_refresh_time
 
     device_id = cred_mgr.device_id if cred_mgr else config.device_id
     if not device_id:
@@ -186,10 +188,19 @@ def fetch_protected_targets(
     try:
         response = requests.get(url, timeout=10)
         if response.status_code == 200:
-            _cached_protected_targets = response.json()
+            data = response.json()
+            _cached_protected_targets = data
+            import time
+            _last_protected_refresh_time = time.time()
+            logger.info(
+                f"[FIREWALL] Retrieved live protected targets list from gateway: "
+                f"{len(data.get('protected_ips', []))} IPs, "
+                f"{len(data.get('protected_ip_ranges', []))} CIDRs, "
+                f"{len(data.get('protected_domains', []))} domains"
+            )
             return _cached_protected_targets
     except Exception as e:
-        logger.warning(f"Could not refresh protected targets list: {e}. Using cached/fallback defaults.")
+        logger.warning(f"Could not refresh protected targets list from {url}: {e}. Using cached/fallback defaults.")
 
     if _cached_protected_targets:
         return _cached_protected_targets
@@ -199,6 +210,28 @@ def fetch_protected_targets(
         "protected_ip_ranges": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "169.254.0.0/16"],
         "protected_domains": ["localhost", "cyberguard.local"]
     }
+
+
+def refresh_protected_targets_if_needed(
+    config: AgentConfig,
+    cred_mgr: Optional[CredentialManager] = None,
+    executor: Optional[Any] = None,
+    force: bool = False
+) -> Dict[str, Any]:
+    """
+    Refreshes the live protected targets list from the backend gateway
+    if more than 1 hour has elapsed or on initial startup.
+    """
+    global _last_protected_refresh_time
+    import time
+    now = time.time()
+    if force or _last_protected_refresh_time == 0.0 or (now - _last_protected_refresh_time >= PROTECTED_TARGETS_REFRESH_INTERVAL_SECONDS):
+        live_targets = fetch_protected_targets(config, cred_mgr=cred_mgr)
+        if executor:
+            executor.update_protected_targets(live_targets)
+        return live_targets
+    return _cached_protected_targets or fetch_protected_targets(config, cred_mgr=cred_mgr)
+
 
 
 def is_ip_protected(ip_str: str, protected_targets: Dict[str, Any]) -> bool:
@@ -440,8 +473,10 @@ def poll_and_dispatch_commands(
 ) -> int:
     """
     Fetches and processes all pending commands for this device.
+    Refreshes live protected targets list periodically or on startup.
     Returns the number of commands processed.
     """
+    refresh_protected_targets_if_needed(config, cred_mgr=cred_mgr, executor=executor)
     commands = fetch_pending_commands(config, cred_mgr=cred_mgr)
     if commands:
         logger.info(f"Retrieved {len(commands)} pending command(s) from gateway")

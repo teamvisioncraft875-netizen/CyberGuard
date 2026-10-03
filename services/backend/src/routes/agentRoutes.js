@@ -37,7 +37,7 @@ const firewallController = require('../controllers/firewallController');
 // 5. Device status view (Admin or Agent)
 router.get('/:device_id/status', generalLimiter, optionalJwt, agentController.getStatus);
 
-// 6. Protected targets (agent safe list download)
-router.get('/:device_id/protected-targets', generalLimiter, firewallController.getProtectedTargets);
+// 6. Protected targets (agent safe list download, public / no auth required)
+router.get('/:device_id/protected-targets', generalLimiter, agentController.getProtectedTargets);
 
 module.exports = router;
