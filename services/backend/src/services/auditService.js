@@ -19,7 +19,8 @@ const AUDIT_ACTIONS = Object.freeze({
   GUARDIAN_LINK_DECLINED: 'guardian:link_declined',
   GUARDIAN_LINK_REVOKED: 'guardian:link_revoked',
   RESPONSE_ACTION_APPROVED: 'response_action:approved',
-  RESPONSE_ACTION_REJECTED: 'response_action:rejected'
+  RESPONSE_ACTION_REJECTED: 'response_action:rejected',
+  TELEMETRY_SYSTEM_EVENT: 'telemetry:system_event'
 });
 
 /**
@@ -87,7 +88,7 @@ async function log({
 }) {
   try {
     const sanitizedDetails = sanitizeDetails(details);
-    const validActorTypes = ['user', 'admin', 'system_policy', 'system_guard'];
+    const validActorTypes = ['user', 'admin', 'system_policy', 'system_guard', 'device'];
     const resolvedActorType = validActorTypes.includes(actor_type) ? actor_type : 'user';
 
     const record = await AuditLog.create({

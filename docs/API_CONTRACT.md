@@ -503,19 +503,38 @@ Ingest host operating system and network behavioral anomalies.
 |---|---|
 | **Method** | `POST` |
 | **Path** | `/api/v1/telemetry/system-event` *(also available at `/api/telemetry/system-event`)* |
-| **Auth Requirement** | Requires JWT (`Authorization: Bearer <jwt_token>`) |
-| **Description** | Ingests process spikes and abnormal outbound network connections from Guard App. |
+| **Auth Requirement** | Requires User JWT (`Authorization: Bearer <jwt_token>`) OR Agent Credentials (`credential_id` + `credential_secret` via body or `X-Agent-Credential-*` headers) |
+| **Description** | Ingests process spikes, abnormal outbound network connections, and OS telemetry from Guard App or Enterprise Agent. Submissions authenticated via agent credentials attribute identity to the device and record audit logs with `actor_type = 'device'`. |
 
-**Request Body:**
+**Request Body (User / Guard App Sensor):**
 ```json
 {
   "user_id": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
   "timestamp": "2026-09-09T08:16:00Z",
-  "event_type": "network_spike", // e.g. "network_spike" | "unusual_process" | "file_modification"
+  "event_type": "network_spike",
   "details": {
     "process_name": "unknown_daemon.exe",
     "remote_ip": "194.26.29.112",
     "outbound_bytes": 104857600
+  }
+}
+```
+
+**Request Body (Enterprise Agent):**
+```json
+{
+  "device_id": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d",
+  "credential_id": "3c8340d8-118e-4a69-9da8-7cfa8c95029e",
+  "credential_secret": "e5f6a1b2c3d4...32byteshex...",
+  "timestamp": "2026-10-03T12:00:00Z",
+  "event_type": "agent_telemetry",
+  "telemetry_type": "agent_telemetry",
+  "source": "enterprise_agent",
+  "details": {
+    "hostname": "workstation-042.corp.internal",
+    "platform": "win32",
+    "network_conn_count": 165,
+    "top_processes": []
   }
 }
 ```
@@ -531,7 +550,7 @@ Ingest host operating system and network behavioral anomalies.
 
 **Errors:**
 - `400 Bad Request`: Malformed event payload.
-- `401 Unauthorized`: Missing or invalid bearer token.
+- `401 Unauthorized`: Missing or invalid bearer token or agent credentials.
 
 ---
 
@@ -1571,7 +1590,42 @@ Unlike user-facing endpoints, Agent endpoints authenticate via machine-specific 
 
 ---
 
-### 8.1 Enroll Device (`POST /api/v1/agents/enroll`)
+### 8.1 Generate Enrollment Token (`POST /api/v1/admin/agents/tokens`)
+Generates a cryptographically secure, single-use enrollment token for enrolling an enterprise agent device into an organization.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/admin/agents/tokens` *(also available at `/api/admin/agents/tokens`)* |
+| **Auth Requirement** | Requires JWT with `admin` role (`Authorization: Bearer <admin_jwt>`) |
+| **Rate Limit** | General limiter (300 req / 15m) |
+| **Description** | Generates a 64-character hex enrollment token valid for a specified window (default 24h). Enforces tenant scoping: admins can only issue tokens for their assigned organization. |
+
+**Request Body:**
+```json
+{
+  "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca",
+  "valid_for_hours": 24
+}
+```
+
+**Response (`201 Created`):**
+```json
+{
+  "token": "4a8c95029ee5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1",
+  "expires_at": "2026-10-04T12:00:00.000Z",
+  "organization_id": "7b09bf3c-4e89-48ce-8dbe-268e24c2ceca"
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Invalid `organization_id` UUID format.
+- `401 Unauthorized`: Missing or invalid bearer JWT.
+- `403 Forbidden`: Authenticated user lacks `admin` role or attempts to generate tokens for another organization.
+
+---
+
+### 8.2 Enroll Device (`POST /api/v1/agents/enroll`)
 Enrolls a new endpoint device into an organization using a one-time cryptographic enrollment token.
 
 | Property | Specification |
@@ -1605,12 +1659,12 @@ Enrolls a new endpoint device into an organization using a one-time cryptographi
 ```
 
 **Errors:**
-- `400 Bad Request`: Missing enrollment token (`{ "error": "INVALID_PAYLOAD", "message": "enrollment_token is required" }`).
+- `400 Bad Request`: Missing enrollment token or empty hostname/os/platform (`{ "error": "INVALID_PAYLOAD", "message": "..." }`).
 - `401 Unauthorized`: Token invalid, expired, or already used (`{ "error": "UNAUTHORIZED", "message": "Invalid or expired enrollment token" }`).
 
 ---
 
-### 8.2 Agent Heartbeat (`POST /api/v1/agents/:device_id/heartbeat`)
+### 8.3 Agent Heartbeat (`POST /api/v1/agents/:device_id/heartbeat`)
 Periodic heartbeat ping (every 30–60 seconds) dispatched by the background enterprise agent daemon.
 
 | Property | Specification |
@@ -1618,8 +1672,8 @@ Periodic heartbeat ping (every 30–60 seconds) dispatched by the background ent
 | **Method** | `POST` |
 | **Path** | `/api/v1/agents/:device_id/heartbeat` |
 | **Auth Requirement** | Agent Credentials (`credential_id` + `credential_secret` via body or `X-Agent-Credential-ID` / `X-Agent-Credential-Secret` headers) |
-| **Rate Limit** | General limiter (60/min per device) |
-| **Description** | Verifies agent credentials via bcrypt comparison against stored hash. Updates `last_heartbeat = NOW()`, confirms `status = 'online'`, and returns the expected interval and count of pending queued commands. |
+| **Rate Limit** | Agent limiter (100 req / 15m per `device_id`) |
+| **Description** | Verifies agent credentials via constant-time safe bcrypt comparison against stored hash. Updates `last_heartbeat = NOW()`, confirms `status = 'online'`, and returns the expected interval and count of pending queued commands. |
 
 **Request Body:**
 ```json
@@ -1646,7 +1700,7 @@ Periodic heartbeat ping (every 30–60 seconds) dispatched by the background ent
 
 ---
 
-### 8.3 Get Pending Commands (`GET /api/v1/agents/:device_id/commands`)
+### 8.4 Get Pending Commands (`GET /api/v1/agents/:device_id/commands`)
 Fetches queued commands that the backend has assigned to this device.
 
 | Property | Specification |
@@ -1654,6 +1708,7 @@ Fetches queued commands that the backend has assigned to this device.
 | **Method** | `GET` |
 | **Path** | `/api/v1/agents/:device_id/commands` |
 | **Auth Requirement** | Agent Credentials (`credential_id` + `credential_secret` via query parameters or headers) |
+| **Rate Limit** | Agent limiter (100 req / 15m per `device_id`) |
 | **Description** | Returns all commands with `status IN ('pending', 'executing')` assigned to the target device, ordered by `created_at ASC`. |
 
 **Query Parameters:**
@@ -1682,7 +1737,7 @@ Fetches queued commands that the backend has assigned to this device.
 
 ---
 
-### 8.4 Record Command Result (`POST /api/v1/agents/:device_id/commands/:command_id/result`)
+### 8.5 Record Command Result (`POST /api/v1/agents/:device_id/commands/:command_id/result`)
 Reports the output or error status of an executed command.
 
 | Property | Specification |
@@ -1690,6 +1745,7 @@ Reports the output or error status of an executed command.
 | **Method** | `POST` |
 | **Path** | `/api/v1/agents/:device_id/commands/:command_id/result` |
 | **Auth Requirement** | Agent Credentials (`credential_id` + `credential_secret` via body or headers) |
+| **Rate Limit** | Agent limiter (100 req / 15m per `device_id`) |
 | **Description** | Updates the command status to `'completed'` or `'failed'`, stores the result payload, and records `executed_at = NOW()`. |
 
 **Request Body:**
@@ -1718,7 +1774,7 @@ Reports the output or error status of an executed command.
 
 ---
 
-### 8.5 Get Device Status (`GET /api/v1/agents/:device_id/status`)
+### 8.6 Get Device Status (`GET /api/v1/agents/:device_id/status`)
 Retrieves the real-time status and heartbeat freshness of a device.
 
 | Property | Specification |

@@ -14,9 +14,10 @@ const agentService = {
    *
    * @param {string} organization_id - Target organization UUID
    * @param {number} [valid_for_hours=24] - Token validity window
-   * @returns {Promise<string>} 64-char hex enrollment token
+   * @param {boolean} [returnDetails=false] - Whether to return full object metadata
+   * @returns {Promise<string|{ token: string, expires_at: string, organization_id: string }>}
    */
-  async generateEnrollmentToken(organization_id, valid_for_hours = 24) {
+  async generateEnrollmentToken(organization_id, valid_for_hours = 24, returnDetails = false) {
     if (!organization_id || !UUID_REGEX.test(organization_id)) {
       throw new Error('Valid organization_id UUID is required to generate enrollment token');
     }
@@ -24,30 +25,45 @@ const agentService = {
     const token = crypto.randomBytes(32).toString('hex');
     const hours = Math.max(1, parseInt(valid_for_hours, 10) || 24);
 
-    const query = `
-      INSERT INTO public.devices (
-        organization_id,
-        enrollment_token,
-        token_expires_at,
-        status,
-        created_at
-      )
-      VALUES ($1, $2, NOW() + ($3 || ' hours')::interval, 'pending', NOW())
-      RETURNING *;
-    `;
+    try {
+      const query = `
+        INSERT INTO public.devices (
+          organization_id,
+          enrollment_token,
+          token_expires_at,
+          status,
+          created_at
+        )
+        VALUES ($1, $2, NOW() + ($3 || ' hours')::interval, 'pending', NOW())
+        RETURNING *;
+      `;
 
-    await db.query(query, [organization_id, token, hours]);
-    return token;
+      const res = await db.query(query, [organization_id, token, hours]);
+      const expires_at = res.rows[0].token_expires_at;
+
+      if (returnDetails) {
+        return {
+          token,
+          expires_at,
+          organization_id
+        };
+      }
+      return token;
+    } catch (err) {
+      console.error('[agentService.generateEnrollmentToken DB error]', err.message);
+      throw err;
+    }
   },
 
   /**
    * Validates an enrollment token.
    *
-   * @param {string} token
+   * @param {string|Object} token
    * @returns {Promise<string|null>} organization_id if valid, or null if expired/non-existent
    */
   async validateEnrollmentToken(token) {
-    if (!token || typeof token !== 'string') return null;
+    const cleanToken = typeof token === 'object' && token?.token ? token.token : (typeof token === 'string' ? token.trim() : null);
+    if (!cleanToken) return null;
 
     try {
       const query = `
@@ -56,7 +72,7 @@ const agentService = {
         WHERE enrollment_token = $1
           AND status = 'pending';
       `;
-      const res = await db.query(query, [token.trim()]);
+      const res = await db.query(query, [cleanToken]);
       if (!res.rows || res.rows.length === 0) {
         return null;
       }
@@ -68,7 +84,7 @@ const agentService = {
 
       return row.organization_id;
     } catch (err) {
-      console.warn('[agentService.validateEnrollmentToken error]', err.message);
+      console.error('[agentService.validateEnrollmentToken DB error]', err.message);
       return null;
     }
   },
@@ -79,7 +95,7 @@ const agentService = {
    * The plaintext credential_secret is returned ONCE and never stored or returned again.
    *
    * @param {Object} params
-   * @param {string} params.token - One-time enrollment token
+   * @param {string|Object} params.token - One-time enrollment token
    * @param {string} [params.hostname='unknown-host']
    * @param {string} [params.os='unknown-os']
    * @param {string} [params.platform='desktop']
@@ -95,9 +111,10 @@ const agentService = {
     linked_user_id = null,
     agent_version = '1.0.0'
   }) {
-    if (!token) return null;
+    const cleanToken = typeof token === 'object' && token?.token ? token.token : (typeof token === 'string' ? token.trim() : null);
+    if (!cleanToken) return null;
 
-    const orgId = await this.validateEnrollmentToken(token);
+    const orgId = await this.validateEnrollmentToken(cleanToken);
     if (!orgId) return null;
 
     // Generate credentials
@@ -136,7 +153,7 @@ const agentService = {
         credential_id,
         credential_secret_hash,
         agent_version,
-        token.trim()
+        cleanToken
       ]);
 
       if (!res.rows || res.rows.length === 0) {
@@ -151,13 +168,14 @@ const agentService = {
         organization_id: enrolled.organization_id
       };
     } catch (err) {
-      console.warn('[agentService.enrollDevice error]', err.message);
+      console.error('[agentService.enrollDevice DB error]', err.message);
       return null;
     }
   },
 
   /**
    * Internal helper: Verifies agent credentials against the database.
+   * Note: bcrypt.compare is constant-time safe against secret timing attacks.
    * Safe, never throws. Returns the device record if valid, null otherwise.
    *
    * @param {string} device_id
@@ -190,10 +208,48 @@ const agentService = {
         return null;
       }
 
+      // Note: bcrypt.compare is constant-time safe against secret timing attacks
       const isMatch = await bcrypt.compare(credential_secret, device.agent_credentials_hash);
       return isMatch ? device : null;
     } catch (err) {
-      console.warn('[agentService.verifyAgentCredentials error]', err.message);
+      console.error('[agentService.verifyAgentCredentials DB connection failed]', err.message);
+      return null;
+    }
+  },
+
+  /**
+   * Internal helper: Verifies agent credentials using credential_id + secret.
+   * Note: bcrypt.compare is constant-time safe against secret timing attacks.
+   *
+   * @param {string} credential_id
+   * @param {string} credential_secret
+   * @returns {Promise<Object|null>}
+   */
+  async verifyAgentCredentialsByCredentialId(credential_id, credential_secret) {
+    if (!credential_id || !credential_secret) return null;
+    if (!UUID_REGEX.test(credential_id)) return null;
+
+    try {
+      const query = `
+        SELECT *
+        FROM public.devices
+        WHERE agent_credentials_id = $1;
+      `;
+      const res = await db.query(query, [credential_id]);
+      if (!res.rows || res.rows.length === 0) {
+        return null;
+      }
+
+      const device = res.rows[0];
+      if (device.status === 'disabled' || !device.agent_credentials_hash) {
+        return null;
+      }
+
+      // Note: bcrypt.compare is constant-time safe against secret timing attacks
+      const isMatch = await bcrypt.compare(credential_secret, device.agent_credentials_hash);
+      return isMatch ? device : null;
+    } catch (err) {
+      console.error('[agentService.verifyAgentCredentialsByCredentialId DB error]', err.message);
       return null;
     }
   },
@@ -240,7 +296,7 @@ const agentService = {
         commands_pending: pendingCount
       };
     } catch (err) {
-      console.warn('[agentService.recordHeartbeat error]', err.message);
+      console.error('[agentService.recordHeartbeat DB error]', err.message);
       return null;
     }
   },
@@ -273,7 +329,7 @@ const agentService = {
 
       return device;
     } catch (err) {
-      console.warn('[agentService.getDeviceStatus error]', err.message);
+      console.error('[agentService.getDeviceStatus DB error]', err.message);
       return null;
     }
   },
@@ -301,7 +357,7 @@ const agentService = {
       const res = await db.query(query, [device_id]);
       return res.rows || [];
     } catch (err) {
-      console.warn('[agentService.getCommandsForDevice error]', err.message);
+      console.error('[agentService.getCommandsForDevice DB error]', err.message);
       return [];
     }
   },
@@ -311,7 +367,7 @@ const agentService = {
    *
    * @param {string} device_id
    * @param {string} command_id
-   * @param {'completed'|'failed'} status
+   * @param {'completed'|'failed'|'received_not_executed'} status
    * @param {Object} result
    * @param {string} credential_id
    * @param {string} credential_secret
@@ -343,7 +399,7 @@ const agentService = {
 
       return Boolean(res.rows && res.rows.length > 0);
     } catch (err) {
-      console.warn('[agentService.recordCommandResult error]', err.message);
+      console.error('[agentService.recordCommandResult DB error]', err.message);
       return false;
     }
   }

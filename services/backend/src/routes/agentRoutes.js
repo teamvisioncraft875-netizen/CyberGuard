@@ -1,6 +1,6 @@
 const express = require('express');
 const agentController = require('../controllers/agentController');
-const { generalLimiter } = require('../middlewares/rateLimiter');
+const { generalLimiter, agentLimiter } = require('../middlewares/rateLimiter');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
 
@@ -24,13 +24,13 @@ const optionalJwt = (req, res, next) => {
 router.post('/enroll', generalLimiter, agentController.enroll);
 
 // 2. Heartbeat (authenticated via agent credential_id + credential_secret)
-router.post('/:device_id/heartbeat', generalLimiter, agentController.heartbeat);
+router.post('/:device_id/heartbeat', agentLimiter, agentController.heartbeat);
 
 // 3. Command queue (authenticated via agent credential_id + credential_secret)
-router.get('/:device_id/commands', generalLimiter, agentController.getCommands);
+router.get('/:device_id/commands', agentLimiter, agentController.getCommands);
 
 // 4. Command execution result (authenticated via agent credential_id + credential_secret)
-router.post('/:device_id/commands/:command_id/result', generalLimiter, agentController.recordCommandResult);
+router.post('/:device_id/commands/:command_id/result', agentLimiter, agentController.recordCommandResult);
 
 // 5. Device status view (Admin or Agent)
 router.get('/:device_id/status', generalLimiter, optionalJwt, agentController.getStatus);

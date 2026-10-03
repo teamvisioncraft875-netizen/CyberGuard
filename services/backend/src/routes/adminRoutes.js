@@ -70,4 +70,15 @@ router.post(
   actionExecutionController.executeAction
 );
 
+// POST /api/v1/admin/agents/tokens: auth + roleCheck(['admin'])
+const agentController = require('../controllers/agentController');
+router.post(
+  '/agents/tokens',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  agentController.createEnrollmentToken
+);
+
 module.exports = router;
+
