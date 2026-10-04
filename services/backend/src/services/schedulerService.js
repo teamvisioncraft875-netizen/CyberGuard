@@ -83,10 +83,10 @@ async function processDueActions() {
 
   isProcessing = true;
   lastRunTimestamp = new Date();
+  let lockClient = null;
+  let lockAcquired = false;
 
   try {
-    let lockClient = null;
-    let lockAcquired = false;
     try {
       lockClient = await db.pool.connect();
       const lockRes = await lockClient.query(
@@ -96,7 +96,7 @@ async function processDueActions() {
       lockAcquired = Boolean(lockRes.rows[0]?.acquired);
       if (!lockAcquired) {
         console.log('[schedulerService] Advisory lock already held by another scheduler worker. Skipping cycle.');
-        lockClient.release();
+        if (lockClient) lockClient.release();
         isProcessing = false;
         return;
       }
@@ -106,14 +106,13 @@ async function processDueActions() {
       return;
     }
 
-    try {
-      // 1. Sync recent execution stats
-      await refreshHourlyCounts();
-      if (!isRunning) {
-        if (lockClient && lockAcquired) {
-          await lockClient.query('SELECT pg_advisory_unlock(hashtext($1));', ['cyberguard_scheduler_lock']);
-          lockClient.release();
-        }
+    // 1. Sync recent execution stats
+    await refreshHourlyCounts();
+    if (!isRunning) {
+      if (lockClient && lockAcquired) {
+        await lockClient.query('SELECT pg_advisory_unlock(hashtext($1));', ['cyberguard_scheduler_lock']);
+        lockClient.release();
+      }
         isProcessing = false;
         return;
       }
