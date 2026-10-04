@@ -142,11 +142,12 @@ async function runCompleteDDoSVerification() {
     // SCENARIO 2: POST FLOOD DETECTION
     // =========================================================================
     console.log('\n[Scenario 2] POST Flood Detection...');
-    // Simulate 150 POST requests to /auth/login from 203.0.113.42 in 5 minutes (default threshold: 100)
+    const targetIp2 = '203.0.113.43';
+    // Simulate 150 POST requests to /auth/login from 203.0.113.43 in 5 minutes (default threshold: 100)
     await ddosDetectionService.recordMetric({
       organization_id: orgId,
       metric_type: 'post_flood',
-      source_ip: targetIp,
+      source_ip: targetIp2,
       endpoint: '/auth/login',
       count: 150,
       window_start: new Date(Date.now() - 5 * 60 * 1000),
@@ -156,8 +157,8 @@ async function runCompleteDDoSVerification() {
     const floodResults = await ddosDetectionService.detectPostFlood(orgId, '/auth/login', 5);
     console.log('Post flood results:', floodResults);
 
-    const floodMatch = floodResults.find((r) => r.source_ip === targetIp);
-    assert.ok(floodMatch, 'Target IP 203.0.113.42 must be detected in post flood results');
+    const floodMatch = floodResults.find((r) => r.source_ip === targetIp2);
+    assert.ok(floodMatch, 'Target IP 203.0.113.43 must be detected in post flood results');
     assert.strictEqual(floodMatch.threshold_exceeded, true, 'threshold_exceeded must be true');
     assert.ok(floodMatch.incident_id, 'Incident must be created for POST flood');
 
@@ -173,11 +174,12 @@ async function runCompleteDDoSVerification() {
     // SCENARIO 3: LOGIN ABUSE DETECTION
     // =========================================================================
     console.log('\n[Scenario 3] Login Abuse Detection...');
-    // Simulate 15 failed login attempts from 203.0.113.42 in 15 minutes (default threshold: 10)
+    const targetIp3 = '203.0.113.44';
+    // Simulate 15 failed login attempts from 203.0.113.44 in 15 minutes (default threshold: 10)
     await ddosDetectionService.recordMetric({
       organization_id: orgId,
       metric_type: 'login_abuse',
-      source_ip: targetIp,
+      source_ip: targetIp3,
       count: 15,
       window_start: new Date(Date.now() - 15 * 60 * 1000),
       window_end: new Date()
@@ -186,8 +188,8 @@ async function runCompleteDDoSVerification() {
     const loginAbuseResults = await ddosDetectionService.detectLoginAbuse(orgId, 15);
     console.log('Login abuse results:', loginAbuseResults);
 
-    const abuseMatch = loginAbuseResults.find((r) => r.source_ip === targetIp);
-    assert.ok(abuseMatch, 'Target IP 203.0.113.42 must be detected in login abuse results');
+    const abuseMatch = loginAbuseResults.find((r) => r.source_ip === targetIp3);
+    assert.ok(abuseMatch, 'Target IP 203.0.113.44 must be detected in login abuse results');
     assert.strictEqual(abuseMatch.threshold_exceeded, true, 'threshold_exceeded must be true');
     assert.ok(abuseMatch.incident_id, 'Incident must be created for login abuse');
 
@@ -204,11 +206,12 @@ async function runCompleteDDoSVerification() {
     // SCENARIO 4: IP FLOODING DETECTION
     // =========================================================================
     console.log('\n[Scenario 4] IP Flooding Detection...');
+    const targetIp4 = '203.0.113.45';
     // Simulate 30 requests from same IP to different endpoints in 5 minutes (default threshold: 20)
     await ddosDetectionService.recordMetric({
       organization_id: orgId,
       metric_type: 'ip_flooding',
-      source_ip: targetIp,
+      source_ip: targetIp4,
       endpoint: '/api/v1/search',
       count: 15,
       window_start: new Date(Date.now() - 5 * 60 * 1000),
@@ -217,7 +220,7 @@ async function runCompleteDDoSVerification() {
     await ddosDetectionService.recordMetric({
       organization_id: orgId,
       metric_type: 'ip_flooding',
-      source_ip: targetIp,
+      source_ip: targetIp4,
       endpoint: '/api/v1/export',
       count: 15,
       window_start: new Date(Date.now() - 5 * 60 * 1000),
@@ -227,8 +230,8 @@ async function runCompleteDDoSVerification() {
     const ipFloodResults = await ddosDetectionService.detectIPFlooding(orgId, 5);
     console.log('IP flooding results:', ipFloodResults);
 
-    const ipFloodMatch = ipFloodResults.find((r) => r.source_ip === targetIp);
-    assert.ok(ipFloodMatch, 'Target IP 203.0.113.42 must be detected in IP flooding');
+    const ipFloodMatch = ipFloodResults.find((r) => r.source_ip === targetIp4);
+    assert.ok(ipFloodMatch, 'Target IP 203.0.113.45 must be detected in IP flooding');
     assert.strictEqual(ipFloodMatch.threshold_exceeded, true, 'threshold_exceeded must be true');
     assert.ok(ipFloodMatch.incident_id, 'Incident must be created for IP flooding');
     console.log('✅ Scenario 4 (IP Flooding Detection) PASSED');

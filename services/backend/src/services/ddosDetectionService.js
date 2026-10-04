@@ -454,6 +454,45 @@ const ddosDetectionService = {
 
     const resolvedOrgId = isUUID(org_id) ? org_id : null;
     const count = Number(details?.count || details?.request_count || details?.failed_attempts || 1);
+    const targetSourceIp = source_ip || details?.source_ip || details?.ip_address || 'unknown';
+
+    // 0. Deduplication Check: Query incidents table for an existing OPEN DDoS incident
+    // Match: organization_id, threat_type='ddos', source_ip within last 15 minutes
+    try {
+      const existingQuery = `
+        SELECT i.*
+        FROM public.incidents i
+        WHERE ($1::UUID IS NULL OR i.organization_id = $1::UUID)
+          AND i.threat_type = 'ddos'
+          AND i.status = 'open'
+          AND i.created_at >= NOW() - INTERVAL '15 minutes'
+          AND (
+            i.explanation ILIKE ('%' || $2::TEXT || '%')
+            OR EXISTS (
+              SELECT 1 FROM public.incident_evidence e
+              WHERE e.incident_id = i.id
+                AND (
+                  e.metadata->>'source_ip' = $2::TEXT
+                  OR e.metadata->>'ip_address' = $2::TEXT
+                )
+            )
+          )
+        ORDER BY i.created_at DESC
+        LIMIT 1;
+      `;
+
+      const existingRes = await db.query(existingQuery, [resolvedOrgId, targetSourceIp]);
+      if (existingRes && existingRes.rows && existingRes.rows.length > 0) {
+        const existingIncident = existingRes.rows[0];
+        console.log('[DDoS] Reusing existing incident', existingIncident.id);
+        if (existingIncident && typeof existingIncident === 'object') {
+          existingIncident.toString = () => existingIncident.id;
+        }
+        return existingIncident;
+      }
+    } catch (dedupErr) {
+      console.warn('[ddosDetectionService.createDDoSIncident Deduplication Check Note]', dedupErr.message);
+    }
 
     // 1. Call incidentService to fully initialize incident and trigger policy engine
     const incident = await persistDetectionIncident({
