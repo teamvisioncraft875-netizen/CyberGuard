@@ -38,6 +38,10 @@ const THREAT_TO_MITRE = Object.freeze({
   exposed_secret: Object.freeze({
     technique_id: 'T1552',
     technique_name: 'Unsecured Credentials'
+  }),
+  ddos: Object.freeze({
+    technique_id: 'T1498',
+    technique_name: 'Network Denial of Service'
   })
 });
 

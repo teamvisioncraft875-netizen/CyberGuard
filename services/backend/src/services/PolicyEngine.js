@@ -64,8 +64,9 @@ class PolicyEngine {
         if (incidentScore < minScore) continue;
 
         // Target filter match (e.g. user_roles)
-        if (rule.target_filter && Array.isArray(rule.target_filter.user_roles) && incident.user_role) {
-          if (!rule.target_filter.user_roles.includes(incident.user_role)) {
+        if (rule.target_filter && Array.isArray(rule.target_filter.user_roles)) {
+          const roles = rule.target_filter.user_roles;
+          if (!roles.includes('*') && incident.user_role && !roles.includes(incident.user_role)) {
             continue;
           }
         }
@@ -148,7 +149,8 @@ class PolicyEngine {
         requires_approval: requiresApproval,
         target,
         scheduled_at: scheduledAt,
-        requested_by_id: null
+        requested_by_id: null,
+        target_device_id: rule.target_device_id || incident.target_device_id || incident.device_id || target.device_id || null
       });
     }
 
@@ -240,10 +242,13 @@ class PolicyEngine {
     const explicitTarget = incident.target || {};
 
     switch (action_type) {
-      case 'block_ip':
+      case 'block_ip': {
+        const ip = explicitTarget.ip_address || signals.ip_address || details.ip_address || incident.ip_address || signals.source_ip || details.source_ip || incident.source_ip || null;
         return {
-          ip_address: explicitTarget.ip_address || signals.ip_address || details.ip_address || incident.ip_address || null
+          ip_address: ip,
+          org_wide: explicitTarget.org_wide !== undefined ? explicitTarget.org_wide : true
         };
+      }
 
       case 'block_domain':
         return {
@@ -364,7 +369,8 @@ class PolicyEngine {
           status: 'proposed',
           target: action.target,
           scheduled_at: action.scheduled_at,
-          requested_by_id: action.requested_by_id
+          requested_by_id: action.requested_by_id,
+          target_device_id: action.target_device_id || null
         });
         createdActions.push(created);
 

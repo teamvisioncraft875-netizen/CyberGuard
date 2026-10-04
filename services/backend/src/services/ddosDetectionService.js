@@ -2,6 +2,7 @@ const db = require('../config/db');
 const Incident = require('../models/Incident');
 const IncidentEvidence = require('../models/IncidentEvidence');
 const DDoSAlert = require('../models/DDoSAlert');
+const { persistDetectionIncident } = require('./incidentService');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const isUUID = (val) => typeof val === 'string' && UUID_REGEX.test(val);
@@ -464,31 +465,57 @@ const ddosDetectionService = {
     const resolvedOrgId = isUUID(org_id) ? org_id : null;
     const count = Number(details?.count || details?.request_count || details?.failed_attempts || 1);
 
-    // 1. Create incident with threat_type='ddos', risk_level='critical', risk_score=95
-    const incident = await Incident.create({
-      user_id: details?.user_id || null,
-      organization_id: resolvedOrgId,
-      threat_type: 'ddos',
-      source_type: 'network',
-      risk_level: 'critical',
-      risk_score: 95,
-      explanation: details?.explanation || `Automated DDoS detection: ${metric_type} pattern identified from IP ${source_ip}.`,
-      status: 'open'
+    // 1. Call incidentService to fully initialize incident and trigger policy engine
+    const incident = await persistDetectionIncident({
+      user: {
+        id: details?.user_id || null,
+        organization_id: resolvedOrgId,
+        role: details?.user_role || 'admin'
+      },
+      threatType: 'ddos',
+      sourceType: 'ddos_detection',
+      mlResult: {
+        risk_level: 'critical',
+        risk_score: 95,
+        explanation: details?.explanation || `Automated DDoS detection: ${metric_type} pattern identified from IP ${source_ip}.`,
+        signals: [
+          {
+            signal_name: metric_type,
+            signal_value: count,
+            weight: 0.9
+          }
+        ],
+        details: {
+          metric_type,
+          source_ip,
+          ip_address: source_ip,
+          count,
+          endpoint: details?.endpoint || null,
+          target_device_id: details?.target_device_id || details?.device_id || null,
+          ...details
+        },
+        confidence: 95
+      },
+      recommendedActions: details?.recommended_actions || ['block_ip', 'notify_admin']
     });
 
     // 2. Store metric details in incident_evidence
-    await IncidentEvidence.create({
-      incident_id: incident.id,
-      evidence_type: 'ddos_metrics',
-      raw_payload: {
-        metric_type,
-        source_ip,
-        threshold_exceeded: true,
-        count,
-        endpoint: details?.endpoint || null,
-        ...details
-      }
-    });
+    try {
+      await IncidentEvidence.create({
+        incident_id: incident.id,
+        evidence_type: 'ddos_metrics',
+        raw_payload: {
+          metric_type,
+          source_ip,
+          threshold_exceeded: true,
+          count,
+          endpoint: details?.endpoint || null,
+          ...details
+        }
+      });
+    } catch (evErr) {
+      console.warn('[ddosDetectionService.createDDoSIncident Evidence Recording Note]', evErr.message);
+    }
 
     // 3. Store metric for audit + trending in ddos_metrics
     try {
@@ -510,7 +537,12 @@ const ddosDetectionService = {
       console.warn('[ddosDetectionService.createDDoSIncident Metric Recording Note]', e.message);
     }
 
-    return incident.id;
+    // Provide toString for backward compatibility where caller expects string incident ID
+    if (incident && typeof incident === 'object') {
+      incident.toString = () => incident.id;
+    }
+
+    return incident;
   },
 
   /**

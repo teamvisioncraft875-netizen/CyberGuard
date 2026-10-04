@@ -2,8 +2,9 @@
 -- CYBERGUARD Migration 018: Create ddos_metrics table & add ddos enums
 -- ======================================================================================
 
--- 1. Ensure threat_type enum includes 'ddos' and incidents can be org-scoped (nullable user_id)
+-- 1. Ensure threat_type enum includes 'ddos', source_type includes 'ddos_detection', and incidents can be org-scoped (nullable user_id)
 ALTER TYPE threat_type ADD VALUE IF NOT EXISTS 'ddos';
+ALTER TYPE source_type ADD VALUE IF NOT EXISTS 'ddos_detection';
 ALTER TABLE public.incidents ALTER COLUMN user_id DROP NOT NULL;
 
 -- 2. Create ddos_metrics table

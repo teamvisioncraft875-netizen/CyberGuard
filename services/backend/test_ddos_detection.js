@@ -157,7 +157,7 @@ async function runTests() {
     console.log('\nTesting createDDoSIncident...');
 
     const attackerIp = '198.51.100.222';
-    const incidentId = await ddosDetectionService.createDDoSIncident(
+    const incidentRes = await ddosDetectionService.createDDoSIncident(
       'request_spike',
       attackerIp,
       {
@@ -167,6 +167,7 @@ async function runTests() {
         window_minutes: 5
       }
     );
+    const incidentId = incidentRes.id || incidentRes;
 
     console.log('Created Incident ID:', incidentId);
     assert.ok(incidentId, 'incidentId must be returned');
