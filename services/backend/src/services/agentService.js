@@ -363,6 +363,27 @@ const agentService = {
   },
 
   /**
+   * Fetches pending commands together with the latest protected IP/domain targets list.
+   *
+   * @param {string} device_id
+   * @param {string} credential_id
+   * @param {string} credential_secret
+   * @returns {Promise<{ commands: Array<Object>, protected_targets: Object }|null>}
+   */
+  async getCommandsWithProtectedTargets(device_id, credential_id, credential_secret) {
+    const commands = await this.getCommandsForDevice(device_id, credential_id, credential_secret);
+    if (commands === null) return null;
+
+    const firewallService = require('./firewallService');
+    const protected_targets = firewallService.getProtectedTargets();
+
+    return {
+      commands,
+      protected_targets
+    };
+  },
+
+  /**
    * Records the execution result of an agent command.
    *
    * @param {string} device_id
@@ -381,23 +402,9 @@ const agentService = {
     const cleanStatus = status === 'failed' ? 'failed' : 'completed';
 
     try {
-      const query = `
-        UPDATE public.agent_commands
-        SET status = $1,
-            result = $2,
-            executed_at = NOW()
-        WHERE id = $3
-          AND device_id = $4
-        RETURNING id;
-      `;
-      const res = await db.query(query, [
-        cleanStatus,
-        typeof result === 'string' ? result : JSON.stringify(result || {}),
-        command_id,
-        device_id
-      ]);
-
-      return Boolean(res.rows && res.rows.length > 0);
+      const agentCommandService = require('./agentCommandService');
+      const updateRes = await agentCommandService.updateAgentCommandStatus(command_id, cleanStatus, result);
+      return Boolean(updateRes && updateRes.success);
     } catch (err) {
       console.error('[agentService.recordCommandResult DB error]', err.message);
       return false;

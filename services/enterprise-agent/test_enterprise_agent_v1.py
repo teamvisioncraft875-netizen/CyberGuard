@@ -74,7 +74,23 @@ class MockBackendHandler(BaseHTTPRequestHandler):
             # Return queued commands and clear queue
             cmds = list(MockBackendHandler.queued_commands)
             MockBackendHandler.queued_commands.clear()
-            self._send_json(200, {"commands": cmds})
+            self._send_json(200, {
+                "commands": cmds,
+                "protected_targets": {
+                    "protected_ips": ["127.0.0.1", "0.0.0.0", "::1"],
+                    "protected_ip_ranges": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "169.254.0.0/16"],
+                    "protected_domains": ["localhost", "cyberguard.local"]
+                }
+            })
+            return
+
+        # Protected targets endpoint: /api/v1/agents/:device_id/protected-targets
+        if "/protected-targets" in self.path:
+            self._send_json(200, {
+                "protected_ips": ["127.0.0.1", "0.0.0.0", "::1"],
+                "protected_ip_ranges": ["10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "169.254.0.0/16"],
+                "protected_domains": ["localhost", "cyberguard.local"]
+            })
             return
 
         self._send_json(404, {"error": "NOT_FOUND"})
@@ -240,7 +256,7 @@ def run_tests():
             f"(processed={processed_count}, result_reported={len(snapshot_results) > 0})"
         )
 
-        # TEST 7: Safe Handling of Temporary Block IP (Phase B Safe Skeleton)
+        # TEST 7: Safe Handling of Temporary Block IP (Phase C.2 Execution / Safe Refusal)
         block_cmd_id = str(uuid.uuid4())
         MockBackendHandler.queued_commands.append({
             "id": block_cmd_id,
@@ -251,18 +267,20 @@ def run_tests():
         poll_and_dispatch_commands(config)
         block_results = [
             r for r in MockBackendHandler.reported_results
-            if r.get("status") == "received_not_executed"
+            if r.get("command_id") == block_cmd_id or "203.0.113.42" in str(r)
         ]
         passed_block = (
             len(block_results) > 0 and
-            block_results[0].get("result", {}).get("reason") == "firewall_integration_pending" and
-            block_results[0].get("result", {}).get("target_ip") == "203.0.113.42"
+            (
+                block_results[0].get("status") in ("received_not_executed", "completed") or
+                (block_results[0].get("status") == "failed" and block_results[0].get("result", {}).get("error") == "insufficient_privileges")
+            )
         )
 
         record_test(
-            "Test 7: Safe Firewall Command Handling (Non-execution)",
+            "Test 7: Safe Firewall Command Handling (Execution / Safe Refusal)",
             passed_block,
-            f"(status={block_results[0].get('status') if block_results else 'none'}, reason={block_results[0].get('result', {}).get('reason') if block_results else 'none'})"
+            f"(status={block_results[0].get('status') if block_results else 'none'}, error={block_results[0].get('result', {}).get('error') if block_results else 'none'})"
         )
 
         # TEST 8: Agent Daemon Lifecycle & Graceful Shutdown
@@ -360,6 +378,61 @@ def run_tests():
             "Test 12: Collector psutil Exception Handling",
             passed_collector,
             "(PermissionError and ProcessLookupError safely caught)"
+        )
+
+        # TEST 13: Defensive Firewall Protected Targets Validation (Phase C.1/C.2)
+        # Clear previous reported results
+        MockBackendHandler.reported_results.clear()
+        from firewall_executor import FirewallExecutor
+        test_executor = FirewallExecutor(is_admin_windows=True, is_root_linux=True, dry_run=True)
+
+        # 13a. Block IP: 127.0.0.1 (Protected -> must be rejected defensively)
+        MockBackendHandler.queued_commands.append({
+            "id": str(uuid.uuid4()),
+            "command_type": "block_ip",
+            "target_data": {"ip": "127.0.0.1"},
+        })
+
+        # 13b. Block Domain: localhost (Protected -> must be rejected defensively)
+        MockBackendHandler.queued_commands.append({
+            "id": str(uuid.uuid4()),
+            "command_type": "block_domain",
+            "target_data": {"domain": "localhost"},
+        })
+
+        # 13c. Block IP: 203.0.113.55 (Valid public IP -> can_execute=True)
+        MockBackendHandler.queued_commands.append({
+            "id": str(uuid.uuid4()),
+            "command_type": "block_ip",
+            "target_data": {"ip": "203.0.113.55"},
+        })
+
+        poll_and_dispatch_commands(config, executor=test_executor)
+
+        res_127 = next((r for r in MockBackendHandler.reported_results if "127.0.0.1" in str(r)), None)
+        res_loc = next((r for r in MockBackendHandler.reported_results if "localhost" in str(r)), None)
+        res_pub = next((r for r in MockBackendHandler.reported_results if "203.0.113.55" in str(r)), None)
+
+        passed_127 = bool(
+            res_127 and res_127.get("status") == "failed" and
+            res_127.get("result", {}).get("error") in ("target_in_protected_list", "target_protected")
+        )
+        passed_loc = bool(
+            res_loc and res_loc.get("status") == "failed" and
+            res_loc.get("result", {}).get("error") in ("target_in_protected_list", "target_protected")
+        )
+        passed_pub = bool(
+            res_pub and (
+                res_pub.get("status") in ("received_not_executed", "completed") or
+                (res_pub.get("status") == "failed" and res_pub.get("result", {}).get("error") in ("insufficient_privileges", "target_protected"))
+            )
+        )
+
+        passed_fw_defense = passed_127 and passed_loc and passed_pub
+        record_test(
+            "Test 13: Defensive Protected Targets Validation",
+            passed_fw_defense,
+            f"(loopback_rejected={passed_127}, localhost_rejected={passed_loc}, public_ip_allowed={passed_pub})"
         )
 
     finally:

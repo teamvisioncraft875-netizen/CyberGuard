@@ -1,4 +1,5 @@
 const agentService = require('../services/agentService');
+const db = require('../config/db');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const VALID_COMMAND_STATUSES = new Set(['completed', 'failed', 'received_not_executed']);
@@ -221,8 +222,8 @@ const agentController = {
     }
 
     try {
-      const commands = await agentService.getCommandsForDevice(device_id, credential_id.trim(), credential_secret.trim());
-      if (commands === null) {
+      const commandsResult = await agentService.getCommandsWithProtectedTargets(device_id, credential_id.trim(), credential_secret.trim());
+      if (commandsResult === null) {
         return res.status(401).json({
           error: 'UNAUTHORIZED',
           message: 'Invalid agent credentials'
@@ -230,7 +231,8 @@ const agentController = {
       }
 
       return res.status(200).json({
-        commands
+        commands: commandsResult.commands,
+        protected_targets: commandsResult.protected_targets
       });
     } catch (err) {
       console.error('[agentController.getCommands error]', err.message);
@@ -303,6 +305,45 @@ const agentController = {
         });
       }
 
+      // Phase C Integration: If command is firewall-related, record/sync in agent_firewall_rules
+      try {
+        const cmdRes = await db.query(
+          `SELECT command_type, target_data FROM public.agent_commands WHERE id = $1;`,
+          [command_id]
+        );
+        if (cmdRes.rows && cmdRes.rows.length > 0) {
+          const cmdRow = cmdRes.rows[0];
+          if (['block_ip', 'block_domain', 'temporary_block_ip'].includes(cmdRow.command_type)) {
+            const firewallService = require('../services/firewallService');
+            const targetData = typeof cmdRow.target_data === 'string'
+              ? JSON.parse(cmdRow.target_data)
+              : (cmdRow.target_data || {});
+
+            await firewallService.createFirewallRuleFromCommandResult(
+              device_id,
+              cmdRow.command_type,
+              targetData,
+              result || {},
+              command_id
+            );
+          } else if (['delete_firewall_rule', 'unblock_ip', 'unblock_domain'].includes(cmdRow.command_type)) {
+            const firewallService = require('../services/firewallService');
+            const targetData = typeof cmdRow.target_data === 'string'
+              ? JSON.parse(cmdRow.target_data)
+              : (cmdRow.target_data || {});
+
+            await firewallService.recordFirewallRuleDeletionResult(
+              device_id,
+              targetData,
+              result || {},
+              status.trim()
+            );
+          }
+        }
+      } catch (fwSyncErr) {
+        console.warn('[agentController] Warning: Failed to sync firewall rule from command result:', fwSyncErr.message);
+      }
+
       return res.status(200).json({
         success: true
       });
@@ -348,7 +389,31 @@ const agentController = {
         message: 'Failed to retrieve device status'
       });
     }
+  },
+
+  /**
+   * GET /api/v1/agents/:device_id/protected-targets
+   * Public endpoint for agents to fetch live protected targets list for validation.
+   * No auth required so agents can retrieve live safe targets on startup and periodically.
+   */
+  async getProtectedTargets(req, res) {
+    try {
+      const firewallService = require('../services/firewallService');
+      const targets = firewallService.getProtectedTargets();
+      return res.status(200).json(targets);
+    } catch (err) {
+      console.error('[agentController.getProtectedTargets error]', err.message);
+      // Graceful fallback: return safe static baseline list
+      return res.status(200).json({
+        protected_ips: ['127.0.0.1', '0.0.0.0', '::1', '::'],
+        protected_ip_ranges: ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '127.0.0.0/8', '169.254.0.0/16'],
+        protected_domains: ['localhost', 'cyberguard.local'],
+        updated_at: new Date().toISOString()
+      });
+    }
   }
 };
+
+agentController.updateCommandResult = agentController.recordCommandResult;
 
 module.exports = agentController;

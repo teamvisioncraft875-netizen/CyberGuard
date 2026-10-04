@@ -42,6 +42,8 @@ const config = Object.freeze({
   SUPABASE_STORAGE_BUCKET: process.env.SUPABASE_STORAGE_BUCKET || 'cyberguard-media',
   ML_SERVICE_URL: process.env.ML_SERVICE_URL || 'http://localhost:8000',
   REDIS_URL: process.env.REDIS_URL || null,
+  BACKEND_URL: process.env.CYBERGUARD_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:5000',
+  backend_url: process.env.CYBERGUARD_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:5000',
 });
 
 module.exports = config;

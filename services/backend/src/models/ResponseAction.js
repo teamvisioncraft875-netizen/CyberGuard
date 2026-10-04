@@ -41,7 +41,8 @@ const ResponseAction = {
     result = null,
     scheduled_at = null,
     executed_at = null,
-    expires_at = null
+    expires_at = null,
+    target_device_id = null
   }, client = null) {
     const dbClient = client || db;
     const text = `
@@ -60,9 +61,10 @@ const ResponseAction = {
         created_at,
         scheduled_at,
         executed_at,
-        expires_at
+        expires_at,
+        target_device_id
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), $12, $13, $14)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), $12, $13, $14, $15)
       RETURNING *;
     `;
     const res = await dbClient.query(text, [
@@ -79,7 +81,8 @@ const ResponseAction = {
       result ? (typeof result === 'string' ? result : JSON.stringify(result)) : null,
       scheduled_at,
       executed_at,
-      expires_at
+      expires_at,
+      target_device_id
     ]);
     return res.rows[0];
   },

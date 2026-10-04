@@ -20,7 +20,13 @@ const AUDIT_ACTIONS = Object.freeze({
   GUARDIAN_LINK_REVOKED: 'guardian:link_revoked',
   RESPONSE_ACTION_APPROVED: 'response_action:approved',
   RESPONSE_ACTION_REJECTED: 'response_action:rejected',
-  TELEMETRY_SYSTEM_EVENT: 'telemetry:system_event'
+  TELEMETRY_SYSTEM_EVENT: 'telemetry:system_event',
+  FIREWALL_RULE_CREATED: 'firewall_rule_created',
+  FIREWALL_RULE_CREATION_FAILED: 'firewall_rule_creation_failed',
+  FIREWALL_RULE_DELETED: 'firewall_rule_deleted',
+  FIREWALL_RULE_DELETION_FAILED: 'firewall_rule_deletion_failed',
+  FIREWALL_RULE_REVOCATION_FAILED: 'firewall_rule_deletion_failed',
+  FIREWALL_COMMAND_CREATED: 'firewall_command_created'
 });
 
 /**
@@ -89,7 +95,10 @@ async function log({
   try {
     const sanitizedDetails = sanitizeDetails(details);
     const validActorTypes = ['user', 'admin', 'system_policy', 'system_guard', 'device'];
-    const resolvedActorType = validActorTypes.includes(actor_type) ? actor_type : 'user';
+    let resolvedActorType = validActorTypes.includes(actor_type) ? actor_type : 'user';
+    if (actor_type === 'agent') {
+      resolvedActorType = 'device';
+    }
 
     const record = await AuditLog.create({
       organization_id,

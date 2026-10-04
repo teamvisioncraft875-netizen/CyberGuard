@@ -9,7 +9,8 @@
     "dev": "nodemon src/index.js",
     "test": "node test_phase5_e2e_and_security.js",
     "test:phase5": "node test_phase5_e2e_and_security.js",
-    "test:e2e": "node test_e2e_pipeline.js"
+    "test:e2e": "node test_e2e_pipeline.js",
+    "test:firewall": "node test_firewall_integration_complete.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",

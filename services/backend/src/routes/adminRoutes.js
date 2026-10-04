@@ -72,6 +72,8 @@ router.post(
 
 // POST /api/v1/admin/agents/tokens: auth + roleCheck(['admin'])
 const agentController = require('../controllers/agentController');
+const firewallController = require('../controllers/firewallController');
+
 router.post(
   '/agents/tokens',
   auth,
@@ -80,5 +82,52 @@ router.post(
   agentController.createEnrollmentToken
 );
 
+// Firewall Rules Management: auth + roleCheck(['admin'])
+// GET /api/v1/admin/firewall-rules: list org-scoped firewall rules
+router.get(
+  '/firewall-rules',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  firewallController.listRules
+);
+
+// POST /api/v1/admin/firewall-rules/validate: pre-validate IP/domain
+router.post(
+  '/firewall-rules/validate',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  firewallController.validateRule
+);
+
+// POST /api/v1/admin/firewall-rules: create firewall rule in 'pending' status
+router.post(
+  '/firewall-rules',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  firewallController.createRule
+);
+
+// DELETE /api/v1/admin/firewall-rules/:rule_id: revoke rule (mark 'pending_delete')
+router.delete(
+  '/firewall-rules/:rule_id',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  firewallController.deleteRule
+);
+
+// POST /api/v1/admin/agents/:agent_id/firewall-commands: manually queue firewall command to agent
+router.post(
+  '/agents/:agent_id/firewall-commands',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  firewallController.createManualFirewallCommand
+);
+
 module.exports = router;
+
 
