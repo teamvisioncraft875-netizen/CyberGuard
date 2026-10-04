@@ -75,16 +75,21 @@ const ddosController = {
         }
       }
 
-      // Automatically create DDoS incidents for identified threats
+      // Automatically create DDoS incidents for identified threats (if not already created by detector)
       let incidentsCreated = 0;
       for (const threat of threats) {
+        if (threat.incident_id) {
+          incidentsCreated++;
+          continue;
+        }
         try {
-          await ddosDetectionService.createDDoSIncident(orgId, scan_type, threat.source_ip, {
+          const inc = await ddosDetectionService.createDDoSIncident(orgId, scan_type, threat.source_ip, {
             ...threat,
             user_id: req.user?.id || null,
             scan_type,
             triggered_by: req.user?.id || 'admin'
           });
+          threat.incident_id = inc?.id || inc;
           incidentsCreated++;
         } catch (incidentErr) {
           console.warn('[ddosController.scan Incident Creation Note]', incidentErr.message);

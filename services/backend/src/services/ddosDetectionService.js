@@ -3,6 +3,7 @@ const Incident = require('../models/Incident');
 const IncidentEvidence = require('../models/IncidentEvidence');
 const DDoSAlert = require('../models/DDoSAlert');
 const { persistDetectionIncident } = require('./incidentService');
+const { log: auditLog } = require('./auditService');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const isUUID = (val) => typeof val === 'string' && UUID_REGEX.test(val);
@@ -67,28 +68,24 @@ const ddosDetectionService = {
 
       for (const [source_ip, count] of ipMap.entries()) {
         const threshold_exceeded = count > threshold;
-        results.push({
+        const item = {
           source_ip,
           count,
           threshold_exceeded
-        });
+        };
+        results.push(item);
 
-        // Store metric entry for trending / audit if threshold exceeded
+        // Store metric entry for trending / audit if threshold exceeded and auto-create incident
         if (threshold_exceeded && validOrgId) {
           try {
-            await DDoSAlert.create({
-              organization_id: validOrgId,
-              metric_type: 'request_spike',
-              source_ip,
-              endpoint: null,
+            const inc = await this.createDDoSIncident(validOrgId, 'request_spike', source_ip, {
               count,
-              window_start: windowStart,
-              window_end: windowEnd,
-              threshold_exceeded: true,
-              metadata: { window_minutes: windowMinutes, threshold }
+              window_minutes: windowMinutes,
+              threshold
             });
+            item.incident_id = inc?.id || inc;
           } catch (e) {
-            // Silently continue if duplicate or constraint error
+            console.warn('[detectRequestSpike auto-create incident note]', e.message);
           }
         }
       }
@@ -176,27 +173,25 @@ const ddosDetectionService = {
         const [source_ip, ep] = key.split('||');
         if (count > threshold) {
           const matchedEndpoint = targetEndpoint || ep;
-          results.push({
+          const item = {
             source_ip,
             count,
-            endpoint: matchedEndpoint
-          });
+            endpoint: matchedEndpoint,
+            threshold_exceeded: true
+          };
+          results.push(item);
 
           if (validOrgId) {
             try {
-              await DDoSAlert.create({
-                organization_id: validOrgId,
-                metric_type: 'post_flood',
-                source_ip,
-                endpoint: matchedEndpoint,
+              const inc = await this.createDDoSIncident(validOrgId, 'post_flood', source_ip, {
                 count,
-                window_start: windowStart,
-                window_end: windowEnd,
-                threshold_exceeded: true,
-                metadata: { window_minutes: windowMinutes, threshold }
+                endpoint: matchedEndpoint,
+                window_minutes: windowMinutes,
+                threshold
               });
+              item.incident_id = inc?.id || inc;
             } catch (e) {
-              // Silently ignore insert collision
+              console.warn('[detectPostFlood auto-create incident note]', e.message);
             }
           }
         }
@@ -296,27 +291,26 @@ const ddosDetectionService = {
 
       for (const [source_ip, data] of ipMap.entries()) {
         if (data.failed_attempts > threshold) {
-          results.push({
+          const item = {
             source_ip,
             count: data.count,
-            failed_attempts: data.failed_attempts
-          });
+            failed_attempts: data.failed_attempts,
+            threshold_exceeded: true
+          };
+          results.push(item);
 
           if (validOrgId) {
             try {
-              await DDoSAlert.create({
-                organization_id: validOrgId,
-                metric_type: 'login_abuse',
-                source_ip,
-                endpoint: '/api/v1/auth/login',
+              const inc = await this.createDDoSIncident(validOrgId, 'login_abuse', source_ip, {
                 count: data.failed_attempts,
-                window_start: windowStart,
-                window_end: windowEnd,
-                threshold_exceeded: true,
-                metadata: { window_minutes: windowMinutes, threshold }
+                failed_attempts: data.failed_attempts,
+                endpoint: '/api/v1/auth/login',
+                window_minutes: windowMinutes,
+                threshold
               });
+              item.incident_id = inc?.id || inc;
             } catch (e) {
-              // Silently ignore insert collision
+              console.warn('[detectLoginAbuse auto-create incident note]', e.message);
             }
           }
         }
@@ -393,31 +387,27 @@ const ddosDetectionService = {
 
       for (const [source_ip, data] of ipMap.entries()) {
         if (data.request_count > threshold) {
-          results.push({
+          const item = {
             source_ip,
             unique_endpoints: Math.max(1, data.unique_endpoints),
-            request_count: data.request_count
-          });
+            request_count: data.request_count,
+            count: data.request_count,
+            threshold_exceeded: true
+          };
+          results.push(item);
 
           if (validOrgId) {
             try {
-              await DDoSAlert.create({
-                organization_id: validOrgId,
-                metric_type: 'ip_flooding',
-                source_ip,
-                endpoint: null,
+              const inc = await this.createDDoSIncident(validOrgId, 'ip_flooding', source_ip, {
                 count: data.request_count,
-                window_start: windowStart,
-                window_end: windowEnd,
-                threshold_exceeded: true,
-                metadata: {
-                  unique_endpoints: data.unique_endpoints,
-                  window_minutes: windowMinutes,
-                  threshold
-                }
+                request_count: data.request_count,
+                unique_endpoints: data.unique_endpoints,
+                window_minutes: windowMinutes,
+                threshold
               });
+              item.incident_id = inc?.id || inc;
             } catch (e) {
-              // Silently ignore insert collision
+              console.warn('[detectIPFlooding auto-create incident note]', e.message);
             }
           }
         }
@@ -535,6 +525,30 @@ const ddosDetectionService = {
       });
     } catch (e) {
       console.warn('[ddosDetectionService.createDDoSIncident Metric Recording Note]', e.message);
+    }
+
+    // 4. Log ddos_incident_created to audit_logs
+    try {
+      await auditLog({
+        organization_id: resolvedOrgId,
+        user_id: details?.user_id || null,
+        actor_type: 'system_guard',
+        action: 'ddos_incident_created',
+        resource_type: 'incident',
+        resource_id: incident.id,
+        details: {
+          metric_type,
+          source_ip,
+          count,
+          endpoint: details?.endpoint || null,
+          incident_id: incident.id,
+          threat_type: 'ddos',
+          risk_score: 95
+        },
+        ip_address: source_ip
+      });
+    } catch (auditErr) {
+      console.warn('[ddosDetectionService.createDDoSIncident Audit Log Note]', auditErr.message);
     }
 
     // Provide toString for backward compatibility where caller expects string incident ID
