@@ -2,14 +2,227 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: dark;
+@layer base {
+  /* =====================================================================
+   * LIGHT THEME (Enterprise SaaS — Stripe / Linear / Notion style)
+   * Soft off-white base, subtle grey surfaces, high-contrast dark text,
+   * restrained cyan-blue accent, clean borders, calibrated risk tones.
+   * ===================================================================== */
+  :root {
+    --background: 210 20% 98%;           /* #f8fafc soft canvas */
+    --foreground: 222 47% 11%;           /* #0f172a slate-900 primary text */
+
+    --card: 0 0% 100%;                   /* #ffffff pure surface */
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 199 89% 44%;              /* #0284c7 restrained deep cyan/blue */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;            /* #f1f5f9 subtle grey */
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;     /* #64748b slate-500 */
+
+    --accent: 210 40% 94%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 351 85% 54%;          /* #e11d48 */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;               /* #e2e8f0 clean hairline */
+    --input: 214 32% 91%;
+    --ring: 199 89% 44%;
+    --focus-ring: 199 89% 44%;
+
+    --radius: 0.75rem;
+
+    /* Semantic Surface Tiers */
+    --surface: 0 0% 100%;                /* #ffffff */
+    --surface-elevated: 0 0% 100%;       /* #ffffff */
+    --surface-lowest: 0 0% 100%;         /* #ffffff */
+    --surface-low: 210 20% 98%;          /* #f8fafc */
+    --surface-container: 0 0% 100%;      /* #ffffff */
+    --surface-high: 210 40% 96%;         /* #f1f5f9 */
+    --surface-highest: 214 32% 91%;      /* #e2e8f0 */
+
+    /* Typography Tiers */
+    --text-primary: 222 47% 11%;         /* #0f172a */
+    --text-secondary: 215 16% 35%;       /* #334155 */
+    --text-muted: 215 16% 55%;           /* #64748b */
+
+    /* Calibrated Risk Colors — Light Mode (Light background, deep readable text) */
+    --risk-safe-bg: 152 76% 94%;         /* #ecfdf5 */
+    --risk-safe-text: 160 84% 24%;       /* #065f46 */
+    --risk-safe-border: 158 64% 45%;     /* #10b981 */
+    --risk-safe-dot: 158 64% 42%;
+
+    --risk-low-bg: 204 100% 95%;         /* #f0f9ff */
+    --risk-low-text: 201 96% 32%;        /* #0369a1 */
+    --risk-low-border: 199 89% 48%;      /* #0ea5e9 */
+    --risk-low-dot: 199 89% 48%;
+
+    --risk-medium-bg: 48 100% 95%;       /* #fffbeb */
+    --risk-medium-text: 35 92% 33%;      /* #b45309 */
+    --risk-medium-border: 38 92% 50%;    /* #f59e0b */
+    --risk-medium-dot: 38 92% 50%;
+
+    --risk-high-bg: 24 100% 95%;         /* #fff7ed */
+    --risk-high-text: 15 85% 35%;        /* #c2410c */
+    --risk-high-border: 21 90% 48%;      /* #f97316 */
+    --risk-high-dot: 21 90% 48%;
+
+    --risk-critical-bg: 355 100% 96%;    /* #fff1f2 */
+    --risk-critical-text: 347 77% 36%;   /* #9f1239 */
+    --risk-critical-border: 351 95% 58%; /* #f43f5e */
+    --risk-critical-dot: 351 95% 58%;
+  }
+
+  /* =====================================================================
+   * DARK THEME (Enterprise SaaS Dark — Linear / Vercel style)
+   * Restrained slate/charcoal canvas (#0f131c), desaturated indigo-blue
+   * accent (non-neon), neutral secondary surfaces, clean hairline borders.
+   * ===================================================================== */
+  .dark {
+    --background: 224 30% 8%;            /* #0f131c void canvas */
+    --foreground: 228 30% 90%;           /* #dfe2ee crisp foreground */
+
+    --card: 220 18% 14%;                 /* #1c2028 container surface */
+    --card-foreground: 228 30% 90%;
+
+    --popover: 220 20% 12%;              /* #181c24 elevated surface */
+    --popover-foreground: 228 30% 90%;
+
+    --primary: 217 70% 56%;              /* #4878d6 restrained enterprise indigo-blue */
+    --primary-foreground: 0 0% 100%;     /* crisp white text */
+
+    --secondary: 220 14% 18%;            /* #262a33 muted neutral */
+    --secondary-foreground: 228 30% 90%;
+
+    --muted: 220 14% 18%;                /* #262a33 */
+    --muted-foreground: 215 16% 55%;      /* #64748b */
+
+    --accent: 220 14% 18%;
+    --accent-foreground: 228 30% 90%;
+
+    --destructive: 351 85% 54%;          /* #e11d48 solid red */
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 20%;               /* #2b2f38 clean hairline */
+    --input: 220 13% 20%;
+    --ring: 217 70% 56%;
+    --focus-ring: 217 70% 56%;
+
+    /* Semantic Surface Tiers */
+    --surface: 220 18% 14%;              /* #1c2028 */
+    --surface-elevated: 220 20% 16%;     /* #20242e */
+    --surface-lowest: 220 38% 6%;        /* #0a0e16 true void */
+    --surface-low: 220 20% 12%;          /* #181c24 */
+    --surface-container: 220 18% 14%;    /* #1c2028 */
+    --surface-high: 222 14% 18%;         /* #262a33 */
+    --surface-highest: 223 11% 22%;      /* #31353e */
+
+    /* Typography Tiers */
+    --text-primary: 228 30% 90%;         /* #dfe2ee */
+    --text-secondary: 215 16% 70%;       /* #94a3b8 */
+    --text-muted: 215 16% 55%;            /* #64748b */
+
+    /* Calibrated Risk Colors — Dark Mode (High-contrast neon glow on dark) */
+    --risk-safe-bg: 158 64% 12%;
+    --risk-safe-text: 150 90% 65%;       /* #34d399 */
+    --risk-safe-border: 158 64% 28%;     /* #059669 */
+    --risk-safe-dot: 150 90% 65%;
+
+    --risk-low-bg: 199 89% 14%;
+    --risk-low-text: 199 89% 65%;        /* #38bdf8 */
+    --risk-low-border: 199 89% 30%;      /* #0284c7 */
+    --risk-low-dot: 199 89% 65%;
+
+    --risk-medium-bg: 38 92% 14%;
+    --risk-medium-text: 45 93% 60%;      /* #fbbf24 */
+    --risk-medium-border: 38 92% 32%;    /* #d97706 */
+    --risk-medium-dot: 45 93% 60%;
+
+    --risk-high-bg: 21 90% 14%;
+    --risk-high-text: 27 96% 65%;        /* #fb923c */
+    --risk-high-border: 21 90% 32%;      /* #ea580c */
+    --risk-high-dot: 27 96% 65%;
+
+    --risk-critical-bg: 351 95% 14%;
+    --risk-critical-text: 351 95% 72%;   /* #fb7185 */
+    --risk-critical-border: 351 95% 38%; /* #e11d48 */
+    --risk-critical-dot: 351 95% 72%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground transition-colors duration-200;
+    margin: 0;
+    min-height: 100dvh;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow-x: hidden;
+  }
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  background-color: #0a0f1d;
-  color: #f8fafc;
+/* Material Symbols Outlined */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Cyber Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--surface-lowest));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--surface-high));
+  border-radius: 9999px;
+  border: 1px solid hsl(var(--border));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--surface-highest));
+}
+
+/* Shimmer animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--surface-container)) 25%,
+    hsl(var(--surface-highest)) 50%,
+    hsl(var(--surface-container)) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
 }
