@@ -46,7 +46,7 @@ def test_api_url_benign(client, route_prefix):
     assert data["signals"]["has_suspicious_keyword"] is False
     assert data["signals"]["is_suspicious_tld"] is False
     assert data["signals"]["engine"] == "URL & Phishing Threat Engine"
-    assert "heuristic" in data["signals"]["model_status"].lower()
+    assert any(term in data["signals"]["model_status"].lower() for term in ["supervised", "heuristic"])
 
 
 @pytest.mark.parametrize("route_prefix", ["/api/v1", "/internal"])

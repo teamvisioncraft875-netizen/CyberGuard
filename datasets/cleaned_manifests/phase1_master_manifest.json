@@ -1,0 +1,162 @@
+{
+  "phase": "PHASE 1 \u2014 DATASET CLEANING & FEATURE ENGINEERING",
+  "status": "COMPLETE",
+  "duration_seconds": 37.79,
+  "timestamp": "2026-10-04T06:58:06.049668+00:00",
+  "engines": {
+    "phishing": {
+      "dataset_name": "CYBERGUARD Curated Phishing & Message Threat Dataset",
+      "timestamp": "2026-10-04T06:57:48.552890+00:00",
+      "total_curated_records": 43680,
+      "audit_stats": {
+        "raw_counts": {
+          "Nazario": 1565,
+          "Nigerian_Fraud": 3332,
+          "CEAS_08": 39154,
+          "Enron": 29767,
+          "SpamAssassin": 5809
+        },
+        "invalid_records": 4,
+        "excluded_generic_spam": {
+          "CEAS_08_generic_spam": 20218,
+          "Enron_marketing_spam": 13972,
+          "SpamAssassin_bulk_spam": 1718
+        },
+        "included_samples": {},
+        "deduplicated_count": 35
+      },
+      "split_distribution": {
+        "train": 34944,
+        "val": 4368,
+        "test": 4368
+      },
+      "class_distribution": {
+        "benign (0)": 37188,
+        "threat (1)": 6492
+      },
+      "source_distribution": {
+        "CEAS_08": 18930,
+        "Enron": 15791,
+        "SpamAssassin": 4091,
+        "Nigerian_Fraud": 3312,
+        "Nazario": 1556
+      },
+      "manifest_path": "datasets\\cleaned_manifests\\phishing_curated_manifest.parquet",
+      "feature_representation": "TF-IDF 25,000 unigram+bigram (sublinear TF)"
+    },
+    "url": {
+      "dataset_name": "CYBERGUARD Curated Malicious URL Dataset",
+      "timestamp": "2026-10-04T06:58:02.634199+00:00",
+      "total_curated_records": 99974,
+      "raw_malicious_count": 74997,
+      "unique_domains_total": 49270,
+      "deduplicated_count": 3,
+      "split_distribution": {
+        "train": 71808,
+        "val": 21975,
+        "test": 6191
+      },
+      "class_distribution": {
+        "benign (0)": 24980,
+        "malicious (1)": 74994
+      },
+      "unseen_test_domains_count": 3449,
+      "domain_leakage_assertion": "0 overlapping domains verified across train/val/test",
+      "manifest_path": "datasets\\cleaned_manifests\\url_curated_manifest.parquet",
+      "feature_columns": [
+        "url_length",
+        "hostname_length",
+        "path_length",
+        "query_length",
+        "num_subdomains",
+        "dot_count",
+        "hyphen_count",
+        "digit_count",
+        "digit_ratio",
+        "special_char_count",
+        "entropy",
+        "is_https",
+        "has_ip_address",
+        "has_suspicious_keyword",
+        "is_suspicious_tld",
+        "is_brand_impersonated"
+      ],
+      "feature_count": 16
+    },
+    "malware": {
+      "dataset_name": "EMBER 2018 Static PE Malware Benchmark",
+      "timestamp": "2026-10-04T06:58:03.666372+00:00",
+      "model_artifact": "datasets\\malware\\ember2018\\ember_model_2018.txt",
+      "model_file_size_bytes": 127284141,
+      "test_partition_path": "datasets\\malware\\ember2018\\test_features.jsonl",
+      "test_partition_size_bytes": 1869447260,
+      "train_shards_count": 6,
+      "train_shards_paths": [
+        "datasets\\malware\\ember2018\\train_features_0.jsonl",
+        "datasets\\malware\\ember2018\\train_features_1.jsonl",
+        "datasets\\malware\\ember2018\\train_features_2.jsonl",
+        "datasets\\malware\\ember2018\\train_features_3.jsonl",
+        "datasets\\malware\\ember2018\\train_features_4.jsonl",
+        "datasets\\malware\\ember2018\\train_features_5.jsonl"
+      ],
+      "feature_dimension": 2381,
+      "safety_verification": {
+        "execution_policy": "PURE_STATIC_INSPECTION_ONLY",
+        "subprocess_execution": "PROHIBITED",
+        "shell_execution": "PROHIBITED",
+        "dynamic_detonation": "PROHIBITED"
+      },
+      "evaluated_test_subpartition": {
+        "total_evaluated_samples": 10000,
+        "benign_samples": 5000,
+        "malware_samples": 5000,
+        "operating_threshold": 0.8336,
+        "target_fpr": "< 1.0%",
+        "achieved_fpr": "0.92%"
+      }
+    },
+    "deepfake_audio": {
+      "dataset_name": "CYBERGUARD Curated Deepfake Audio Benchmark",
+      "timestamp": "2026-10-04T06:58:03.679831+00:00",
+      "total_samples": 240,
+      "split_distribution": {
+        "train": 140,
+        "validation": 50,
+        "test": 50
+      },
+      "class_distribution": {
+        "genuine": 120,
+        "manipulated": 120
+      },
+      "source_disjointness": {
+        "train_sources_count": 47,
+        "val_sources_count": 23,
+        "test_sources_count": 17,
+        "total_unique_sources": 87,
+        "leakage_assertion": "0 source overlap verified"
+      },
+      "preprocessing_standardization": "16 kHz mono polyphase resample, DC offset removed, peak normalized to [-1.0, 1.0]",
+      "feature_count": 13,
+      "operating_threshold": 0.5
+    },
+    "deepfake_visual": {
+      "dataset_name": "DFDC Shield 2026 Visual Deepfake Dataset",
+      "timestamp": "2026-10-04T06:58:06.048059+00:00",
+      "train_samples": 10458,
+      "validation_samples": 2241,
+      "test_samples": 2242,
+      "total_samples": 14941,
+      "class_distribution_train": {
+        "genuine (0)": 1112,
+        "manipulated (1)": 9346
+      },
+      "class_distribution_test": {
+        "genuine (0)": 239,
+        "manipulated (1)": 2003
+      },
+      "feature_representation": "20 frames x 1024-dim CLIP ViT embeddings + 2D FFT spectral forensic analysis",
+      "operating_threshold": 0.64,
+      "leakage_and_limitation_disclosure": "Pre-extracted tensors preserve official benchmark partition boundaries. Because video-level subject IDs were not retained in raw tensors, strict reliance on the official partition files is enforced."
+    }
+  }
+}

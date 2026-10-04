@@ -1,0 +1,24 @@
+{
+  "dataset_name": "CYBERGUARD Curated Deepfake Audio Benchmark",
+  "timestamp": "2026-10-04T06:58:03.679831+00:00",
+  "total_samples": 240,
+  "split_distribution": {
+    "train": 140,
+    "validation": 50,
+    "test": 50
+  },
+  "class_distribution": {
+    "genuine": 120,
+    "manipulated": 120
+  },
+  "source_disjointness": {
+    "train_sources_count": 47,
+    "val_sources_count": 23,
+    "test_sources_count": 17,
+    "total_unique_sources": 87,
+    "leakage_assertion": "0 source overlap verified"
+  },
+  "preprocessing_standardization": "16 kHz mono polyphase resample, DC offset removed, peak normalized to [-1.0, 1.0]",
+  "feature_count": 13,
+  "operating_threshold": 0.5
+}

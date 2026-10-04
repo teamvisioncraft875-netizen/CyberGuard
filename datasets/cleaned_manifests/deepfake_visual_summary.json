@@ -1,0 +1,19 @@
+{
+  "dataset_name": "DFDC Shield 2026 Visual Deepfake Dataset",
+  "timestamp": "2026-10-04T06:58:06.048059+00:00",
+  "train_samples": 10458,
+  "validation_samples": 2241,
+  "test_samples": 2242,
+  "total_samples": 14941,
+  "class_distribution_train": {
+    "genuine (0)": 1112,
+    "manipulated (1)": 9346
+  },
+  "class_distribution_test": {
+    "genuine (0)": 239,
+    "manipulated (1)": 2003
+  },
+  "feature_representation": "20 frames x 1024-dim CLIP ViT embeddings + 2D FFT spectral forensic analysis",
+  "operating_threshold": 0.64,
+  "leakage_and_limitation_disclosure": "Pre-extracted tensors preserve official benchmark partition boundaries. Because video-level subject IDs were not retained in raw tensors, strict reliance on the official partition files is enforced."
+}

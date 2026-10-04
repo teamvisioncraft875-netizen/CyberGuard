@@ -22,7 +22,39 @@ from app.prompts.phishing import (
     sanitize_message_input,
 )
 
+import joblib
+from pathlib import Path
+from typing import Tuple, Optional
+
 logger = logging.getLogger("cyberguard.message_engine")
+
+_MODEL_DIR = Path(__file__).resolve().parents[1] / "models" / "phishing"
+_CLASSIFIER_PATH = _MODEL_DIR / "phishing_classifier_v1.0.0.joblib"
+_VECTORIZER_PATH = _MODEL_DIR / "phishing_vectorizer_v1.0.0.joblib"
+_METADATA_PATH = _MODEL_DIR / "phishing_metadata_v1.0.0.json"
+
+_CACHED_MODEL = None
+_CACHED_VECTORIZER = None
+_CACHED_METADATA = None
+
+
+def _get_phishing_model() -> Tuple[Optional[Any], Optional[Any], Optional[Dict[str, Any]]]:
+    """Lazy loader for trained supervised phishing classifier, vectorizer, and metadata."""
+    global _CACHED_MODEL, _CACHED_VECTORIZER, _CACHED_METADATA
+    if _CACHED_MODEL is None and _CLASSIFIER_PATH.exists() and _VECTORIZER_PATH.exists():
+        try:
+            _CACHED_MODEL = joblib.load(_CLASSIFIER_PATH)
+            _CACHED_VECTORIZER = joblib.load(_VECTORIZER_PATH)
+            if _METADATA_PATH.exists():
+                with open(_METADATA_PATH, "r", encoding="utf-8") as f:
+                    _CACHED_METADATA = json.load(f)
+            logger.info("Successfully loaded supervised Phishing classifier v1.0.0")
+        except Exception as e:
+            logger.warning(f"Failed to load supervised phishing model: {e}")
+            _CACHED_MODEL = None
+            _CACHED_VECTORIZER = None
+            _CACHED_METADATA = None
+    return _CACHED_MODEL, _CACHED_VECTORIZER, _CACHED_METADATA
 
 
 def _call_llm_if_available(sanitized_text: str) -> Dict[str, Any] | None:
@@ -119,10 +151,12 @@ def analyze_message(request: MessageAnalyzeRequest) -> UnifiedAnalysisResponse:
         except Exception as parse_err:
             logger.warning(f"Failed to parse LLM structured output: {parse_err}. Falling back to rule-based engine.")
 
-    # 3. Deterministic / Heuristic feature-scoring pipeline (fast-path & offline fallback)
+    # 3. Supervised ML Classifier (Calibrated LinearSVC trained on Nazario/Nigerian/CEAS/Enron)
+    model, vectorizer, meta = _get_phishing_model()
+
     text_lower = sanitized_text.lower()
 
-    # Urgency cues
+    # Heuristic XAI cues (Urgency, Credential solicitation, Brand targeting, Links)
     urgency_terms = [
         "urgent", "immediately", "account locked", "suspended", "unauthorized",
         "action required", "within 24 hours", "within 1 hour", "limited time",
@@ -131,7 +165,6 @@ def analyze_message(request: MessageAnalyzeRequest) -> UnifiedAnalysisResponse:
     urgency_matches = [term for term in urgency_terms if term in text_lower]
     urgency_score = min(1.0, len(urgency_matches) * 0.35 + (0.3 if "urgent" in text_lower or "immediately" in text_lower else 0.0))
 
-    # Credential solicitation keywords
     credential_terms = [
         "password", "login", "credentials", "banking", "ssn", "pin", "verify account",
         "update payment", "confirm credentials", "access code", "two-factor"
@@ -139,7 +172,6 @@ def analyze_message(request: MessageAnalyzeRequest) -> UnifiedAnalysisResponse:
     credential_matches = [term for term in credential_terms if term in text_lower]
     credential_solicitation = len(credential_matches) > 0
 
-    # Brand targeting
     brands = {
         "chase": "Chase Bank",
         "paypal": "PayPal",
@@ -152,22 +184,48 @@ def analyze_message(request: MessageAnalyzeRequest) -> UnifiedAnalysisResponse:
         "netflix": "Netflix",
     }
     targeted_brand = next((name for k, name in brands.items() if k in text_lower), None)
-
-    # Link / URL presence
     has_link = bool(re.search(r"https?://\S+|www\.\S+", sanitized_text))
 
-    # Calibrate risk score and tier
-    score = 15
-    if urgency_score > 0.3:
-        score += int(urgency_score * 35)
-    if credential_solicitation:
-        score += 30
-    if targeted_brand:
-        score += 15
-    if has_link:
-        score += 10
+    ml_prob = None
+    threshold = 0.36
+    if model is not None and vectorizer is not None:
+        try:
+            X_vec = vectorizer.transform([sanitized_text])
+            ml_prob = float(model.predict_proba(X_vec)[0, 1])
+            threshold = float(meta.get("operating_threshold", 0.36)) if meta else 0.36
+        except Exception as ml_err:
+            logger.warning(f"Supervised model inference failed: {ml_err}. Falling back to pure heuristics.")
+            ml_prob = None
 
-    score = min(100, max(0, score))
+    # Calibrate unified score and tier
+    if ml_prob is not None:
+        is_threat = ml_prob >= threshold
+        if is_threat:
+            # Scaled 70..100 based on probability and compounding risk cues
+            base_score = 70 + int((ml_prob - threshold) / (1.0 - threshold) * 20)
+            if credential_solicitation or targeted_brand:
+                base_score += 10
+            score = min(100, max(70, base_score))
+        else:
+            # Scaled 5..65 based on probability and heuristic cues
+            base_score = int((ml_prob / max(threshold, 0.01)) * 40)
+            if urgency_score > 0.3:
+                base_score += 15
+            if has_link:
+                base_score += 10
+            score = min(65, max(5, base_score))
+    else:
+        # Fallback heuristic calculation if model unreadable
+        score = 15
+        if urgency_score > 0.3:
+            score += int(urgency_score * 35)
+        if credential_solicitation:
+            score += 30
+        if targeted_brand:
+            score += 15
+        if has_link:
+            score += 10
+        score = min(100, max(0, score))
 
     if score >= 80:
         risk_level = RiskLevel.HIGH if score < 95 else RiskLevel.CRITICAL
@@ -175,7 +233,7 @@ def analyze_message(request: MessageAnalyzeRequest) -> UnifiedAnalysisResponse:
             f"Message exhibits extreme urgency cues demanding credential verification "
             f"and targets {targeted_brand or 'a recognized provider'}."
             if targeted_brand else
-            "Message exhibits extreme urgency cues demanding credential verification and contains an unverified typo-squatted link."
+            "Supervised analysis identified high-probability phishing or social engineering threat targeting credentials or accounts."
         )
         actions = [
             "Do not click any embedded links",
@@ -183,9 +241,9 @@ def analyze_message(request: MessageAnalyzeRequest) -> UnifiedAnalysisResponse:
         ]
     elif score >= 50:
         risk_level = RiskLevel.MEDIUM
-        explanation = "Message contains moderate urgency language or unfamiliar security notices."
+        explanation = "Message contains moderate urgency language, unexpected financial requests, or unfamiliar notices."
         actions = ["Exercise caution before taking action on this message"]
-    elif score >= 30:
+    elif score >= 25:
         risk_level = RiskLevel.LOW
         explanation = "Low Risk: Minor marketing urgency terms detected with no credential solicitation."
         actions = ["Review message normally"]
@@ -194,11 +252,16 @@ def analyze_message(request: MessageAnalyzeRequest) -> UnifiedAnalysisResponse:
         explanation = "Safe: No phishing, credential harvesting, or urgency indicators detected."
         actions = ["No action required"]
 
+    confidence = round(ml_prob if (ml_prob and ml_prob >= 0.5) else (1.0 - ml_prob if ml_prob else 0.88), 4)
+
     return UnifiedAnalysisResponse(
         risk_level=risk_level,
         risk_score=score,
         explanation=explanation,
         signals={
+            "ml_threat_probability": round(ml_prob, 4) if ml_prob is not None else None,
+            "ml_decision": "threat" if (ml_prob is not None and ml_prob >= threshold) else "benign",
+            "operating_threshold": threshold,
             "urgency_score": round(urgency_score, 2),
             "urgency_language_detected": urgency_score > 0.3,
             "credential_solicitation": credential_solicitation,
@@ -206,9 +269,10 @@ def analyze_message(request: MessageAnalyzeRequest) -> UnifiedAnalysisResponse:
             "brand_targeted": targeted_brand,
             "contains_url": has_link,
             "prompt_injection_detected": False,
-            "model_type": f"nlp_hybrid_transformer_v{SYSTEM_PROMPT_VERSION}",
+            "model_type": "supervised_calibrated_linearsvc_v1.0.0" if ml_prob is not None else f"heuristic_fallback_v{SYSTEM_PROMPT_VERSION}",
             "source_type": request.source_type.value,
         },
         recommended_actions=actions,
-        confidence_score=0.94 if score >= 80 else 0.88,
+        confidence_score=confidence,
     )
+

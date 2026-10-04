@@ -1,0 +1,60 @@
+{
+  "dataset_name": "CYBERGUARD Curated Malicious URL Dataset",
+  "timestamp": "2026-10-04T08:47:54.608527+00:00",
+  "alignment_status": "ALIGNED_TO_V1_PRODUCTION",
+  "total_curated_records": 125839,
+  "raw_malicious_count": 74997,
+  "unique_domains_total": 52193,
+  "split_distribution": {
+    "train": 100627,
+    "val": 16492,
+    "test": 8720
+  },
+  "class_distribution": {
+    "benign (0)": 50845,
+    "malicious (1)": 74994
+  },
+  "split_domain_counts": {
+    "train": 41756,
+    "val": 5218,
+    "test": 5219
+  },
+  "unseen_test_domains_count": 5219,
+  "domain_leakage_assertion": "0 overlapping domains verified across train/val/test",
+  "shared_domains_quarantine": {
+    "overlap_domains_count": 8,
+    "overlapping_domains": [
+      "ad.doubleclick.net",
+      "docs.google.com",
+      "google.com",
+      "tinyurl.com",
+      "web.archive.org",
+      "www.google.com",
+      "www.linkedin.com",
+      "www.surveymonkey.com"
+    ],
+    "assigned_partition": "train_only"
+  },
+  "split_sha256": "ffb085da3ea88fe6bbf1ea7c1061bff23775e6fb7e7f02288f61e22ba30ea5e1",
+  "manifest_path": "datasets\\cleaned_manifests\\url_curated_manifest.parquet",
+  "feature_columns": [
+    "url_length",
+    "hostname_length",
+    "path_length",
+    "query_length",
+    "num_subdomains",
+    "dot_count",
+    "hyphen_count",
+    "digit_count",
+    "digit_ratio",
+    "special_char_count",
+    "entropy",
+    "is_https",
+    "has_ip_address",
+    "has_suspicious_keyword",
+    "is_suspicious_tld",
+    "is_brand_impersonated"
+  ],
+  "feature_count": 16,
+  "alignment_duration_seconds": 5.32
+}

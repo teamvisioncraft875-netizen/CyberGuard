@@ -1,0 +1,28 @@
+{
+  "model_name": "CYBERGUARD Supervised Malicious URL Classifier",
+  "version": "1.0.0",
+  "features": [
+    "url_length",
+    "hostname_length",
+    "path_length",
+    "query_length",
+    "num_subdomains",
+    "dot_count",
+    "hyphen_count",
+    "digit_count",
+    "digit_ratio",
+    "special_char_count",
+    "entropy",
+    "is_https",
+    "has_ip_address",
+    "has_suspicious_keyword",
+    "is_suspicious_tld",
+    "is_brand_impersonated"
+  ],
+  "feature_count": 16,
+  "output_format": {
+    "prediction": "binary_integer (0: benign, 1: malicious)",
+    "threat_probability": "float (0.0 to 1.0)",
+    "calibrated_threshold": 0.7400000000000002
+  }
+}

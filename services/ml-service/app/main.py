@@ -54,9 +54,10 @@ async def health_check():
         },
     }
 
-# Wire Analysis Routers (internal and API v1)
+# Wire Analysis Routers (internal, API v1, and direct)
 app.include_router(analyze_router, prefix="/internal")
 app.include_router(analyze_router, prefix="/api/v1")
+app.include_router(analyze_router)
 
 if __name__ == "__main__":
     import uvicorn
