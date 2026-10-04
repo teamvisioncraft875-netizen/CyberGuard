@@ -85,25 +85,58 @@ async function processDueActions() {
   lastRunTimestamp = new Date();
 
   try {
-    // 1. Sync recent execution stats
-    await refreshHourlyCounts();
-    if (!isRunning) return;
-
-    // 2. Query response_actions WHERE status IN ('scheduled', 'approved') AND scheduled_at <= NOW()
-    const dueQuery = `
-      SELECT *
-      FROM public.response_actions
-      WHERE status IN ('scheduled', 'approved')
-        AND scheduled_at IS NOT NULL
-        AND scheduled_at <= NOW()
-      ORDER BY scheduled_at ASC;
-    `;
-    const { rows: dueActions } = await db.query(dueQuery);
-
-    if (!dueActions || dueActions.length === 0 || !isRunning) {
+    let lockClient = null;
+    let lockAcquired = false;
+    try {
+      lockClient = await db.pool.connect();
+      const lockRes = await lockClient.query(
+        'SELECT pg_try_advisory_lock(hashtext($1)) AS acquired;',
+        ['cyberguard_scheduler_lock']
+      );
+      lockAcquired = Boolean(lockRes.rows[0]?.acquired);
+      if (!lockAcquired) {
+        console.log('[schedulerService] Advisory lock already held by another scheduler worker. Skipping cycle.');
+        lockClient.release();
+        isProcessing = false;
+        return;
+      }
+    } catch (lErr) {
+      if (lockClient) lockClient.release();
       isProcessing = false;
       return;
     }
+
+    try {
+      // 1. Sync recent execution stats
+      await refreshHourlyCounts();
+      if (!isRunning) {
+        if (lockClient && lockAcquired) {
+          await lockClient.query('SELECT pg_advisory_unlock(hashtext($1));', ['cyberguard_scheduler_lock']);
+          lockClient.release();
+        }
+        isProcessing = false;
+        return;
+      }
+
+      // 2. Query response_actions WHERE status IN ('scheduled', 'approved') AND scheduled_at <= NOW()
+      const dueQuery = `
+        SELECT *
+        FROM public.response_actions
+        WHERE status IN ('scheduled', 'approved')
+          AND scheduled_at IS NOT NULL
+          AND scheduled_at <= NOW()
+        ORDER BY scheduled_at ASC;
+      `;
+      const { rows: dueActions } = await db.query(dueQuery);
+
+      if (!dueActions || dueActions.length === 0 || !isRunning) {
+        if (lockClient && lockAcquired) {
+          await lockClient.query('SELECT pg_advisory_unlock(hashtext($1));', ['cyberguard_scheduler_lock']);
+          lockClient.release();
+        }
+        isProcessing = false;
+        return;
+      }
 
     console.log(`[schedulerService] Found ${dueActions.length} due response action(s) to process`);
 
@@ -163,6 +196,12 @@ async function processDueActions() {
   } catch (cycleErr) {
     console.error('[schedulerService] Uncaught error in scheduler cycle:', cycleErr.message);
   } finally {
+    if (lockClient && lockAcquired) {
+      try {
+        await lockClient.query('SELECT pg_advisory_unlock(hashtext($1));', ['cyberguard_scheduler_lock']);
+      } catch (uErr) {}
+      lockClient.release();
+    }
     isProcessing = false;
   }
 }

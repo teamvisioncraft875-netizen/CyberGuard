@@ -13,11 +13,60 @@ const { log: auditLog } = require('./auditService');
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const isUUID = (val) => typeof val === 'string' && UUID_REGEX.test(val);
 
-const VALID_METRIC_TYPES = new Set(['request_spike', 'post_flood', 'login_abuse', 'ip_flooding']);
+const VALID_METRIC_TYPES = new Set(['request_spike', 'post_flood', 'login_abuse', 'ip_flooding', 'distributed_ddos']);
+
+/**
+ * Truncates, limits, and sanitizes evidence payloads to prevent database storage abuse.
+ *
+ * @param {Object} payload
+ * @param {number} [maxBytes=32768]
+ * @returns {Object}
+ */
+function capEvidencePayload(payload, maxBytes = 32768) {
+  if (!payload || typeof payload !== 'object') return payload;
+
+  const sanitizeNode = (val, depth = 0) => {
+    if (depth > 6 || val === null || val === undefined) return val;
+    if (typeof val === 'string') {
+      return val.length > 500 ? `${val.slice(0, 500)}...[truncated]` : val;
+    }
+    if (Array.isArray(val)) {
+      const MAX_ARRAY = 50;
+      if (val.length > MAX_ARRAY) {
+        const sliced = val.slice(0, MAX_ARRAY).map((item) => sanitizeNode(item, depth + 1));
+        sliced.push({ _omitted_items_count: val.length - MAX_ARRAY });
+        return sliced;
+      }
+      return val.map((item) => sanitizeNode(item, depth + 1));
+    }
+    if (typeof val === 'object') {
+      const res = {};
+      for (const [k, v] of Object.entries(val)) {
+        res[k] = sanitizeNode(v, depth + 1);
+      }
+      return res;
+    }
+    return val;
+  };
+
+  const capped = sanitizeNode(payload);
+  const jsonStr = JSON.stringify(capped);
+  if (jsonStr.length > maxBytes) {
+    return {
+      truncated: true,
+      summary: 'Evidence payload exceeded maximum byte limit (32KB)',
+      metric_type: payload.metric_type,
+      source_ip: payload.source_ip,
+      count: payload.count,
+      sample: jsonStr.slice(0, 2048)
+    };
+  }
+  return capped;
+}
 
 /**
  * DDoS Detection Service (rule-based, no ML).
- * Detects request spikes, POST floods, login abuse, and IP flooding based on historical windows.
+ * Detects request spikes, POST floods, login abuse, IP flooding, and distributed DDoS swarms.
  */
 const ddosDetectionService = {
   /**
@@ -426,6 +475,151 @@ const ddosDetectionService = {
   },
 
   /**
+   * Detects distributed DDoS attacks that evade per-IP thresholds (e.g. 50 IPs sending 20 requests each).
+   * Checks:
+   * 1. Subnet aggregation (/24 CIDR blocks)
+   * 2. Organization-wide distributed spikes across many distinct IPs
+   * 3. Endpoint-wide distributed spikes
+   *
+   * @param {string|null} org_id - Target organization UUID
+   * @param {number} [window_minutes=5] - Time window in minutes
+   * @returns {Promise<Array<{ attack_type: string, target: string, distinct_ips: number, total_requests: number, threshold_exceeded: boolean }>>}
+   */
+  async detectDistributedDDoS(org_id, window_minutes = 5) {
+    try {
+      const windowMinutes = Math.max(1, parseInt(window_minutes, 10) || 5);
+      const validOrgId = isUUID(org_id) ? org_id : null;
+
+      // 1. Organization-wide and Subnet aggregation from audit_logs and ddos_metrics
+      const auditQuery = `
+        SELECT ip_address AS source_ip,
+               COUNT(*)::INT AS count,
+               COALESCE(details->>'endpoint', details->>'path', resource_type, 'default') AS endpoint
+        FROM public.audit_logs
+        WHERE ($1::UUID IS NULL OR organization_id = $1::UUID)
+          AND created_at >= NOW() - ($2 || ' minutes')::INTERVAL
+          AND ip_address IS NOT NULL
+        GROUP BY ip_address, endpoint;
+      `;
+      const auditRes = await db.query(auditQuery, [validOrgId, windowMinutes]);
+
+      const metricsQuery = `
+        SELECT source_ip,
+               SUM(count)::INT AS count,
+               COALESCE(endpoint, 'default') AS endpoint
+        FROM public.ddos_metrics
+        WHERE ($1::UUID IS NULL OR organization_id = $1::UUID)
+          AND created_at >= NOW() - ($2 || ' minutes')::INTERVAL
+          AND source_ip IS NOT NULL
+        GROUP BY source_ip, endpoint;
+      `;
+      const metricsRes = await db.query(metricsQuery, [validOrgId, windowMinutes]);
+
+      // Combine logs
+      const ipEndpointMap = new Map();
+      const allRows = [...auditRes.rows, ...metricsRes.rows];
+      for (const row of allRows) {
+        if (!row.source_ip) continue;
+        const key = `${row.source_ip}||${row.endpoint}`;
+        ipEndpointMap.set(key, (ipEndpointMap.get(key) || 0) + Number(row.count));
+      }
+
+      // Aggregate by Subnet (/24) and Org-wide
+      const subnetMap = new Map();
+      const orgIps = new Set();
+      let orgTotalRequests = 0;
+      const endpointMap = new Map();
+
+      for (const [key, count] of ipEndpointMap.entries()) {
+        const [ip, ep] = key.split('||');
+        orgIps.add(ip);
+        orgTotalRequests += count;
+
+        const parts = ip.split('.');
+        const subnet = parts.length === 4 ? `${parts[0]}.${parts[1]}.${parts[2]}.0/24` : 'other';
+        const sEntry = subnetMap.get(subnet) || { ips: new Set(), total_requests: 0 };
+        sEntry.ips.add(ip);
+        sEntry.total_requests += count;
+        subnetMap.set(subnet, sEntry);
+
+        const eEntry = endpointMap.get(ep) || { ips: new Set(), total_requests: 0 };
+        eEntry.ips.add(ip);
+        eEntry.total_requests += count;
+        endpointMap.set(ep, eEntry);
+      }
+
+      const results = [];
+      const DISTRIBUTED_IP_COUNT_THRESHOLD = parseInt(process.env.DDOS_DISTRIBUTED_IP_THRESHOLD, 10) || 20;
+      const DISTRIBUTED_TOTAL_REQ_THRESHOLD = parseInt(process.env.DDOS_DISTRIBUTED_REQ_THRESHOLD, 10) || 400;
+
+      // A) Org-wide distributed attack
+      if (orgIps.size >= DISTRIBUTED_IP_COUNT_THRESHOLD && orgTotalRequests >= DISTRIBUTED_TOTAL_REQ_THRESHOLD) {
+        const item = {
+          attack_type: 'organization_wide_distributed',
+          target: validOrgId || 'global',
+          distinct_ips: orgIps.size,
+          total_requests: orgTotalRequests,
+          count: orgTotalRequests,
+          threshold_exceeded: true
+        };
+        results.push(item);
+
+        if (validOrgId) {
+          try {
+            const inc = await this.createDDoSIncident(validOrgId, 'distributed_ddos', 'distributed_swarm', {
+              count: orgTotalRequests,
+              distinct_ips: orgIps.size,
+              sample_ips: Array.from(orgIps).slice(0, 50),
+              window_minutes: windowMinutes,
+              threshold: DISTRIBUTED_TOTAL_REQ_THRESHOLD,
+              explanation: `Distributed DDoS attack detected: ${orgIps.size} distinct IPs generated ${orgTotalRequests} requests in ${windowMinutes}m.`
+            });
+            item.incident_id = inc?.id || inc;
+          } catch (e) {
+            console.warn('[detectDistributedDDoS auto-create error]', e.message);
+          }
+        }
+      }
+
+      // B) Subnet flood: >= 10 distinct IPs and >= 200 total requests from same /24
+      for (const [subnet, sData] of subnetMap.entries()) {
+        if (subnet !== 'other' && sData.ips.size >= 10 && sData.total_requests >= 200) {
+          const item = {
+            attack_type: 'subnet_flood',
+            target: subnet,
+            distinct_ips: sData.ips.size,
+            total_requests: sData.total_requests,
+            count: sData.total_requests,
+            threshold_exceeded: true
+          };
+          results.push(item);
+
+          if (validOrgId) {
+            try {
+              const inc = await this.createDDoSIncident(validOrgId, 'distributed_ddos', subnet, {
+                count: sData.total_requests,
+                distinct_ips: sData.ips.size,
+                subnet,
+                sample_ips: Array.from(sData.ips).slice(0, 50),
+                window_minutes: windowMinutes,
+                explanation: `Subnet DDoS flood detected from ${subnet}: ${sData.ips.size} IPs generated ${sData.total_requests} requests.`
+              });
+              item.incident_id = inc?.id || inc;
+            } catch (e) {
+              console.warn('[detectDistributedDDoS subnet auto-create error]', e.message);
+            }
+          }
+        }
+      }
+
+      return results;
+    } catch (err) {
+      console.error('[ddosDetectionService.detectDistributedDDoS Error]', err.message);
+      return [];
+    }
+  },
+
+  /**
    * Generates a critical DDoS incident and records incident evidence.
    * Signature supports both:
    *   createDDoSIncident(metric_type, source_ip, details)
@@ -512,15 +706,17 @@ const ddosDetectionService = {
           throw new Error('Simulated transaction failure midway');
         }
 
+        const threatType = metric_type === 'distributed_ddos' ? 'distributed_ddos' : 'ddos';
+
         // 3. Create incident record in database
         const newIncident = await Incident.create({
           user_id: details?.user_id || null,
           organization_id: resolvedOrgId,
-          threat_type: 'ddos',
+          threat_type: threatType,
           source_type: 'ddos_detection',
           risk_level: 'critical',
           risk_score: 95,
-          explanation: details?.explanation || `Automated DDoS detection: ${metric_type} pattern identified from IP ${targetSourceIp}.`,
+          explanation: details?.explanation || `Automated DDoS detection: ${metric_type} pattern identified from ${targetSourceIp}.`,
           status: 'open'
         }, client);
 
@@ -550,50 +746,61 @@ const ddosDetectionService = {
         }));
         await RecommendedAction.createMany(recActions, client);
 
-        // 7. Store metric details in incident_evidence (including dedup fingerprint)
+        // 7. Store metric details in incident_evidence (enforce storage protection)
+        const evidencePayload = capEvidencePayload({
+          metric_type,
+          threat_type: threatType,
+          source_ip: targetSourceIp,
+          threshold_exceeded: true,
+          count,
+          endpoint: details?.endpoint || null,
+          dedup_fingerprint: dedupFingerprint,
+          lock_key: lockKey,
+          ...details
+        });
+
         await IncidentEvidence.create({
           incident_id: newIncident.id,
           evidence_type: 'ddos_metrics',
-          raw_payload: {
-            metric_type,
-            source_ip: targetSourceIp,
-            threshold_exceeded: true,
-            count,
-            endpoint: details?.endpoint || null,
-            dedup_fingerprint: dedupFingerprint,
-            lock_key: lockKey,
-            ...details
-          },
-          metadata: {
-            metric_type,
-            source_ip: targetSourceIp,
-            threshold_exceeded: true,
-            count,
-            endpoint: details?.endpoint || null,
-            dedup_fingerprint: dedupFingerprint,
-            lock_key: lockKey,
-            ...details
-          }
+          raw_payload: evidencePayload,
+          metadata: evidencePayload
         }, client);
 
         // 8. Store metric for audit + trending in ddos_metrics
         await DDoSAlert.create({
           organization_id: resolvedOrgId,
-          metric_type,
+          metric_type: metric_type === 'distributed_ddos' ? 'request_spike' : metric_type,
           source_ip: targetSourceIp,
           endpoint: details?.endpoint || null,
           count,
           window_start: details?.window_start || new Date(Date.now() - 5 * 60 * 1000),
           window_end: details?.window_end || new Date(),
           threshold_exceeded: true,
-          metadata: {
+          metadata: capEvidencePayload({
             incident_id: newIncident.id,
             dedup_fingerprint: dedupFingerprint,
+            threat_type: threatType,
             ...details
-          }
+          })
         }, client);
 
-        // 9. Log ddos_incident_created to audit_logs
+        // 9. Log incident_created and ddos_incident_created to audit_logs (Section 9 Audit Integrity)
+        await auditLog({
+          organization_id: resolvedOrgId,
+          user_id: details?.user_id || null,
+          actor_type: 'system_guard',
+          action: 'incident_created',
+          resource_type: 'incident',
+          resource_id: newIncident.id,
+          details: {
+            metric_type,
+            source_ip: targetSourceIp,
+            threat_type: threatType,
+            risk_score: 95
+          },
+          ip_address: targetSourceIp
+        }, client);
+
         await auditLog({
           organization_id: resolvedOrgId,
           user_id: details?.user_id || null,
@@ -607,7 +814,7 @@ const ddosDetectionService = {
             count,
             endpoint: details?.endpoint || null,
             incident_id: newIncident.id,
-            threat_type: 'ddos',
+            threat_type: threatType,
             risk_score: 95,
             dedup_fingerprint: dedupFingerprint
           },

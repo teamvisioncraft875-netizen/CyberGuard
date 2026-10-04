@@ -178,7 +178,7 @@ const responseAdminController = {
         organization_id,
         user_id: req.user.id,
         actor_type: 'admin',
-        action: approved ? AUDIT_ACTIONS.RESPONSE_ACTION_APPROVED : AUDIT_ACTIONS.RESPONSE_ACTION_REJECTED,
+        action: approved ? 'action_approved' : 'action_rejected',
         resource_type: 'response_action',
         resource_id: id,
         details: {

@@ -1,11 +1,12 @@
 const net = require('net');
+const crypto = require('crypto');
 const { URL } = require('url');
 const db = require('../config/db');
 const config = require('../config');
 const FirewallRule = require('../models/FirewallRule');
 const { auditService, AUDIT_ACTIONS } = require('./auditService');
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Domain validation regex: labels separated by dots, lowercase alphanumeric and hyphens, no consecutive dots
 const DOMAIN_LABEL_REGEX = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
@@ -39,7 +40,11 @@ const STATIC_PROTECTED_IPS = [
 // Protected domains that must never be blocked
 const STATIC_PROTECTED_DOMAINS = [
   'localhost',
-  'cyberguard.local'
+  'cyberguard.local',
+  'cyberguard.internal',
+  'cyberguard.security',
+  'api.cyberguard.internal',
+  'dashboard.cyberguard.internal'
 ];
 
 /**
@@ -368,6 +373,22 @@ const firewallService = {
     try {
       const target_ip = validation.target_ip || null;
       const target_domain = validation.target_domain || null;
+      const targetStr = target_ip || target_domain;
+      const rule_hash = crypto.createHash('sha256').update(`${rule_type}:${targetStr}`).digest('hex');
+
+      // 1. Deduplication lookup: return existing rule if already pending or active
+      const existingRule = await FirewallRule.findActiveByHash(agent_id, rule_hash);
+      if (existingRule) {
+        return {
+          success: true,
+          valid: true,
+          reused: true,
+          rule_id: existingRule.id,
+          status: existingRule.status,
+          rule: existingRule,
+          validation_result: validation
+        };
+      }
 
       const rule = await FirewallRule.create({
         agent_id,
@@ -375,10 +396,12 @@ const firewallService = {
         rule_type,
         target_ip,
         target_domain,
+        rule_hash,
         status: 'pending',
         created_by_id,
         result: {
           validation: 'passed',
+          rule_hash,
           initiated_at: new Date().toISOString()
         }
       });
@@ -421,7 +444,8 @@ const firewallService = {
           rule_type,
           target: target_ip || target_domain,
           status: rule.status,
-          agent_id
+          agent_id,
+          rule_hash
         }
       });
 
@@ -499,6 +523,53 @@ const firewallService = {
         }
       });
       return { success: false, deleted: false, notFound: true, error: 'Firewall rule not found' };
+    }
+
+    // Idempotent revocation & race condition guard:
+    if (existing.status === 'pending_delete' || existing.status === 'deleted') {
+      return {
+        success: true,
+        deleted: true,
+        already_deleted: true,
+        rule_id,
+        status: existing.status
+      };
+    }
+
+    if (existing.status === 'pending') {
+      // Rule hasn't been applied on the host agent yet: cancel directly without leaving orphan entries
+      await FirewallRule.updateStatus(rule_id, organization_id, 'deleted', new Date().toISOString());
+      try {
+        await db.query(
+          `UPDATE public.agent_commands
+           SET status = 'failed', result = jsonb_set(COALESCE(result, '{}'::jsonb), '{error}', '"cancelled_prior_to_execution"')
+           WHERE device_id = $1 AND (target_data->>'ip_address' = $2 OR target_data->>'domain' = $3)
+             AND status = 'pending';`,
+          [existing.agent_id, existing.target_ip, existing.target_domain]
+        );
+      } catch (cErr) {}
+
+      await auditService.log({
+        organization_id,
+        user_id: deleted_by_id,
+        actor_type: deleted_by_id ? 'admin' : 'system_policy',
+        action: AUDIT_ACTIONS.FIREWALL_RULE_DELETED,
+        resource_type: 'firewall_rule',
+        resource_id: rule_id,
+        details: {
+          rule_type: existing.rule_type,
+          target: existing.target_ip || existing.target_domain,
+          status: 'deleted',
+          cancelled_pending: true
+        }
+      });
+
+      return {
+        success: true,
+        deleted: true,
+        rule_id,
+        status: 'deleted'
+      };
     }
 
     const updated = await FirewallRule.updateStatus(

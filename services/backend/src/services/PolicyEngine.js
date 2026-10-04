@@ -351,15 +351,40 @@ class PolicyEngine {
     }
 
     try {
+      if (client) {
+        await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`policy_eval:${incident.id}`]);
+      }
+
       const applicablePolicies = await this.getApplicablePolicies(incident, client);
       if (!applicablePolicies || applicablePolicies.length === 0) {
         return [];
       }
 
+      const { log: auditLog } = require('./auditService');
+      await auditLog({
+        organization_id: incident.organization_id,
+        user_id: null,
+        actor_type: 'system_policy',
+        action: 'policy_matched',
+        resource_type: 'incident',
+        resource_id: incident.id,
+        details: {
+          matched_policies_count: applicablePolicies.length,
+          policies: applicablePolicies.map((p) => ({ policy_id: p.policy_id, name: p.policy_name, action_type: p.action_type }))
+        }
+      }, client);
+
       const calculatedActions = this.calculateActions(incident, applicablePolicies);
       const createdActions = [];
+      const seenActionKeys = new Set();
 
       for (const action of calculatedActions) {
+        const actionKey = `${action.action_type}:${JSON.stringify(action.target || {})}`;
+        if (seenActionKeys.has(actionKey)) {
+          continue; // In-memory dedup within same batch
+        }
+        seenActionKeys.add(actionKey);
+
         const created = await ResponseAction.create({
           organization_id: action.organization_id,
           incident_id: action.incident_id,
@@ -372,14 +397,31 @@ class PolicyEngine {
           requested_by_id: action.requested_by_id,
           target_device_id: action.target_device_id || null
         }, client);
-        createdActions.push(created);
+        
+        if (created) {
+          createdActions.push(created);
 
-        // Hook into response_actions creation (Phase 1C: Notification Service)
-        // Fire-and-forget: never block execution or fail incident response
-        const matchingPolicy = applicablePolicies.find((p) => p.policy_id === action.policy_id);
-        notificationService.sendActionNotification(created, incident, matchingPolicy).catch((nErr) => {
-          console.error('[NotificationService Hook Error]', nErr.message);
-        });
+          await auditLog({
+            organization_id: action.organization_id,
+            user_id: null,
+            actor_type: 'system_policy',
+            action: 'action_proposed',
+            resource_type: 'response_action',
+            resource_id: created.id,
+            details: {
+              action_type: created.action_type,
+              target: created.target,
+              incident_id: incident.id,
+              policy_id: created.policy_id
+            }
+          }, client);
+
+          // Hook into response_actions creation (Phase 1C: Notification Service)
+          const matchingPolicy = applicablePolicies.find((p) => p.policy_id === action.policy_id);
+          notificationService.sendActionNotification(created, incident, matchingPolicy).catch((nErr) => {
+            console.error('[NotificationService Hook Error]', nErr.message);
+          });
+        }
       }
 
       return createdActions;

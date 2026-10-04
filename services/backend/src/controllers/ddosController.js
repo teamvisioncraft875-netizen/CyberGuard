@@ -2,7 +2,7 @@ const db = require('../config/db');
 const ddosDetectionService = require('../services/ddosDetectionService');
 const { log: auditLog } = require('../services/auditService');
 
-const VALID_SCAN_TYPES = new Set(['request_spike', 'post_flood', 'login_abuse', 'ip_flooding']);
+const VALID_SCAN_TYPES = new Set(['request_spike', 'post_flood', 'login_abuse', 'ip_flooding', 'distributed_ddos']);
 
 /**
  * DDoS Controller — Exposes administrative detection and monitoring APIs.
@@ -71,6 +71,13 @@ const ddosController = {
           const windowMinutes = Math.max(1, parseInt(window_minutes, 10) || 5);
           rawResults = await ddosDetectionService.detectIPFlooding(orgId, windowMinutes);
           threats = rawResults;
+          break;
+        }
+
+        case 'distributed_ddos': {
+          const windowMinutes = Math.max(1, parseInt(window_minutes, 10) || 5);
+          rawResults = await ddosDetectionService.detectDistributedDDoS(orgId, windowMinutes);
+          threats = rawResults.filter((r) => r.threshold_exceeded);
           break;
         }
       }

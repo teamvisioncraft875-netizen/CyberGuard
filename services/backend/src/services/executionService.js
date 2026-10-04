@@ -33,18 +33,28 @@ const PROTECTED_DOMAINS = new Set([
   'dashboard.cyberguard.internal'
 ]);
 
+const net = require('net');
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 /**
- * Checks whether an IP address is in a protected internal/loopback range.
+ * Checks whether an IP address is in a protected internal/loopback/broadcast range or malformed.
  *
  * @param {string} ip
  * @returns {boolean}
  */
 function isProtectedIp(ip) {
-  if (!ip || typeof ip !== 'string') return false;
+  if (!ip || typeof ip !== 'string') return true;
   const clean = ip.trim().toLowerCase();
+  
+  if (net.isIP(clean) === 0) return true; // Malformed IP is rejected as protected/invalid
   if (PROTECTED_IPS.has(clean)) return true;
+
+  // Broadcast & 0.0.0.0/8
+  if (clean === '255.255.255.255' || clean === '0.0.0.0' || clean.startsWith('0.')) return true;
+
   // Loopback (127.0.0.0/8)
   if (/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(clean)) return true;
+
   // RFC 1918 Private Ranges
   // 10.0.0.0/8
   if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(clean)) return true;
@@ -54,18 +64,24 @@ function isProtectedIp(ip) {
   if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(clean)) return true;
   // 169.254.0.0/16 (link-local)
   if (/^169\.254\.\d{1,3}\.\d{1,3}$/.test(clean)) return true;
+
+  // Multicast & Reserved (224.0.0.0 - 255.255.255.255)
+  const firstOctet = parseInt(clean.split('.')[0], 10);
+  if (!isNaN(firstOctet) && firstOctet >= 224) return true;
+
   return false;
 }
 
 /**
- * Checks whether a domain name belongs to protected infrastructure.
+ * Checks whether a domain name belongs to protected infrastructure or is malformed.
  *
  * @param {string} domain
  * @returns {boolean}
  */
 function isProtectedDomain(domain) {
-  if (!domain || typeof domain !== 'string') return false;
+  if (!domain || typeof domain !== 'string') return true;
   const clean = domain.trim().toLowerCase();
+  if (clean.includes('*') || /[/\\:?#@\s]/.test(clean)) return true;
   if (PROTECTED_DOMAINS.has(clean)) return true;
   if (clean.endsWith('.cyberguard.internal') || clean.endsWith('.cyberguard.security') || clean.endsWith('.localhost')) {
     return true;
@@ -81,8 +97,8 @@ function isProtectedDomain(domain) {
  */
 async function revokeSession(action) {
   const target = typeof action.target === 'string' ? JSON.parse(action.target) : (action.target || {});
-  if (!target.user_id) {
-    throw new Error('target.user_id is required for revoke_session');
+  if (!target.user_id || !UUID_REGEX.test(target.user_id)) {
+    return { success: false, error: 'target.user_id must be a valid UUID for revoke_session' };
   }
   const count = await RefreshToken.revokeByUserId(target.user_id);
   return { revoked_tokens: count || 0, user_id: target.user_id };
@@ -97,7 +113,7 @@ async function revokeSession(action) {
 async function blockIp(action) {
   const target = typeof action.target === 'string' ? JSON.parse(action.target) : (action.target || {});
   if (!target.ip_address) {
-    throw new Error('target.ip_address is required for block_ip');
+    return { success: false, error: 'target.ip_address is required for block_ip' };
   }
   if (isProtectedIp(target.ip_address)) {
     return { success: false, error: 'target is protected' };
@@ -116,7 +132,7 @@ async function blockIp(action) {
 async function blockDomain(action) {
   const target = typeof action.target === 'string' ? JSON.parse(action.target) : (action.target || {});
   if (!target.domain) {
-    throw new Error('target.domain is required for block_domain');
+    return { success: false, error: 'target.domain is required for block_domain' };
   }
   if (isProtectedDomain(target.domain)) {
     return { success: false, error: 'target is protected' };
@@ -130,12 +146,20 @@ async function blockDomain(action) {
  * Updates device status to 'suspended' in PostgreSQL.
  *
  * @param {Object} action
- * @returns {Promise<{ suspended_device_id: string }>}
+ * @returns {Promise<{ suspended_device_id: string } | { success: false, error: string }>}
  */
 async function suspendDevice(action) {
   const target = typeof action.target === 'string' ? JSON.parse(action.target) : (action.target || {});
-  if (!target.device_id) {
-    throw new Error('target.device_id is required for suspend_device');
+  if (!target.device_id || !UUID_REGEX.test(target.device_id)) {
+    return { success: false, error: 'target.device_id must be a valid UUID for suspend_device' };
+  }
+  // Validate device belongs to organization
+  const devCheck = await db.query(
+    'SELECT id FROM public.devices WHERE id = $1 AND ($2::UUID IS NULL OR organization_id = $2::UUID);',
+    [target.device_id, action.organization_id]
+  );
+  if (!devCheck.rows || devCheck.rows.length === 0) {
+    return { success: false, error: 'Target device not found or does not belong to organization' };
   }
   await Device.updateStatus(target.device_id, 'suspended');
   return { suspended_device_id: target.device_id };
@@ -145,12 +169,20 @@ async function suspendDevice(action) {
  * Stores password reset requirement flag in Redis with a 7-day TTL.
  *
  * @param {Object} action
- * @returns {Promise<{ user_id: string, expires_in_days: number }>}
+ * @returns {Promise<{ user_id: string, expires_in_days: number } | { success: false, error: string }>}
  */
 async function forcePasswordReset(action) {
   const target = typeof action.target === 'string' ? JSON.parse(action.target) : (action.target || {});
-  if (!target.user_id) {
-    throw new Error('target.user_id is required for force_password_reset');
+  if (!target.user_id || !UUID_REGEX.test(target.user_id)) {
+    return { success: false, error: 'target.user_id must be a valid UUID for force_password_reset' };
+  }
+  // Validate user belongs to organization
+  const userCheck = await db.query(
+    'SELECT id FROM public.users WHERE id = $1 AND ($2::UUID IS NULL OR organization_id = $2::UUID);',
+    [target.user_id, action.organization_id]
+  );
+  if (!userCheck.rows || userCheck.rows.length === 0) {
+    return { success: false, error: 'Target user not found or does not belong to organization' };
   }
   const sevenDaysInSeconds = 7 * 24 * 60 * 60;
   await redis.set(`password_reset_required:${target.user_id}`, 'true', { EX: sevenDaysInSeconds });
@@ -161,39 +193,23 @@ async function forcePasswordReset(action) {
  * Carries out live response action execution with strict guardrails and audit logging.
  *
  * @param {Object} action - The response_action record
- * @param {'system_policy'|'admin'|'user'} [actor_type='system_policy']
- * @returns {Promise<{ success: boolean, result?: Object, error?: string }>}
+ * @param {'system_policy'|'admin'|'user'|'background_scheduler'} [actor_type='system_policy']
+ * @returns {Promise<{ success: boolean, result?: Object, error?: string, already_executed?: boolean }>}
  */
 async function execute(action, actor_type = 'system_policy') {
-  // Guardrail c: Increment execution_attempts, cap at 3 (fail after 3 retries)
-  const currentAttempts = Number(action?.execution_attempts || 0);
-  if (currentAttempts >= 3) {
-    const errorMsg = 'Maximum execution attempts (3) exceeded';
-    if (action?.id) {
-      try {
-        await db.query(`
-          UPDATE public.response_actions
-          SET status = 'failed',
-              last_execution_error = $1,
-              result = $2
-          WHERE id = $3;
-        `, [errorMsg, JSON.stringify({ error: errorMsg }), action.id]);
-      } catch (dbErr) {
-        console.warn('[executionService DB update error]', dbErr.message);
-      }
-    }
-    return { success: false, error: errorMsg };
+  if (!action || !action.id) {
+    return { success: false, error: 'Valid action with ID is required' };
   }
 
-  // Guardrail a: ONLY execute if status='approved' or status='scheduled' (throw 400 if status='proposed', 'pending_approval', etc.)
-  if (!action || (action.status !== 'approved' && action.status !== 'scheduled')) {
+  // Guardrail a: ONLY execute if status='approved' or status='scheduled'
+  if (action.status !== 'approved' && action.status !== 'scheduled') {
     const err = new Error(`Action status must be 'approved' or 'scheduled' to execute (got '${action?.status}')`);
     err.statusCode = 400;
     err.status = 400;
     throw err;
   }
 
-  // Guardrail b: ONLY execute if action_mode='live' (throw 400 if 'shadow')
+  // Guardrail b: ONLY execute if action_mode='live'
   if (action.action_mode !== 'live') {
     const err = new Error(`Action mode must be 'live' to execute (got '${action?.action_mode}')`);
     err.statusCode = 400;
@@ -201,8 +217,46 @@ async function execute(action, actor_type = 'system_policy') {
     throw err;
   }
 
-  const newAttempts = currentAttempts + 1;
-  const target = typeof action.target === 'string' ? JSON.parse(action.target) : (action.target || {});
+  // Guardrail c: Increment execution_attempts, cap at 3
+  const currentAttempts = Number(action?.execution_attempts || 0);
+  if (currentAttempts >= 3) {
+    const errorMsg = 'Maximum execution attempts (3) exceeded';
+    try {
+      await db.query(`
+        UPDATE public.response_actions
+        SET status = 'failed',
+            last_execution_error = $1,
+            result = $2
+        WHERE id = $3;
+      `, [errorMsg, JSON.stringify({ error: errorMsg }), action.id]);
+    } catch (dbErr) {
+      console.warn('[executionService DB update error]', dbErr.message);
+    }
+    return { success: false, error: errorMsg };
+  }
+
+  // CONCURRENCY & DEDUPLICATION GUARD:
+  // Atomically claim the action from ('approved', 'scheduled') -> 'executing'.
+  // Only ONE execution thread across all schedulers/workers can succeed here.
+  const claimRes = await db.query(`
+    UPDATE public.response_actions
+    SET status = 'executing',
+        execution_attempts = COALESCE(execution_attempts, 0) + 1
+    WHERE id = $1 AND status IN ('approved', 'scheduled')
+    RETURNING *;
+  `, [action.id]);
+
+  if (!claimRes.rows || claimRes.rows.length === 0) {
+    return {
+      success: false,
+      already_executed: true,
+      error: `Action ${action.id} is already executing, completed, or no longer approved`
+    };
+  }
+
+  const activeAction = claimRes.rows[0];
+  const newAttempts = Number(activeAction.execution_attempts || 1);
+  const target = typeof activeAction.target === 'string' ? JSON.parse(activeAction.target) : (activeAction.target || {});
 
   try {
     let executionResult;
