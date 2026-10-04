@@ -74,6 +74,16 @@ router.post(
 const agentController = require('../controllers/agentController');
 const firewallController = require('../controllers/firewallController');
 
+// GET /api/v1/admin/agents: list org-scoped agents
+router.get(
+  '/agents',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  agentController.listAgents
+);
+
+// POST /api/v1/admin/agents/tokens: auth + roleCheck(['admin'])
 router.post(
   '/agents/tokens',
   auth,

@@ -20,6 +20,12 @@ const optionalJwt = (req, res, next) => {
   next();
 };
 
+const auth = require('../middlewares/auth');
+const roleCheck = require('../middlewares/roleCheck');
+
+// 0. List agents (Admin only: GET /api/v1/agents alias for /api/v1/admin/agents)
+router.get('/', auth, roleCheck(['admin']), generalLimiter, agentController.listAgents);
+
 // 1. Enrollment (authenticated via one-time enrollment token)
 router.post('/enroll', generalLimiter, agentController.enroll);
 

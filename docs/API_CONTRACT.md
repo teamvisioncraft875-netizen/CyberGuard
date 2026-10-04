@@ -1920,6 +1920,58 @@ Public endpoint enabling enterprise agents to download the central catalog of pr
 
 ---
 
+### 8.8 List Enrolled Devices / Agents (`GET /api/v1/admin/agents`)
+Lists enrolled enterprise agents/devices for the authenticated administrator's organization, including current status and heartbeat freshness. Essential for device management interfaces and selecting target agents during firewall containment rule creation.
+
+| Property | Specification |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/api/v1/admin/agents` *(alias: `/api/v1/agents` for authenticated admins)* |
+| **Auth Requirement** | Bearer JWT (Role: `admin`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Returns paginated list of all enrolled endpoints/devices belonging to the administrator's organization. Supports optional status filtering. Devices are ordered by heartbeat freshness (`last_heartbeat DESC NULLS LAST, created_at DESC`). Enforces strict multi-tenant isolation. |
+
+**Query Parameters:**
+- `limit` *(optional, integer, default: 25, max: 100)*: Number of agents to return per page.
+- `offset` *(optional, integer, default: 0)*: Number of agents to skip.
+- `status` *(optional, string)*: Filter by device status (`online`, `offline`, `disabled`, `pending`).
+
+**Response (`200 OK`):**
+```json
+{
+  "total": 3,
+  "limit": 25,
+  "offset": 0,
+  "agents": [
+    {
+      "id": "3b07b2e1-81ad-496c-b0fa-80a72ba92d8e",
+      "organization_id": "48349eb0-45b0-4417-a2c3-d54bff0b5074",
+      "hostname": "laptop-john",
+      "os": "Windows 11 Enterprise",
+      "platform": "desktop",
+      "status": "online",
+      "last_heartbeat": "2026-10-04T12:00:00.000Z",
+      "last_heartbeat_age_seconds": 5,
+      "agent_version": "1.0.0",
+      "created_at": "2026-10-04T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Invalid query parameters (e.g., negative offset, invalid status, limit > 100).
+  ```json
+  {
+    "error": "INVALID_QUERY_PARAMS",
+    "message": "limit must be a positive integer between 1 and 100"
+  }
+  ```
+- `401 Unauthorized`: Missing or invalid Bearer JWT.
+- `403 Forbidden`: Authenticated user lacks `admin` role or is unassociated with an organization.
+
+---
+
 ## 9. Firewall Integration APIs (Phase C.1 Foundation)
 
 The Firewall Integration APIs manage host-level network containment policies, validation safeguards, and lifecycle tracking.
