@@ -1,0 +1,57 @@
+{
+  "dataset_name": "CYBERGUARD Curated Phishing & Message Threat Dataset",
+  "timestamp": "2026-10-04T06:57:48.552890+00:00",
+  "total_curated_records": 43680,
+  "audit_stats": {
+    "raw_counts": {
+      "Nazario": 1565,
+      "Nigerian_Fraud": 3332,
+      "CEAS_08": 39154,
+      "Enron": 29767,
+      "SpamAssassin": 5809
+    },
+    "invalid_records": 4,
+    "excluded_generic_spam": {
+      "CEAS_08_generic_spam": 20218,
+      "Enron_marketing_spam": 13972,
+      "SpamAssassin_bulk_spam": 1718
+    },
+    "included_samples": {},
+    "deduplicated_count": 35
+  },
+  "split_distribution": {
+    "train": 34944,
+    "test": 4368,
+    "val": 4368
+  },
+  "class_distribution": {
+    "benign (0)": 37188,
+    "threat (1)": 6492
+  },
+  "source_distribution": {
+    "CEAS_08": 18930,
+    "Enron": 15791,
+    "SpamAssassin": 4091,
+    "Nigerian_Fraud": 3312,
+    "Nazario": 1556
+  },
+  "manifest_path": "datasets\\cleaned_manifests\\phishing_curated_manifest.parquet",
+  "feature_representation": "TF-IDF 25,000 unigram+bigram (sublinear TF)",
+  "split_alignment": {
+    "status": "ALIGNED_WITH_V1.0.0_COMPOSITE_STRATIFICATION",
+    "composite_strata_key": "dataset_source.str.lower() + '_' + label.astype(str)",
+    "random_seed": 42,
+    "backup_path": "datasets\\cleaned_manifests\\backups\\phishing_curated_manifest_phase1_initial.parquet",
+    "aligned_parquet_hash": "21afa541187266f17af47d7007c3f48d1f9bb51ec82a170b3913595e17872954",
+    "split_signature_hash": "75d91078e633f8e90e139b0639b1d493d1345a32796b12ed01e2fa8af7233640",
+    "test_cohorts": {
+      "Nazario": 156,
+      "Nigerian_Fraud": 331,
+      "CEAS_08_total": 1893,
+      "CEAS_08_threat": 162,
+      "CEAS_08_benign": 1731,
+      "Enron": 1579,
+      "SpamAssassin": 409
+    }
+  }
+}

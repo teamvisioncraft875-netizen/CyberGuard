@@ -10,6 +10,7 @@ from app.schemas.analyzeSchema import (
     MediaAnalyzeRequest,
     LoginAnalyzeRequest,
     SystemAnalyzeRequest,
+    MalwareAnalyzeRequest,
     UnifiedAnalysisResponse,
 )
 
@@ -22,5 +23,6 @@ __all__ = [
     "MediaAnalyzeRequest",
     "LoginAnalyzeRequest",
     "SystemAnalyzeRequest",
+    "MalwareAnalyzeRequest",
     "UnifiedAnalysisResponse",
 ]

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "cae6efcc-1cec-40e0-9bf4-47ba6e190d46",
+  "status": "current",
+  "command": "deliver",
+  "type": "sequence",
+  "input": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\sequence-threat-detection-20260929-094800\\candidate.json",
+  "output": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\sequence-threat-detection-20260929-094800\\threat-detection.html",
+  "specification": {
+    "sha256": "dbf3e0f12fce0b46baa89c1786084cf4be4d33baed3373bd1407fce14941c8d5",
+    "bytes": 3326
+  },
+  "artifact": {
+    "sha256": "0101e1457f6c689ed7045bfbbbb7620d01291ef9c057790529a58c289f3b02d9",
+    "bytes": 758994
+  }
+}

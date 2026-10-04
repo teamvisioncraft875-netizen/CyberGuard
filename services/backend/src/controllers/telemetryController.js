@@ -3,6 +3,8 @@ const LoginEvent = require('../models/LoginEvent');
 const TelemetryEvent = require('../models/TelemetryEvent');
 const { callMlEngine } = require('../utils/mlClient');
 const { persistDetectionIncident } = require('../services/incidentService');
+const { detectSecrets } = require('../services/secretDetector');
+const { log: auditLog } = require('../services/auditService');
 
 const ANOMALOUS_RISK_TIERS = new Set(['medium', 'high', 'critical']);
 
@@ -213,9 +215,10 @@ const telemetryController = {
       });
     }
 
-    // Non-admin always forced to req.user.id, ignoring any client user_id in req.body
-    let userId = req.user?.id;
-    let userOrgId = req.user?.organization_id || null;
+    // Resolve user and organization identities based on Auth source (User JWT vs Agent Device)
+    let userId = req.user?.id || req.agent?.user_id || null;
+    let userOrgId = req.user?.organization_id || req.agent?.organization_id || null;
+    const deviceId = req.agent?.device_id || req.body.device_id || null;
 
     // If admin, verify the target user_id belongs to req.user.organization_id before accepting it
     if (req.user?.role === 'admin' && req.body.user_id) {
@@ -234,6 +237,27 @@ const telemetryController = {
       userId = req.body.user_id;
     }
 
+    // Record audit log for agent device submissions
+    if (req.agent) {
+      try {
+        await auditLog({
+          organization_id: userOrgId,
+          user_id: userId,
+          actor_type: 'device',
+          action: 'telemetry:system_event',
+          resource_type: 'device',
+          resource_id: req.agent.device_id,
+          details: {
+            event_type,
+            telemetry_type: req.body.telemetry_type || event_type
+          },
+          ip_address: req.ip
+        });
+      } catch (aErr) {
+        console.warn('[telemetryController.reportSystemEvent Audit Note]', aErr.message);
+      }
+    }
+
     let mlResult = null;
     try {
       mlResult = await callMlEngine('/internal/analyze/system', {
@@ -250,7 +274,7 @@ const telemetryController = {
     try {
       await TelemetryEvent.create({
         user_id: userId,
-        device_id: req.body.device_id || null,
+        device_id: deviceId,
         event_type,
         payload: details
       });
@@ -263,7 +287,65 @@ const telemetryController = {
     const riskLevelLower = (mlResult?.risk_level || '').toLowerCase();
     const isAnomalous = ANOMALOUS_RISK_TIERS.has(riskLevelLower);
 
-    // 2. If anomaly detected (medium/high/critical), persist incident with MITRE mapping and alerts
+    // 2. Secret Exposure Inspection on log_dump / environment_variables
+    const telemetryType = req.body.telemetry_type || event_type;
+    let secretIncident = null;
+    if (telemetryType === 'log_dump' || telemetryType === 'environment_variables') {
+      const dataToScan = typeof details === 'string'
+        ? details
+        : (details.data || details.content || details.logs || details.env || JSON.stringify(details));
+      const detectedSecrets = detectSecrets(String(dataToScan), { telemetryType });
+
+      if (detectedSecrets && detectedSecrets.length > 0) {
+        const maxScore = Math.max(...detectedSecrets.map((s) => s.score || 85));
+        const secretRiskLevel = maxScore >= 90 ? 'Critical' : (maxScore >= 70 ? 'High' : 'Medium');
+        const secretTypes = [...new Set(detectedSecrets.map((s) => s.secret_type))];
+
+        try {
+          secretIncident = await persistDetectionIncident({
+            user: { id: userId, organization_id: userOrgId },
+            threatType: 'exposed_secret',
+            sourceType: 'telemetry',
+            mlResult: {
+              risk_score: maxScore,
+              risk_level: secretRiskLevel,
+              explanation: `Found ${detectedSecrets.length} exposed secret(s) in system telemetry (${telemetryType}): ${secretTypes.join(', ')}`,
+              confidence: 100,
+              signals: {
+                secret_types: secretTypes.join(','),
+                secret_count: detectedSecrets.length,
+                locations: detectedSecrets.map((s) => `${s.secret_type} at ${s.location}`).join('; ')
+              }
+            },
+            recommendedActions: [
+              'Revoke exposed credential immediately and generate new secret',
+              'Audit access logs for unauthorized use of leaked credentials'
+            ]
+          });
+
+          // Log to append-only audit_logs
+          auditLog({
+            organization_id: userOrgId,
+            user_id: userId,
+            actor_type: 'system_guard',
+            action: 'telemetry:secret_exposure_detected',
+            resource_type: 'telemetry',
+            resource_id: secretIncident?.id || null,
+            details: {
+              message: 'Secret exposure detected in system telemetry',
+              telemetry_type: telemetryType,
+              secret_types: secretTypes,
+              count: detectedSecrets.length
+            },
+            ip_address: req.ip || null
+          });
+        } catch (sErr) {
+          console.error('[telemetryController.reportSystemEvent Secret Incident Error]', sErr.message);
+        }
+      }
+    }
+
+    // 3. If anomaly detected (medium/high/critical), persist incident with MITRE mapping and alerts
     let incident = null;
     if (mlResult && isAnomalous) {
       const recommendedActions = Array.isArray(mlResult.recommended_actions) && mlResult.recommended_actions.length > 0
@@ -288,16 +370,19 @@ const telemetryController = {
       }
     }
 
-    // 3. Response shape
+    // 4. Response shape
     const responsePayload = {
       status: 'recorded',
-      anomaly_detected: anomalyDetected,
-      risk_level: riskLevel,
+      anomaly_detected: anomalyDetected || Boolean(secretIncident),
+      risk_level: secretIncident ? 'Critical' : riskLevel,
       risk_score: mlResult?.risk_score,
       explanation: mlResult?.explanation,
       signals: mlResult?.signals
     };
-    if (incident?.id) {
+    if (secretIncident?.id) {
+      responsePayload.incident_id = secretIncident.id;
+      responsePayload.secret_incident_id = secretIncident.id;
+    } else if (incident?.id) {
       responsePayload.incident_id = incident.id;
     }
 

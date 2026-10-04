@@ -1,0 +1,173 @@
+{
+  "dataset_name": "DFDC_Shield_2026",
+  "dataset_path": "D:\\cyberguard project  work su\\CyberGuard\\datasets\\DFDC",
+  "status": "DISCOVERED",
+  "timestamp": "2026-10-03T21:54:34.198708+00:00",
+  "file_inventory": {
+    "total_files": 8,
+    "total_size_bytes": 1225065519,
+    "total_size_mb": 1168.31,
+    "files": [
+      {
+        "relative_path": "Deepfake.pdf",
+        "size_bytes": 941000,
+        "size_mb": 0.9,
+        "sha256": "c33895eb6dc4c87aca23f6cd3f66712145609f725d6d6a18fcaa861618cc3837"
+      },
+      {
+        "relative_path": ".virtual_documents/__notebook_source__.ipynb",
+        "size_bytes": 29019,
+        "size_mb": 0.03,
+        "sha256": "a4c72df669fd577b47b2d9c6400f67083057309d10b0a60206dc31784be93bf0"
+      },
+      {
+        "relative_path": "shield_2026_final_data/X_test.pt",
+        "size_bytes": 183666146,
+        "size_mb": 175.16,
+        "sha256": "450e0cfca0b186f9a01206945f45a7a9d1d53d5bee3d607b1a76e82714a22aa1"
+      },
+      {
+        "relative_path": "shield_2026_final_data/X_train.pt",
+        "size_bytes": 856720937,
+        "size_mb": 817.03,
+        "sha256": "da3a604c01e27ae837a6fcd40f4ca6ba6a656e3d9c6ea74a0e976d09ac4bb193"
+      },
+      {
+        "relative_path": "shield_2026_final_data/X_val.pt",
+        "size_bytes": 183584219,
+        "size_mb": 175.08,
+        "sha256": "3bc6894da2f104748bbf53bc6a261a81a5d1ee8c71ee54993659c8c022ef03c9"
+      },
+      {
+        "relative_path": "shield_2026_final_data/y_test.pt",
+        "size_bytes": 19490,
+        "size_mb": 0.02,
+        "sha256": "b6dbde9991a98adf2cd7bcc2a6a656e9b638fcd9153f869ddbe1ecb28aa66b01"
+      },
+      {
+        "relative_path": "shield_2026_final_data/y_train.pt",
+        "size_bytes": 85225,
+        "size_mb": 0.08,
+        "sha256": "30b1361664b48a4b5139671084d2affea6c6c952b524b6586201f82ea4dfa7a4"
+      },
+      {
+        "relative_path": "shield_2026_final_data/y_val.pt",
+        "size_bytes": 19483,
+        "size_mb": 0.02,
+        "sha256": "048a3b1fe96ec22f75abe730a49b280fe961019f218a2de53c5bf1e1382be314"
+      }
+    ]
+  },
+  "raw_videos": {
+    "count": 0,
+    "present": false,
+    "notes": "No raw .mp4 videos are stored locally. The dataset consists of pre-extracted frame-level feature embeddings."
+  },
+  "documentation_and_metadata": {
+    "pdf_research_paper": {
+      "present": true,
+      "filename": "Deepfake.pdf",
+      "title": "Deepfake Detection in Manipulated Images/ Audio (IJISRT 2025)",
+      "authors": "Harish Chaudhary, Nandeesh C. R, Gagan T. N, V. Tejas Aarya, Dr. Shakunthala B. S, Chethan Kumar T."
+    },
+    "notebook_provenance": {
+      "present": true,
+      "filename": ".virtual_documents/__notebook_source__.ipynb",
+      "backbone_model": "CLIP ViT-H/14 (laion2b_s32b_b79k)",
+      "feature_dim": 1024,
+      "frames_per_video": 20,
+      "normalization": "L2 normalized (features /= norm)",
+      "sources_aggregated": [
+        "FaceForensics++ (C23)",
+        "Celeb-DF v2",
+        "DFDC (dfdc-10)"
+      ],
+      "sampling_method": "Deterministic uniform 20-frame sampling (np.linspace(0, len(vr)-1, 20))"
+    }
+  },
+  "splits": {
+    "train": {
+      "split_name": "train",
+      "num_samples": 10458,
+      "tensor_shape": [
+        10458,
+        20,
+        1024
+      ],
+      "data_type": "torch.float32",
+      "genuine_count": 1112,
+      "manipulated_count": 9346,
+      "genuine_percentage": 10.63,
+      "manipulated_percentage": 89.37,
+      "has_nan": false,
+      "has_inf": false,
+      "mean_l2_norm": 1.0,
+      "feature_min": -0.45183730125427246,
+      "feature_max": 0.5232830047607422,
+      "feature_mean": 0.00010075714817503467,
+      "feature_std": 0.031249837949872017
+    },
+    "validation": {
+      "split_name": "val",
+      "num_samples": 2241,
+      "tensor_shape": [
+        2241,
+        20,
+        1024
+      ],
+      "data_type": "torch.float32",
+      "genuine_count": 238,
+      "manipulated_count": 2003,
+      "genuine_percentage": 10.62,
+      "manipulated_percentage": 89.38,
+      "has_nan": false,
+      "has_inf": false,
+      "mean_l2_norm": 1.0,
+      "feature_min": -0.45893704891204834,
+      "feature_max": 0.5372074842453003,
+      "feature_mean": 6.603952351724729e-05,
+      "feature_std": 0.03124993108212948
+    },
+    "test": {
+      "split_name": "test",
+      "num_samples": 2242,
+      "tensor_shape": [
+        2242,
+        20,
+        1024
+      ],
+      "data_type": "torch.float32",
+      "genuine_count": 239,
+      "manipulated_count": 2003,
+      "genuine_percentage": 10.66,
+      "manipulated_percentage": 89.34,
+      "has_nan": false,
+      "has_inf": false,
+      "mean_l2_norm": 1.0,
+      "feature_min": -0.4531904458999634,
+      "feature_max": 0.5315899848937988,
+      "feature_mean": 8.916043589124456e-05,
+      "feature_std": 0.031249873340129852
+    },
+    "total_samples": 14941,
+    "total_genuine": 1589,
+    "total_manipulated": 13352,
+    "overall_genuine_pct": 10.64,
+    "overall_manipulated_pct": 89.36,
+    "imbalance_ratio": "1:8.4"
+  },
+  "leakage_analysis": {
+    "cross_split_exact_duplicates": 0,
+    "high_similarity_pairs_above_98pct": 182,
+    "source_disjoint_guarantee": "PARTIAL_UNVERIFIED",
+    "leakage_risk_assessment": "The dataset was split using stratified train_test_split on video-level tensors. Because original source video identity IDs were omitted from the local .pt files, unseen-identity disjointness cannot be cryptographically guaranteed. Evaluations on this test partition must be reported as Shield-DFDC held-out test partition rather than claiming general real-world benchmark accuracy."
+  },
+  "audit_conclusion": {
+    "structurally_usable": true,
+    "is_complete_dfdc": false,
+    "subset_specification": "Shield 2026 Deepfake Benchmark (14,941 samples: DFDC-10 + FF++ C23 + Celeb-DF v2)",
+    "supervised_training_ready": true,
+    "recommended_architecture": "Attention-Pooled Temporal Feature Classifier (1024-dim input, multi-head temporal pooling, MLP classification head)",
+    "recommended_loss": "Focal Loss or Weighted Binary Cross-Entropy (handling 1:8.4 class imbalance)"
+  }
+}

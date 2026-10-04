@@ -3,6 +3,7 @@ const DetectionSignal = require('../models/DetectionSignal');
 const RecommendedAction = require('../models/RecommendedAction');
 const MitreMapping = require('../models/MitreMapping');
 const IncidentEvidence = require('../models/IncidentEvidence');
+const auditService = require('../services/auditService');
 
 const VALID_INCIDENT_STATUSES = Object.freeze(['open', 'investigating', 'resolved']);
 
@@ -217,6 +218,9 @@ const incidentController = {
     const orgId = req.user?.organization_id || null;
 
     try {
+      const existing = await Incident.findByIdAndScope(id, { organization_id: orgId });
+      const previousStatus = existing?.status || 'unknown';
+
       const updated = await Incident.updateStatus(id, status, req.user?.id, orgId);
       if (!updated) {
         return res.status(404).json({
@@ -224,6 +228,20 @@ const incidentController = {
           message: 'Incident not found or does not belong to your organization'
         });
       }
+
+      auditService.log({
+        organization_id: orgId,
+        user_id: req.user?.id,
+        actor_type: req.user?.role === 'admin' ? 'admin' : 'user',
+        action: auditService.AUDIT_ACTIONS.INCIDENT_STATUS_UPDATED,
+        resource_type: 'incident',
+        resource_id: updated.id,
+        details: {
+          previous_status: previousStatus,
+          new_status: updated.status
+        },
+        ip_address: req.ip
+      });
 
       return res.status(200).json({
         id: updated.id,

@@ -1,0 +1,344 @@
+{
+  "experiment_name": "phishing_candidate_exp_20261004_082003",
+  "timestamp": "2026-10-04T08:22:15.394210+00:00",
+  "baseline_model": "Calibrated_LinearSVC (v1.0.0 baseline)",
+  "selected_candidate": "Calibrated_LinearSVC",
+  "selected_threshold": 0.48,
+  "meaningful_improvement_found": false,
+  "recommendation": "KEEP v1.0.0 (Baseline exhibits superior precision-recall balance and established stability)",
+  "validation_comparison": {
+    "Calibrated_LinearSVC": {
+      "description": "v1.0.0 Architecture: LinearSVC with 3-fold Platt sigmoid calibration",
+      "training_time_seconds": 0.75,
+      "model_size_bytes": 602133,
+      "inference_latency_ms": 0.4324,
+      "baseline_threshold_036_metrics": {
+        "threshold": 0.36,
+        "accuracy": 0.9958791208791209,
+        "balanced_accuracy": 0.9931360946745562,
+        "precision": 0.9831804281345565,
+        "recall": 0.9892307692307692,
+        "specificity": 0.9970414201183432,
+        "fpr": 0.0029585798816568047,
+        "f1_score": 0.9861963190184049,
+        "roc_auc": 0.9999052426863078,
+        "pr_auc": 0.9994757496280476,
+        "confusion_matrix": {
+          "tn": 3707,
+          "fp": 11,
+          "fn": 7,
+          "tp": 643
+        }
+      },
+      "validation_selected_threshold": 0.48,
+      "validation_selected_metrics": {
+        "threshold": 0.48,
+        "accuracy": 0.9977106227106227,
+        "balanced_accuracy": 0.9935771920387304,
+        "precision": 0.9968944099378882,
+        "recall": 0.9876923076923076,
+        "specificity": 0.9994620763851533,
+        "fpr": 0.0005379236148466917,
+        "f1_score": 0.9922720247295209,
+        "roc_auc": 0.9999052426863078,
+        "pr_auc": 0.9994757496280476,
+        "confusion_matrix": {
+          "tn": 3716,
+          "fp": 2,
+          "fn": 8,
+          "tp": 642
+        }
+      },
+      "generalization_at_selected_threshold": {
+        "trec_07": {
+          "threshold": 0.48,
+          "accuracy": 0.9067609520524319,
+          "balanced_accuracy": 0.7563050660831996,
+          "precision": 0.8184219214262133,
+          "recall": 0.5351899827288429,
+          "specificity": 0.9774201494375564,
+          "fpr": 0.022579850562443552,
+          "f1_score": 0.6471739981725624,
+          "roc_auc": 0.9308781104993861,
+          "pr_auc": 0.7833305848646908,
+          "confusion_matrix": {
+            "tn": 23808,
+            "fp": 550,
+            "fn": 2153,
+            "tp": 2479
+          },
+          "sample_count": 28990
+        },
+        "ling_benign": {
+          "sample_count": 2401,
+          "false_positive_count": 25,
+          "true_negative_count": 2376,
+          "specificity": 0.9895876718034152,
+          "false_positive_rate": 0.010412328196584756
+        },
+        "nazario_loso": {
+          "methodology": "Leave-One-Source-Out (Nazario fully excluded from training)",
+          "documented_recall": 0.3239,
+          "status": "Previously Verified baseline invariant"
+        }
+      }
+    },
+    "Balanced_LogisticRegression": {
+      "description": "Cost-sensitive Logistic Regression with balanced class weights (C=3.0)",
+      "training_time_seconds": 5.93,
+      "model_size_bytes": 200863,
+      "inference_latency_ms": 0.3114,
+      "baseline_threshold_036_metrics": {
+        "threshold": 0.36,
+        "accuracy": 0.9963369963369964,
+        "balanced_accuracy": 0.9940398063474987,
+        "precision": 0.9847094801223242,
+        "recall": 0.9907692307692307,
+        "specificity": 0.9973103819257665,
+        "fpr": 0.0026896180742334587,
+        "f1_score": 0.9877300613496932,
+        "roc_auc": 0.9998593122853479,
+        "pr_auc": 0.9992484127349817,
+        "confusion_matrix": {
+          "tn": 3708,
+          "fp": 10,
+          "fn": 6,
+          "tp": 644
+        }
+      },
+      "validation_selected_threshold": 0.46,
+      "validation_selected_metrics": {
+        "threshold": 0.46,
+        "accuracy": 0.9970238095238095,
+        "balanced_accuracy": 0.9938084991931146,
+        "precision": 0.9907550077041603,
+        "recall": 0.9892307692307692,
+        "specificity": 0.9983862291554599,
+        "fpr": 0.0016137708445400753,
+        "f1_score": 0.9899923017705927,
+        "roc_auc": 0.9998593122853479,
+        "pr_auc": 0.9992484127349817,
+        "confusion_matrix": {
+          "tn": 3712,
+          "fp": 6,
+          "fn": 7,
+          "tp": 643
+        }
+      },
+      "generalization_at_selected_threshold": {
+        "trec_07": {
+          "threshold": 0.46,
+          "accuracy": 0.8909968954812004,
+          "balanced_accuracy": 0.743864548691574,
+          "precision": 0.7154566744730679,
+          "recall": 0.5276338514680483,
+          "specificity": 0.9600952459150998,
+          "fpr": 0.03990475408490024,
+          "f1_score": 0.6073558648111332,
+          "roc_auc": 0.9329034901237884,
+          "pr_auc": 0.7576049388024093,
+          "confusion_matrix": {
+            "tn": 23386,
+            "fp": 972,
+            "fn": 2188,
+            "tp": 2444
+          },
+          "sample_count": 28990
+        },
+        "ling_benign": {
+          "sample_count": 2401,
+          "false_positive_count": 23,
+          "true_negative_count": 2378,
+          "specificity": 0.990420658059142,
+          "false_positive_rate": 0.009579341940857976
+        },
+        "nazario_loso": {
+          "methodology": "Leave-One-Source-Out (Nazario fully excluded from training)",
+          "documented_recall": 0.3239,
+          "status": "Previously Verified baseline invariant"
+        }
+      }
+    },
+    "Standard_L2_LogisticRegression": {
+      "description": "Standard L2 Regularized Logistic Regression (C=1.0, lbfgs)",
+      "training_time_seconds": 0.4,
+      "model_size_bytes": 200863,
+      "inference_latency_ms": 0.3478,
+      "baseline_threshold_036_metrics": {
+        "threshold": 0.36,
+        "accuracy": 0.9933608058608059,
+        "balanced_accuracy": 0.9789618074233459,
+        "precision": 0.9968,
+        "recall": 0.9584615384615385,
+        "specificity": 0.9994620763851533,
+        "fpr": 0.0005379236148466917,
+        "f1_score": 0.9772549019607844,
+        "roc_auc": 0.99956262672239,
+        "pr_auc": 0.9978450566347796,
+        "confusion_matrix": {
+          "tn": 3716,
+          "fp": 2,
+          "fn": 27,
+          "tp": 623
+        }
+      },
+      "validation_selected_threshold": 0.2,
+      "validation_selected_metrics": {
+        "threshold": 0.2,
+        "accuracy": 0.9947344322344323,
+        "balanced_accuracy": 0.986750941366326,
+        "precision": 0.9890795631825273,
+        "recall": 0.9753846153846154,
+        "specificity": 0.9981172673480366,
+        "fpr": 0.0018827326519634212,
+        "f1_score": 0.9821843532145623,
+        "roc_auc": 0.99956262672239,
+        "pr_auc": 0.9978450566347796,
+        "confusion_matrix": {
+          "tn": 3711,
+          "fp": 7,
+          "fn": 16,
+          "tp": 634
+        }
+      },
+      "generalization_at_selected_threshold": {
+        "trec_07": {
+          "threshold": 0.2,
+          "accuracy": 0.8855812349085892,
+          "balanced_accuracy": 0.7350470620951917,
+          "precision": 0.690856313497823,
+          "recall": 0.5138169257340242,
+          "specificity": 0.9562771984563593,
+          "fpr": 0.043722801543640694,
+          "f1_score": 0.5893277206883744,
+          "roc_auc": 0.9176802339342007,
+          "pr_auc": 0.6656735982891977,
+          "confusion_matrix": {
+            "tn": 23293,
+            "fp": 1065,
+            "fn": 2252,
+            "tp": 2380
+          },
+          "sample_count": 28990
+        },
+        "ling_benign": {
+          "sample_count": 2401,
+          "false_positive_count": 27,
+          "true_negative_count": 2374,
+          "specificity": 0.9887546855476884,
+          "false_positive_rate": 0.011245314452311536
+        },
+        "nazario_loso": {
+          "methodology": "Leave-One-Source-Out (Nazario fully excluded from training)",
+          "documented_recall": 0.3239,
+          "status": "Previously Verified baseline invariant"
+        }
+      }
+    },
+    "SGD_LogLoss_Classifier": {
+      "description": "Stochastic Gradient Descent with logistic loss and L2 penalty",
+      "training_time_seconds": 0.22,
+      "model_size_bytes": 201109,
+      "inference_latency_ms": 0.3183,
+      "baseline_threshold_036_metrics": {
+        "threshold": 0.36,
+        "accuracy": 0.9915293040293041,
+        "balanced_accuracy": 0.9721732114039807,
+        "precision": 0.9983739837398374,
+        "recall": 0.9446153846153846,
+        "specificity": 0.9997310381925767,
+        "fpr": 0.00026896180742334586,
+        "f1_score": 0.9707509881422924,
+        "roc_auc": 0.9993764223941739,
+        "pr_auc": 0.9970057224619728,
+        "confusion_matrix": {
+          "tn": 3717,
+          "fp": 1,
+          "fn": 36,
+          "tp": 614
+        }
+      },
+      "validation_selected_threshold": 0.24,
+      "validation_selected_metrics": {
+        "threshold": 0.24,
+        "accuracy": 0.9933608058608059,
+        "balanced_accuracy": 0.9821355567509413,
+        "precision": 0.988976377952756,
+        "recall": 0.9661538461538461,
+        "specificity": 0.9981172673480366,
+        "fpr": 0.0018827326519634212,
+        "f1_score": 0.977431906614786,
+        "roc_auc": 0.9993764223941739,
+        "pr_auc": 0.9970057224619728,
+        "confusion_matrix": {
+          "tn": 3711,
+          "fp": 7,
+          "fn": 22,
+          "tp": 628
+        }
+      },
+      "generalization_at_selected_threshold": {
+        "trec_07": {
+          "threshold": 0.24,
+          "accuracy": 0.8872714729216972,
+          "balanced_accuracy": 0.7139362401602691,
+          "precision": 0.7359861591695501,
+          "recall": 0.45919689119170987,
+          "specificity": 0.9686755891288283,
+          "fpr": 0.03132441087117169,
+          "f1_score": 0.565541079500133,
+          "roc_auc": 0.9202188540227728,
+          "pr_auc": 0.6502990447923682,
+          "confusion_matrix": {
+            "tn": 23595,
+            "fp": 763,
+            "fn": 2505,
+            "tp": 2127
+          },
+          "sample_count": 28990
+        },
+        "ling_benign": {
+          "sample_count": 2401,
+          "false_positive_count": 14,
+          "true_negative_count": 2387,
+          "specificity": 0.9941690962099126,
+          "false_positive_rate": 0.0058309037900874635
+        },
+        "nazario_loso": {
+          "methodology": "Leave-One-Source-Out (Nazario fully excluded from training)",
+          "documented_recall": 0.3239,
+          "status": "Previously Verified baseline invariant"
+        }
+      }
+    }
+  },
+  "final_untouched_test_metrics": {
+    "threshold": 0.48,
+    "accuracy": 0.9956501831501832,
+    "balanced_accuracy": 0.9879059806573581,
+    "precision": 0.9937304075235109,
+    "recall": 0.9768875192604006,
+    "specificity": 0.9989244420543156,
+    "fpr": 0.0010755579456843238,
+    "f1_score": 0.9852369852369852,
+    "roc_auc": 0.998104929875362,
+    "pr_auc": 0.9944139139129473,
+    "confusion_matrix": {
+      "tn": 3715,
+      "fp": 4,
+      "fn": 15,
+      "tp": 634
+    }
+  },
+  "determinism_verification": {
+    "identical_predictions": true,
+    "identical_probabilities": true
+  },
+  "artifacts": {
+    "vectorizer": "services\\ml-service\\experiments\\phishing_exp_20261004_082003\\candidate_vectorizer.joblib",
+    "vectorizer_sha256": "5464be9f620df683b98671de1f222b7244784b438cb47b6652b539612c032ce0",
+    "model": "services\\ml-service\\experiments\\phishing_exp_20261004_082003\\candidate_Calibrated_LinearSVC.joblib",
+    "model_sha256": "d6ab011e9ba1557eddae7d6cc186bf5db8b683ceadbd3fe6004df456b5b3521a"
+  },
+  "total_runtime_seconds": 131.83
+}

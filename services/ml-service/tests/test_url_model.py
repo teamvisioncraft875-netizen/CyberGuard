@@ -27,7 +27,9 @@ def test_phishing_dataset_composition_and_negative_class_check():
     3. Confirms supervised binary training must be BLOCKED pending a benign dataset.
     """
     repo_root = Path(__file__).resolve().parents[3]
-    phish_csv = repo_root / "datasets" / "phising.csv"
+    phish_csv = repo_root / "datasets" / "Phishing" / "phising.csv"
+    if not phish_csv.exists():
+        phish_csv = repo_root / "datasets" / "phising.csv"
 
     assert phish_csv.exists(), f"Missing phising.csv at {phish_csv}"
 

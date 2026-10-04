@@ -146,7 +146,7 @@ async function runPhase5TestSuite() {
     });
     if (phishRes.status !== 200) throw new Error(`Expected 200 for URL check, got ${phishRes.status}`);
     const phishData = await phishRes.json();
-    if (phishData.risk_level !== 'Critical') throw new Error(`Expected Critical, got ${phishData.risk_level}`);
+    if (phishData.risk_level?.toLowerCase() !== 'critical') throw new Error(`Expected Critical, got ${phishData.risk_level}`);
     console.log(`✅ PASS: E2E URL detection returned Critical (brand: ${phishData.signals?.target_brand})`);
 
     // 2b. E2E Network Telemetry
@@ -196,6 +196,61 @@ async function runPhase5TestSuite() {
     const loginData = await loginRes.json();
     if (!loginData.anomaly_detected) throw new Error('Expected anomaly_detected: true');
     console.log(`✅ PASS: E2E Login anomaly returned ${loginData.risk_level}`);
+
+    // 2d. E2E Media & Deepfake Impersonation Checks (Real FaceForensics & Podonos Datasets)
+    console.log('[E2E 2d] Testing real image forensic check via Gateway...');
+    const mediaImgRes = await fetch(`${baseUrl}/api/check/media`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${validToken}`
+      },
+      body: JSON.stringify({
+        file_url: 'datasets/FaceForensics/images/ex_original.png',
+        media_type: 'image'
+      })
+    });
+    if (mediaImgRes.status !== 200) throw new Error(`Expected 200 for media image check, got ${mediaImgRes.status}`);
+    const mediaImgData = await mediaImgRes.json();
+    if (!mediaImgData.id) throw new Error('Expected incident id in media check response');
+    if (typeof mediaImgData.risk_score !== 'number') throw new Error('Expected numeric risk_score');
+    if (!mediaImgData.signals?.fourier_heatmap_base64 && !mediaImgData.signals?.heatmap_base64) {
+      throw new Error('Expected Fourier heatmap in signals');
+    }
+    console.log(`✅ PASS: E2E Media image check returned ${mediaImgData.risk_level} (score: ${mediaImgData.risk_score}, FFT slope: ${mediaImgData.signals?.spectral_decay_slope})`);
+
+    console.log('[E2E 2e] Testing real audio acoustic forensic check via Gateway...');
+    const mediaAudRes = await fetch(`${baseUrl}/api/check/media`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${validToken}`
+      },
+      body: JSON.stringify({
+        file_url: 'datasets/audio-dfd-benchmark/dataset/100.wav',
+        media_type: 'audio'
+      })
+    });
+    if (mediaAudRes.status !== 200) throw new Error(`Expected 200 for media audio check, got ${mediaAudRes.status}`);
+    const mediaAudData = await mediaAudRes.json();
+    if (typeof mediaAudData.risk_score !== 'number') throw new Error('Expected numeric risk_score');
+    console.log(`✅ PASS: E2E Media audio check returned ${mediaAudData.risk_level} (score: ${mediaAudData.risk_score}, F0: ${mediaAudData.signals?.mean_f0_hz} Hz, jitter: ${mediaAudData.signals?.pitch_jitter_pct}%)`);
+
+    // 2f. Media input shape validation
+    console.log('[E2E 2f] Testing media validation rejecting invalid media_type...');
+    const invalidTypeRes = await fetch(`${baseUrl}/api/check/media`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${validToken}`
+      },
+      body: JSON.stringify({
+        file_url: 'datasets/FaceForensics/images/ex_original.png',
+        media_type: 'unsupported_type'
+      })
+    });
+    if (invalidTypeRes.status !== 400) throw new Error(`Expected 400 for invalid media_type, got ${invalidTypeRes.status}`);
+    console.log('✅ PASS: Invalid media_type rejected with 400');
 
     // =========================================================================
     // SECTION 3: Failure & Recovery Testing (Step 5.10)

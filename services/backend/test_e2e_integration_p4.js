@@ -79,7 +79,7 @@ async function runPhase4EndToEndTests() {
 
     const phishData = await phishUrlRes.json();
     console.log(`[E2E URL 1a] Risk Level: ${phishData.risk_level}, Explanation: ${phishData.explanation.slice(0, 70)}...`);
-    if (phishData.risk_level !== 'Critical') {
+    if (phishData.risk_level?.toLowerCase() !== 'critical') {
       throw new Error(`Expected Critical risk level for phishing URL, got: ${phishData.risk_level}`);
     }
     if (!phishData.signals || phishData.signals.target_brand !== 'amazon') {
@@ -105,7 +105,7 @@ async function runPhase4EndToEndTests() {
     }
     const benignData = await benignUrlRes.json();
     console.log(`[E2E URL 1b] Risk Level: ${benignData.risk_level}`);
-    if (benignData.risk_level !== 'Safe') {
+    if (benignData.risk_level?.toLowerCase() !== 'safe') {
       throw new Error(`Expected Safe risk level for benign URL, got: ${benignData.risk_level}`);
     }
     console.log('✅ TEST 1b PASSED: Benign URL correctly classified as Safe');

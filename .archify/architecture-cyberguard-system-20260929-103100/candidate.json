@@ -1,0 +1,1046 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "CyberGuard System Architecture",
+    "subtitle": "Component boundaries, detection pipelines, automated response layer, and persistence",
+    "output": ".archify/architecture-cyberguard-system-20260929-103100/cyberguard-system.html",
+    "quality_profile": "showcase",
+    "animation": "trace",
+    "locale": "en",
+    "repository": {
+      "url": "https://github.com/teamvisioncraft875-netizen/CyberGuard.git",
+      "revision": "3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae",
+      "provider": "github",
+      "link_mode": "web"
+    },
+    "legend": {
+      "mode": "all",
+      "entries": {
+        "frontend": {
+          "label": "Presentation Layer (Blue)"
+        },
+        "backend": {
+          "label": "API Gateway Layer (Green)"
+        },
+        "cloud": {
+          "label": "Business Logic Layer (Yellow)"
+        },
+        "security": {
+          "label": "ML / Detection Layer (Red)"
+        },
+        "database": {
+          "label": "Data & Storage Layer (Purple)"
+        },
+        "messagebus": {
+          "label": "Real-Time / Socket.io (Orange)"
+        },
+        "external": {
+          "label": "External Integrations (Gray)"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "client_web",
+      "type": "frontend",
+      "label": "Web Dashboard",
+      "sublabel": "React / Vite dashboard",
+      "pos": [
+        60,
+        90
+      ],
+      "size": [
+        150,
+        54
+      ],
+      "sources": [
+        {
+          "path": "apps/web/package.json",
+          "line": 1,
+          "label": "Web Dashboard"
+        }
+      ]
+    },
+    {
+      "id": "client_mobile",
+      "type": "frontend",
+      "label": "Mobile Security App",
+      "sublabel": "React Native / Expo app",
+      "pos": [
+        60,
+        220
+      ],
+      "size": [
+        150,
+        54
+      ],
+      "sources": [
+        {
+          "path": "apps/mobile/package.json",
+          "line": 1,
+          "label": "Mobile App"
+        }
+      ]
+    },
+    {
+      "id": "sensor_guard",
+      "type": "frontend",
+      "label": "Guard App Sensor",
+      "sublabel": "Host telemetry agent",
+      "pos": [
+        60,
+        350
+      ],
+      "size": [
+        150,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/guard-app/main.py",
+          "line": 1,
+          "label": "Guard Sensor"
+        }
+      ]
+    },
+    {
+      "id": "rate_limiter",
+      "type": "backend",
+      "label": "Rate Limiters",
+      "sublabel": "auth, check, general limits",
+      "pos": [
+        310,
+        90
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/backend/src/middlewares/rateLimiter.js",
+          "line": 18,
+          "label": "Rate Limiters"
+        }
+      ]
+    },
+    {
+      "id": "api_gw",
+      "type": "backend",
+      "label": "Express API Gateway",
+      "sublabel": "Node.js / Express gateway",
+      "pos": [
+        310,
+        220
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/backend/src/index.js",
+          "line": 21,
+          "label": "Express App"
+        }
+      ]
+    },
+    {
+      "id": "auth_mw",
+      "type": "backend",
+      "label": "Auth & RBAC",
+      "sublabel": "JWT verify + tenant scope",
+      "pos": [
+        310,
+        350
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/backend/src/middlewares/auth.js",
+          "line": 1,
+          "label": "Auth Middleware"
+        }
+      ]
+    },
+    {
+      "id": "realtime_ws",
+      "type": "messagebus",
+      "label": "WebSocket Server",
+      "sublabel": "Socket.io room alerts",
+      "pos": [
+        310,
+        480
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/backend/src/config/socket.js",
+          "line": 14,
+          "label": "Socket.io Init"
+        }
+      ]
+    },
+    {
+      "id": "client_ml",
+      "type": "cloud",
+      "label": "ML Client (Axios)",
+      "sublabel": "FastAPI HTTP client",
+      "pos": [
+        570,
+        90
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/backend/src/utils/mlClient.js",
+          "line": 1,
+          "label": "ML Client"
+        }
+      ]
+    },
+    {
+      "id": "ctrl_check",
+      "type": "cloud",
+      "label": "Check Controller",
+      "sublabel": "Threat triage controller",
+      "pos": [
+        570,
+        220
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/backend/src/controllers/checkController.js",
+          "line": 1,
+          "label": "Check Controller"
+        }
+      ]
+    },
+    {
+      "id": "svc_incident",
+      "type": "cloud",
+      "label": "Incident Service",
+      "sublabel": "Atomic 4-table Tx service",
+      "pos": [
+        570,
+        350
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/backend/src/services/incidentService.js",
+          "line": 1,
+          "label": "Incident Service"
+        }
+      ]
+    },
+    {
+      "id": "ctrl_mgmt",
+      "type": "cloud",
+      "label": "Resource Controllers",
+      "sublabel": "Incidents & telemetry APIs",
+      "pos": [
+        570,
+        480
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/backend/src/index.js",
+          "line": 49,
+          "label": "API Routers"
+        }
+      ]
+    },
+    {
+      "id": "ml_gw",
+      "type": "security",
+      "label": "FastAPI Engine",
+      "sublabel": "FastAPI service :8000",
+      "pos": [
+        880,
+        220
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/ml-service/app/main.py",
+          "line": 10,
+          "label": "FastAPI App"
+        }
+      ]
+    },
+    {
+      "id": "eng_text_url",
+      "type": "security",
+      "label": "NLP & URL Engines",
+      "sublabel": "Phishing NLP & URL scan",
+      "pos": [
+        1120,
+        90
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/ml-service/app/services/url_engine.py",
+          "line": 1,
+          "label": "URL Engine"
+        }
+      ]
+    },
+    {
+      "id": "eng_anomaly",
+      "type": "security",
+      "label": "Anomaly Engines",
+      "sublabel": "Login anomaly & system",
+      "pos": [
+        1120,
+        220
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/ml-service/app/services/login_engine.py",
+          "line": 1,
+          "label": "Login Anomaly"
+        }
+      ]
+    },
+    {
+      "id": "eng_media",
+      "type": "security",
+      "label": "Deepfake & Audio",
+      "sublabel": "Deepfake ViT & ASVspoof",
+      "pos": [
+        1120,
+        350
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/ml-service/app/main.py",
+          "line": 15,
+          "label": "Media Analysis"
+        }
+      ]
+    },
+    {
+      "id": "ext_threat_intel",
+      "type": "external",
+      "label": "URL Threat Intel",
+      "sublabel": "Safe Browsing & VirusTotal",
+      "pos": [
+        1360,
+        90
+      ],
+      "size": [
+        160,
+        54
+      ]
+    },
+    {
+      "id": "ext_abuseipdb",
+      "type": "external",
+      "label": "AbuseIPDB API",
+      "sublabel": "IP reputation checks",
+      "pos": [
+        1360,
+        220
+      ],
+      "size": [
+        160,
+        54
+      ]
+    },
+    {
+      "id": "ext_mitre",
+      "type": "external",
+      "label": "MITRE ATT&CK",
+      "sublabel": "MITRE ATT&CK taxonomy",
+      "pos": [
+        1360,
+        350
+      ],
+      "size": [
+        160,
+        54
+      ]
+    },
+    {
+      "id": "ext_fcm",
+      "type": "external",
+      "label": "Firebase FCM",
+      "sublabel": "Push notification dispatch",
+      "pos": [
+        1360,
+        480
+      ],
+      "size": [
+        160,
+        54
+      ]
+    },
+    {
+      "id": "store_media",
+      "type": "database",
+      "label": "Supabase Storage",
+      "sublabel": "Deepfake media buckets",
+      "pos": [
+        310,
+        630
+      ],
+      "size": [
+        180,
+        56
+      ]
+    },
+    {
+      "id": "db_rls",
+      "type": "database",
+      "label": "Row Level Security",
+      "sublabel": "Tenant & guardian RLS",
+      "pos": [
+        570,
+        630
+      ],
+      "size": [
+        190,
+        56
+      ]
+    },
+    {
+      "id": "db_postgres",
+      "type": "database",
+      "label": "PostgreSQL (Supabase)",
+      "sublabel": "Supabase PostgreSQL tables",
+      "pos": [
+        880,
+        630
+      ],
+      "size": [
+        280,
+        56
+      ]
+    },
+    {
+      "id": "db_redis",
+      "type": "database",
+      "label": "Redis Cache & Blacklist",
+      "sublabel": "Token & IP blacklist",
+      "pos": [
+        1170,
+        630
+      ],
+      "size": [
+        160,
+        56
+      ],
+      "sources": [
+        {
+          "path": "services/backend/src/config/redis.js",
+          "line": 1,
+          "label": "Redis Config"
+        }
+      ]
+    },
+    {
+      "id": "eng_secrets",
+      "type": "security",
+      "label": "Secret Exposure",
+      "sublabel": "Pattern regex + entropy",
+      "pos": [
+        1120,
+        480
+      ],
+      "size": [
+        160,
+        54
+      ]
+    },
+    {
+      "id": "ext_firewall",
+      "type": "external",
+      "label": "Firewall Sync",
+      "sublabel": "Blocklist (future)",
+      "pos": [
+        1360,
+        610
+      ],
+      "size": [
+        160,
+        54
+      ]
+    },
+    {
+      "id": "ext_email",
+      "type": "external",
+      "label": "Email Provider",
+      "sublabel": "SendGrid / SMTP",
+      "pos": [
+        1360,
+        740
+      ],
+      "size": [
+        160,
+        54
+      ]
+    },
+    {
+      "id": "eng_policy",
+      "type": "cloud",
+      "label": "Policy Engine",
+      "sublabel": "Shadow / live rules",
+      "pos": [
+        310,
+        760
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/backend/src/services/PolicyEngine.js",
+          "line": 1,
+          "label": "Policy Engine"
+        }
+      ]
+    },
+    {
+      "id": "ctrl_actions",
+      "type": "backend",
+      "label": "Response Actions",
+      "sublabel": "Propose / Approve",
+      "pos": [
+        570,
+        760
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/backend/src/controllers/actionExecutionController.js",
+          "line": 1,
+          "label": "Action Execution"
+        }
+      ]
+    },
+    {
+      "id": "svc_execution",
+      "type": "backend",
+      "label": "Execution Service",
+      "sublabel": "Revoke, block, suspend",
+      "pos": [
+        830,
+        760
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/backend/src/services/executionService.js",
+          "line": 1,
+          "label": "Execution Service"
+        }
+      ]
+    },
+    {
+      "id": "svc_audit",
+      "type": "security",
+      "label": "Audit Logging",
+      "sublabel": "Immutable audit trail",
+      "pos": [
+        1050,
+        760
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/backend/src/services/auditService.js",
+          "line": 1,
+          "label": "Audit Service"
+        }
+      ]
+    },
+    {
+      "id": "svc_notification",
+      "type": "messagebus",
+      "label": "Notification Service",
+      "sublabel": "Email & push alerts",
+      "pos": [
+        1050,
+        850
+      ],
+      "size": [
+        160,
+        54
+      ],
+      "sources": [
+        {
+          "path": "services/backend/src/services/notificationService.js",
+          "line": 1,
+          "label": "Notification Service"
+        }
+      ]
+    },
+    {
+      "id": "ext_siem",
+      "type": "external",
+      "label": "SIEM Export",
+      "sublabel": "Syslog / webhook (future)",
+      "pos": [
+        1360,
+        870
+      ],
+      "size": [
+        160,
+        54
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Presentation Layer",
+      "wraps": [
+        "client_web",
+        "client_mobile",
+        "sensor_guard"
+      ],
+      "pad": 16
+    },
+    {
+      "kind": "security-group",
+      "label": "API Gateway & Security",
+      "wraps": [
+        "rate_limiter",
+        "api_gw",
+        "auth_mw",
+        "realtime_ws"
+      ],
+      "pad": 16
+    },
+    {
+      "kind": "region",
+      "label": "Business Logic & Services",
+      "wraps": [
+        "client_ml",
+        "ctrl_check",
+        "svc_incident",
+        "ctrl_mgmt"
+      ],
+      "pad": 16
+    },
+    {
+      "kind": "security-group",
+      "label": "ML Inference & Detection",
+      "wraps": [
+        "ml_gw",
+        "eng_text_url",
+        "eng_anomaly",
+        "eng_media",
+        "eng_secrets"
+      ],
+      "pad": 16
+    },
+    {
+      "kind": "region",
+      "label": "External APIs & Services",
+      "wraps": [
+        "ext_threat_intel",
+        "ext_abuseipdb",
+        "ext_mitre",
+        "ext_fcm",
+        "ext_firewall",
+        "ext_email",
+        "ext_siem"
+      ],
+      "pad": 16
+    },
+    {
+      "kind": "region",
+      "label": "Data & Persistence Layer",
+      "wraps": [
+        "store_media",
+        "db_rls",
+        "db_postgres",
+        "db_redis"
+      ],
+      "pad": 16
+    },
+    {
+      "kind": "security-group",
+      "label": "Response & Remediation Layer",
+      "wraps": [
+        "eng_policy",
+        "ctrl_actions",
+        "svc_execution",
+        "svc_audit",
+        "svc_notification"
+      ],
+      "pad": 16
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn-web-gw",
+      "from": "client_web",
+      "to": "api_gw",
+      "label": "HTTPS / REST",
+      "variant": "emphasis"
+    },
+    {
+      "id": "conn-mobile-gw",
+      "from": "client_mobile",
+      "to": "api_gw",
+      "label": "HTTPS / REST",
+      "variant": "emphasis"
+    },
+    {
+      "id": "conn-sensor-gw",
+      "from": "sensor_guard",
+      "to": "api_gw",
+      "label": "telemetry stream",
+      "variant": "default"
+    },
+    {
+      "id": "conn-gw-ratelimit",
+      "from": "api_gw",
+      "to": "rate_limiter",
+      "label": "enforce limits",
+      "variant": "default"
+    },
+    {
+      "id": "conn-gw-auth",
+      "from": "api_gw",
+      "to": "auth_mw",
+      "label": "verify JWT & RBAC",
+      "variant": "security"
+    },
+    {
+      "id": "conn-gw-check",
+      "from": "api_gw",
+      "to": "ctrl_check",
+      "label": "/check/* dispatch",
+      "variant": "emphasis"
+    },
+    {
+      "id": "conn-gw-mgmt",
+      "from": "api_gw",
+      "to": "ctrl_mgmt",
+      "label": "resource routing",
+      "variant": "default"
+    },
+    {
+      "id": "conn-check-mlclient",
+      "from": "ctrl_check",
+      "to": "client_ml",
+      "label": "inference request",
+      "variant": "default"
+    },
+    {
+      "id": "conn-check-svc",
+      "from": "ctrl_check",
+      "to": "svc_incident",
+      "label": "persist triage",
+      "variant": "default"
+    },
+    {
+      "id": "conn-mlclient-mlgw",
+      "from": "client_ml",
+      "to": "ml_gw",
+      "label": "POST /internal/analyze/*",
+      "variant": "emphasis"
+    },
+    {
+      "id": "conn-mlgw-texturl",
+      "from": "ml_gw",
+      "to": "eng_text_url",
+      "label": "dispatch text/url",
+      "variant": "default"
+    },
+    {
+      "id": "conn-mlgw-anomaly",
+      "from": "ml_gw",
+      "to": "eng_anomaly",
+      "label": "dispatch telemetry",
+      "variant": "default"
+    },
+    {
+      "id": "conn-mlgw-media",
+      "from": "ml_gw",
+      "to": "eng_media",
+      "label": "dispatch media",
+      "variant": "default"
+    },
+    {
+      "id": "conn-texturl-threat",
+      "from": "eng_text_url",
+      "to": "ext_threat_intel",
+      "label": "scan reputation",
+      "variant": "security"
+    },
+    {
+      "id": "conn-anomaly-abuse",
+      "from": "eng_anomaly",
+      "to": "ext_abuseipdb",
+      "label": "IP threat score",
+      "variant": "security"
+    },
+    {
+      "id": "conn-svc-mitre",
+      "from": "svc_incident",
+      "to": "ext_mitre",
+      "label": "ATT&CK taxonomy",
+      "variant": "dashed"
+    },
+    {
+      "id": "conn-svc-fcm",
+      "from": "svc_incident",
+      "to": "ext_fcm",
+      "label": "push dispatch",
+      "variant": "default"
+    },
+    {
+      "id": "conn-svc-db",
+      "from": "svc_incident",
+      "to": "db_postgres",
+      "label": "atomic 4-table Tx",
+      "variant": "security"
+    },
+    {
+      "id": "conn-mgmt-db",
+      "from": "ctrl_mgmt",
+      "to": "db_postgres",
+      "label": "scoped queries",
+      "variant": "default"
+    },
+    {
+      "id": "conn-anomaly-db",
+      "from": "eng_anomaly",
+      "to": "db_postgres",
+      "label": "read login history",
+      "variant": "dashed"
+    },
+    {
+      "id": "conn-svc-ws",
+      "from": "svc_incident",
+      "to": "realtime_ws",
+      "label": "incident:new event",
+      "variant": "emphasis"
+    },
+    {
+      "id": "conn-ws-web",
+      "from": "realtime_ws",
+      "to": "client_web",
+      "label": "live incident stream",
+      "variant": "emphasis"
+    },
+    {
+      "id": "conn-ws-mobile",
+      "from": "realtime_ws",
+      "to": "client_mobile",
+      "label": "push & Guardian alerts",
+      "variant": "emphasis"
+    },
+    {
+      "id": "conn-check-store",
+      "from": "ctrl_check",
+      "to": "store_media",
+      "label": "upload media",
+      "variant": "dashed"
+    },
+    {
+      "id": "conn-media-store",
+      "from": "eng_media",
+      "to": "store_media",
+      "label": "fetch media bytes",
+      "variant": "dashed"
+    },
+    {
+      "id": "conn-db-rls",
+      "from": "db_postgres",
+      "to": "db_rls",
+      "label": "tenant RLS policy",
+      "variant": "security"
+    },
+    {
+      "id": "conn-mlgw-secrets",
+      "from": "ml_gw",
+      "to": "eng_secrets",
+      "label": "scan strings",
+      "variant": "default"
+    },
+    {
+      "id": "conn-incident-policy",
+      "from": "svc_incident",
+      "to": "eng_policy",
+      "label": "policy rules",
+      "variant": "security"
+    },
+    {
+      "id": "conn-policy-propose",
+      "from": "eng_policy",
+      "to": "ctrl_actions",
+      "label": "1. propose",
+      "variant": "security"
+    },
+    {
+      "id": "conn-admin-approve",
+      "from": "ctrl_mgmt",
+      "to": "ctrl_actions",
+      "label": "2. admin approve",
+      "variant": "emphasis"
+    },
+    {
+      "id": "conn-actions-exec",
+      "from": "ctrl_actions",
+      "to": "svc_execution",
+      "label": "3. execute",
+      "variant": "emphasis"
+    },
+    {
+      "id": "conn-exec-redis",
+      "from": "svc_execution",
+      "to": "db_redis",
+      "label": "block / revoke",
+      "variant": "security"
+    },
+    {
+      "id": "conn-exec-pg",
+      "from": "svc_execution",
+      "to": "db_postgres",
+      "label": "suspend device",
+      "variant": "default"
+    },
+    {
+      "id": "conn-exec-audit",
+      "from": "svc_execution",
+      "to": "svc_audit",
+      "label": "record action",
+      "variant": "security"
+    },
+    {
+      "id": "conn-audit-db",
+      "from": "svc_audit",
+      "to": "db_postgres",
+      "label": "audit log",
+      "variant": "security"
+    },
+    {
+      "id": "conn-exec-notify",
+      "from": "svc_execution",
+      "to": "svc_notification",
+      "label": "execution alert",
+      "variant": "default"
+    },
+    {
+      "id": "conn-notify-email",
+      "from": "svc_notification",
+      "to": "ext_email",
+      "label": "admin email",
+      "variant": "default"
+    },
+    {
+      "id": "conn-exec-firewall",
+      "from": "svc_execution",
+      "to": "ext_firewall",
+      "label": "blocklist sync",
+      "variant": "dashed"
+    },
+    {
+      "id": "conn-audit-siem",
+      "from": "svc_audit",
+      "to": "ext_siem",
+      "label": "syslog stream",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Presentation & Sensors",
+      "items": [
+        "React Web Dashboard (apps/web) provides full SOC command, incident review, and metrics triage",
+        "React Native Mobile App (apps/mobile) powers Guardian link pairing and push alerts",
+        "Guard App Sensor (services/guard-app) streams host and login telemetry"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Gateway & Protection",
+      "items": [
+        "Express API Gateway handles request termination, routing, and CORS policy",
+        "Rate limiters enforce 5/15m (auth), 100/15m (check), and 300/15m (general) thresholds",
+        "Auth & roleCheck middlewares enforce JWT verification and multi-tenant scoping"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "AI/ML Detection Stack",
+      "items": [
+        "FastAPI service executes parallel inference across message, URL, media, and login engines",
+        "Login anomaly engine pairs Isolation Forest model with Cowrie honeypot behavioral baselines",
+        "External APIs (Safe Browsing, VirusTotal, AbuseIPDB) enrich threat confidence scores"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Persistence & Real-Time",
+      "items": [
+        "Atomic transaction inserts across incidents, signals, actions, and MITRE mapping tables",
+        "Row Level Security (RLS) ensures strict tenant and guardian scoping at the database layer",
+        "Socket.io broadcasts instant notifications to user, org, and guardian rooms"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Response & Remediation Layer [Phase 2]",
+      "items": [
+        "Configurable Policy Engine maps threat score to response actions in shadow mode",
+        "Two-step approval lifecycle: Propose -> Admin Approve -> Live Execution",
+        "Execution Service revokes tokens, blocks IPs, suspends devices, and logs immutable audit trail"
+      ]
+    }
+  ]
+}

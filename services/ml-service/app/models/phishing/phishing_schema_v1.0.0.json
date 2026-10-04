@@ -1,0 +1,16 @@
+{
+  "model_name": "CYBERGUARD Supervised Phishing & Social Engineering Classifier",
+  "version": "1.0.0",
+  "input_type": "raw_text_string",
+  "vectorizer": "TfidfVectorizer",
+  "max_features": 25000,
+  "ngram_range": [
+    1,
+    2
+  ],
+  "output_format": {
+    "prediction": "binary_integer (0: benign, 1: threat)",
+    "threat_probability": "float (0.0 to 1.0)",
+    "calibrated_threshold": 0.36000000000000004
+  }
+}

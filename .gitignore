@@ -169,7 +169,7 @@ venv/
 dist/
 build/
 
-# Large Datasets & Raw Captures (CTU-13 / PCAP / NetFlow / Cowrie)
+# Large Datasets & Raw Captures (CTU-13 / PCAP / NetFlow / Cowrie / Media)
 *.binetflow
 *.binetflow.txt
 *.pcap
@@ -177,3 +177,16 @@ build/
 *.csv.gz
 *.tar.gz
 datasets/logs_dataset/
+datasets/audio-dfd-benchmark/
+datasets/FaceForensics/
+datasets/deepfake-audio-detection/
+datasets/DFDC
+# Large local ML datasets
+datasets/ctu13/
+datasets/Malicious url/
+datasets/malware/
+datasets/Phishing/
+
+# Large ML model artifact - keep locally, do not commit
+services/ml-service/app/models/malware/ember_model_2018.txt
+*.flac

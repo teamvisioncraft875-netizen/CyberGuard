@@ -1,39 +1,39 @@
 const db = require('../config/db');
 
 /**
- * Organization Model — CRUD operations on the 'organisations' table
+ * Organization Model — CRUD operations on the 'organizations' table
  */
 const Organization = {
-  async create({ name, domain }) {
+  async create({ name }) {
     const text = `
-      INSERT INTO organisations (name, domain, created_at)
-      VALUES ($1, $2, NOW())
-      RETURNING id, name, domain, created_at;
+      INSERT INTO organizations (name, created_at)
+      VALUES ($1, NOW())
+      RETURNING id, name, created_at;
     `;
-    const res = await db.query(text, [name, domain]);
+    const res = await db.query(text, [name]);
     return res.rows[0];
   },
 
   async findById(id) {
-    const text = `SELECT * FROM organisations WHERE id = $1;`;
+    const text = `SELECT id, name, created_at FROM organizations WHERE id = $1;`;
     const res = await db.query(text, [id]);
     return res.rows[0] || null;
   },
 
-  async findByDomain(domain) {
-    const text = `SELECT * FROM organisations WHERE domain = $1;`;
-    const res = await db.query(text, [domain]);
+  async findByName(name) {
+    const text = `SELECT id, name, created_at FROM organizations WHERE LOWER(name) = LOWER($1);`;
+    const res = await db.query(text, [name]);
     return res.rows[0] || null;
   },
 
   async findAll() {
-    const text = `SELECT * FROM organisations ORDER BY name ASC;`;
+    const text = `SELECT id, name, created_at FROM organizations ORDER BY name ASC;`;
     const res = await db.query(text, []);
     return res.rows;
   },
 
   async deleteById(id) {
-    const text = `DELETE FROM organisations WHERE id = $1 RETURNING id;`;
+    const text = `DELETE FROM organizations WHERE id = $1 RETURNING id;`;
     const res = await db.query(text, [id]);
     return res.rows[0] || null;
   }

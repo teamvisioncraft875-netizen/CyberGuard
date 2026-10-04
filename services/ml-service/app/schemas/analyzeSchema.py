@@ -52,6 +52,11 @@ class SystemAnalyzeRequest(BaseModel):
     details: Dict[str, Any] = Field(default_factory=dict, description="Arbitrary event metrics and telemetry data")
 
 
+class MalwareAnalyzeRequest(BaseModel):
+    file_content_base64: str = Field(..., min_length=1, description="Base64-encoded binary file content")
+    filename: Optional[str] = Field("sample.bin", description="Original filename of the binary")
+
+
 # Unified Detection Response Schema
 class UnifiedAnalysisResponse(BaseModel):
     risk_level: RiskLevel = Field(..., description="5-tier calibrated risk level")

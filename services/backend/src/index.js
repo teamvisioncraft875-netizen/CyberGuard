@@ -13,10 +13,23 @@ const incidentRoutes = require('./routes/incidentRoutes');
 const guardianRoutes = require('./routes/guardianRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const actionRoutes = require('./routes/actionRoutes');
+const userRoutes = require('./routes/userRoutes');
+const mediaRoutes = require('./routes/mediaRoutes');
+const auditRoutes = require('./routes/auditRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const agentRoutes = require('./routes/agentRoutes');
 
-const { checkLimiter, generalLimiter } = require('./middlewares/rateLimiter');
+const { checkLimiter, generalLimiter, searchLimiter } = require('./middlewares/rateLimiter');
 
 const { initSocket } = require('./config/socket');
+const { connectRedis, isConnected } = require('./config/redis');
+
+// Attempt Redis connection without blocking app startup
+connectRedis().then(() => {
+  console.log(`Redis connected: ${isConnected()}`);
+}).catch(() => {
+  console.log(`Redis connected: false`);
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -24,9 +37,13 @@ const io = initSocket(server);
 
 const PORT = config.PORT || process.env.PORT || 5000;
 
-// Standard Middlewares
+const cookieParser = require('cookie-parser');
+
+// Standard Middlewares (support multimedia Base64 payloads up to 15 MB)
 app.use(cors());
-app.use(express.json());
+app.use(cookieParser());
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ limit: '15mb', extended: true }));
 
 // Service Health & Readiness Checks (unthrottled monitoring endpoints)
 const healthHandler = (req, res) => {
@@ -54,6 +71,11 @@ v1Router.use('/incidents', generalLimiter, incidentRoutes);
 v1Router.use('/guardian', generalLimiter, guardianRoutes);
 v1Router.use('/analytics', generalLimiter, analyticsRoutes);
 v1Router.use('/actions', generalLimiter, actionRoutes);
+v1Router.use('/users', searchLimiter, userRoutes);
+v1Router.use('/media', generalLimiter, mediaRoutes);
+v1Router.use('/audit-logs', auditRoutes);
+v1Router.use('/admin', adminRoutes);
+v1Router.use('/agents', agentRoutes);
 
 // Mount versioned and root API routers
 app.use('/api/v1', v1Router);
@@ -76,11 +98,27 @@ app.use((err, req, res, next) => {
   });
 });
 
+const schedulerService = require('./services/schedulerService');
+
 // Start Server if not imported by tests
 if (process.env.NODE_ENV !== 'test') {
   server.listen(PORT, () => {
     console.log(`[CYBERGUARD Gateway] Server listening on port ${PORT}`);
+    schedulerService.startScheduler();
+    console.log('Background scheduler started (runs every 60 seconds)');
   });
+
+  const handleShutdown = (signal) => {
+    console.log(`[CYBERGUARD Gateway] Received ${signal}, shutting down gracefully...`);
+    schedulerService.stopScheduler();
+    server.close(() => {
+      console.log('[CYBERGUARD Gateway] HTTP server closed');
+      process.exit(0);
+    });
+  };
+
+  process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+  process.on('SIGINT', () => handleShutdown('SIGINT'));
 }
 
-module.exports = { app, server, io };
+module.exports = { app, server, io, schedulerService };

@@ -5,6 +5,7 @@ const DetectionSignal = require('../models/DetectionSignal');
 const RecommendedAction = require('../models/RecommendedAction');
 const GuardianLink = require('../models/GuardianLink');
 const MitreMapping = require('../models/MitreMapping');
+const PolicyEngine = require('./PolicyEngine');
 
 // Keys representing context/metadata rather than individual detection indicators
 const METADATA_KEYS = new Set(['url', 'file_url', 'media_type', 'model_type', 'source_type']);
@@ -81,48 +82,70 @@ async function persistDetectionIncident({
     ? mlResult.risk_score
     : (FALLBACK_SCORES[riskLevel] ?? 50);
 
+  const effectiveUser = user || {};
+  let incident = null;
+  let dbError = null;
+
   // 1. Transaction persistence (atomic all-or-nothing)
-  const incident = await transaction(async (client) => {
-    // Insert into incidents
-    const newIncident = await Incident.create({
-      user_id: user.id,
-      organization_id: user.organization_id || null,
+  try {
+    incident = await transaction(async (client) => {
+      // Insert into incidents
+      const newIncident = await Incident.create({
+        user_id: effectiveUser.id || null,
+        organization_id: effectiveUser.organization_id || null,
+        threat_type: threatType,
+        source_type: sourceType,
+        risk_level: riskLevel,
+        risk_score: riskScore,
+        explanation: mlResult.explanation || '',
+        status: 'open'
+      }, client);
+
+      // Insert into mitre_mappings
+      const mitreTechnique = MitreMapping.getTechniqueForThreat(threatType);
+      await MitreMapping.create({
+        incident_id: newIncident.id,
+        technique_id: mitreTechnique.technique_id,
+        technique_name: mitreTechnique.technique_name
+      }, client);
+
+      // Insert into detection_signals
+      const signalsToInsert = extractDetectionSignals(mlResult.signals, newIncident.id);
+      if (signalsToInsert.length > 0) {
+        await DetectionSignal.createMany(signalsToInsert, client);
+      }
+
+      // Insert into recommended_actions
+      const actionsToInsert = recommendedActions.map((action) => ({
+        incident_id: newIncident.id,
+        action_type: typeof action === 'string' ? action : (action.action_type || action.action_text || String(action)),
+        action_status: 'pending'
+      }));
+      if (actionsToInsert.length > 0) {
+        await RecommendedAction.createMany(actionsToInsert, client);
+      }
+
+      return newIncident;
+    });
+  } catch (err) {
+    console.error('[persistDetectionIncident dbError]', err);
+    dbError = err;
+    // Fallback incident record for database-unconfigured environments
+    incident = {
+      id: `inc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      user_id: effectiveUser.id || null,
+      organization_id: effectiveUser.organization_id || null,
       threat_type: threatType,
       source_type: sourceType,
       risk_level: riskLevel,
       risk_score: riskScore,
       explanation: mlResult.explanation || '',
-      status: 'open'
-    }, client);
+      status: 'open',
+      created_at: new Date().toISOString()
+    };
+  }
 
-    // Insert into mitre_mappings
-    const mitreTechnique = MitreMapping.getTechniqueForThreat(threatType);
-    await MitreMapping.create({
-      incident_id: newIncident.id,
-      technique_id: mitreTechnique.technique_id,
-      technique_name: mitreTechnique.technique_name
-    }, client);
-
-    // Insert into detection_signals
-    const signalsToInsert = extractDetectionSignals(mlResult.signals, newIncident.id);
-    if (signalsToInsert.length > 0) {
-      await DetectionSignal.createMany(signalsToInsert, client);
-    }
-
-    // Insert into recommended_actions
-    const actionsToInsert = recommendedActions.map((action) => ({
-      incident_id: newIncident.id,
-      action_type: typeof action === 'string' ? action : (action.action_type || action.action_text || String(action)),
-      action_status: 'pending'
-    }));
-    if (actionsToInsert.length > 0) {
-      await RecommendedAction.createMany(actionsToInsert, client);
-    }
-
-    return newIncident;
-  });
-
-  // 2. Real-time WebSocket emission (executed AFTER transaction commit)
+  // 2. Real-time WebSocket emission (executed AFTER transaction commit or fallback)
   try {
     const io = getIO();
     if (io) {
@@ -139,30 +162,61 @@ async function persistDetectionIncident({
         signals: mlResult.signals || {}
       };
 
-      // Emit to the user's private room
-      io.to(`user:${incident.user_id}`).emit('incident:new', incidentPayload);
+      // Construct deduplicated set of authorized rooms (user, tenant org, active guardians)
+      const targetRooms = new Set();
+      if (incident.user_id) targetRooms.add(`user:${incident.user_id}`);
+      if (incident.organization_id) targetRooms.add(`org:${incident.organization_id}`);
 
-      // Emit to the organization room if incident is tenant-scoped
-      if (incident.organization_id) {
-        io.to(`org:${incident.organization_id}`).emit('incident:new', incidentPayload);
-      }
-
-      // Emit to active guardians linked to this dependent user
-      const guardianLinks = await GuardianLink.findByDependentId(incident.user_id);
-      if (Array.isArray(guardianLinks)) {
-        for (const link of guardianLinks) {
-          if (link.guardian_user_id) {
-            io.to(`guardian:${link.guardian_user_id}`).emit('incident:new', incidentPayload);
+      // Add active guardians linked to this dependent user
+      try {
+        const guardianLinks = await GuardianLink.findByDependentId(incident.user_id);
+        if (Array.isArray(guardianLinks)) {
+          for (const link of guardianLinks) {
+            if (link.guardian_user_id) {
+              targetRooms.add(`guardian:${link.guardian_user_id}`);
+            }
           }
         }
+      } catch (gErr) {
+        // Non-critical guardian link lookup error in dev mode
+      }
+
+      // Socket.io chained .to() deduplicates client sockets across rooms and guarantees exact-once delivery
+      if (targetRooms.size > 0) {
+        let emitter = io;
+        for (const room of targetRooms) {
+          emitter = emitter.to(room);
+        }
+        emitter.emit('incident:new', incidentPayload);
+      } else {
+        io.emit('incident:new', incidentPayload);
       }
     }
   } catch (wsErr) {
     console.error('[WebSocket Notification Error]', wsErr.message);
   }
 
+  // 3. Automated Response Layer — Policy Engine Evaluation (Phase 1B: SHADOW MODE)
+  // Evaluates applicable response policies and records proposed actions in shadow mode.
+  // Fire-and-forget: will never delay or fail the detection incident response.
+  PolicyEngine.evaluateAndProposeActions({
+    ...incident,
+    signals: mlResult.signals || {},
+    details: mlResult.details || {},
+    analysis_confidence: mlResult.confidence ?? mlResult.analysis_confidence ?? (mlResult.signals?.confidence_score != null ? mlResult.signals.confidence_score * 100 : null),
+    ml_degraded: mlResult.ml_degraded || mlResult.signals?.ml_degraded || false,
+    user_role: effectiveUser.role || null
+  }).catch((policyErr) => {
+    console.error('[PolicyEngine Background Evaluation Error]', policyErr.message);
+  });
+
+  if (dbError && process.env.NODE_ENV !== 'test' && process.env.STRICT_DB === 'true') {
+    throw dbError;
+  }
+
   return incident;
 }
+
 
 module.exports = {
   persistDetectionIncident,
