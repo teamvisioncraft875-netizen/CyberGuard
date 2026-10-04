@@ -1,0 +1,24 @@
+{
+  "model_name": "CYBERGUARD Supervised Malicious URL Classifier (Reproduced Baseline)",
+  "version": "1.0.0-reproduced",
+  "features": [
+    "url_length",
+    "hostname_length",
+    "path_length",
+    "query_length",
+    "num_subdomains",
+    "dot_count",
+    "hyphen_count",
+    "digit_count",
+    "digit_ratio",
+    "special_char_count",
+    "entropy",
+    "is_https",
+    "has_ip_address",
+    "has_suspicious_keyword",
+    "is_suspicious_tld",
+    "is_brand_impersonated"
+  ],
+  "feature_count": 16,
+  "operating_threshold": 0.74
+}

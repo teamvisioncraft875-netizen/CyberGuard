@@ -1,0 +1,176 @@
+{
+  "experiment_name": "phishing_exp_20261004_075542",
+  "timestamp": "2026-10-04T07:57:13.326894+00:00",
+  "status": "REPRODUCED_AND_VERIFIED",
+  "random_seed": 42,
+  "operating_threshold": 0.36,
+  "training_duration_seconds": 28.83975625038147,
+  "dataset_manifest": "datasets\\cleaned_manifests\\phishing_curated_manifest.parquet",
+  "dataset_counts": {
+    "train": 34944,
+    "val": 4368,
+    "test": 4368,
+    "total": 43680
+  },
+  "validation_metrics": {
+    "split": "Validation",
+    "sample_count": 4368,
+    "threshold": 0.36,
+    "accuracy": 0.9958791208791209,
+    "balanced_accuracy": 0.9931360946745562,
+    "precision": 0.9831804281345565,
+    "recall": 0.9892307692307692,
+    "specificity": 0.9970414201183432,
+    "f1_score": 0.9861963190184049,
+    "roc_auc": 0.9999052426863078,
+    "pr_auc": 0.9994757496280476,
+    "confusion_matrix": {
+      "tn": 3707,
+      "fp": 11,
+      "fn": 7,
+      "tp": 643
+    }
+  },
+  "test_metrics": {
+    "split": "Held-Out Test",
+    "sample_count": 4368,
+    "threshold": 0.36,
+    "accuracy": 0.9945054945054945,
+    "balanced_accuracy": 0.9904136133485193,
+    "precision": 0.9785604900459418,
+    "recall": 0.9845916795069337,
+    "specificity": 0.9962355471901049,
+    "f1_score": 0.9815668202764977,
+    "roc_auc": 0.998104929875362,
+    "pr_auc": 0.9944139139129473,
+    "confusion_matrix": {
+      "tn": 3705,
+      "fp": 14,
+      "fn": 10,
+      "tp": 639
+    }
+  },
+  "sub_cohort_test_breakdown": {
+    "Nazario": {
+      "sample_count": 156,
+      "threat_count": 156,
+      "benign_count": 0,
+      "tp": 151,
+      "fp": 0,
+      "tn": 0,
+      "fn": 5,
+      "recall": 0.967948717948718,
+      "fpr": "N/A"
+    },
+    "Nigerian_Fraud": {
+      "sample_count": 331,
+      "threat_count": 331,
+      "benign_count": 0,
+      "tp": 327,
+      "fp": 0,
+      "tn": 0,
+      "fn": 4,
+      "recall": 0.9879154078549849,
+      "fpr": "N/A"
+    },
+    "CEAS_08": {
+      "sample_count": 1893,
+      "threat_count": 162,
+      "benign_count": 1731,
+      "tp": 161,
+      "fp": 9,
+      "tn": 1722,
+      "fn": 1,
+      "recall": 0.9938271604938271,
+      "fpr": 0.005199306759098787
+    },
+    "Enron": {
+      "sample_count": 1579,
+      "threat_count": 0,
+      "benign_count": 1579,
+      "tp": 0,
+      "fp": 3,
+      "tn": 1576,
+      "fn": 0,
+      "recall": "N/A",
+      "fpr": 0.0018999366687777073
+    },
+    "SpamAssassin": {
+      "sample_count": 409,
+      "threat_count": 0,
+      "benign_count": 409,
+      "tp": 0,
+      "fp": 2,
+      "tn": 407,
+      "fn": 0,
+      "recall": "N/A",
+      "fpr": 0.004889975550122249
+    }
+  },
+  "generalization_audit": {
+    "trec_07": {
+      "split": "NIST TREC 2007 Unseen",
+      "sample_count": 53757,
+      "threshold": 0.36,
+      "accuracy": 0.6663132243242741,
+      "balanced_accuracy": 0.6894202178580876,
+      "precision": 0.8928497977651333,
+      "recall": 0.44300826558726486,
+      "specificity": 0.9358321701289104,
+      "f1_score": 0.5921884235893239,
+      "roc_auc": 0.9045288889633786,
+      "pr_auc": 0.8999705597411022,
+      "confusion_matrix": {
+        "tn": 22795,
+        "fp": 1563,
+        "fn": 16375,
+        "tp": 13024
+      }
+    },
+    "ling_benign": {
+      "split": "Ling Academic Benign",
+      "sample_count": 2401,
+      "threshold": 0.36,
+      "accuracy": 0.9754269054560599,
+      "balanced_accuracy": 0.9754269054560599,
+      "precision": 0.0,
+      "recall": 0.0,
+      "specificity": 0.9754269054560599,
+      "f1_score": 0.0,
+      "roc_auc": NaN,
+      "pr_auc": 0.5,
+      "confusion_matrix": {
+        "tn": 2342,
+        "fp": 59,
+        "fn": 0,
+        "tp": 0
+      }
+    },
+    "nazario_loso": {
+      "methodology": "Leave-One-Source-Out (Nazario fully excluded from training)",
+      "documented_recall": 0.3239,
+      "status": "Previously Verified (Audit Report: phishing_generalization_audit_report.json)",
+      "interpretation": "Proves necessity of multi-source training to capture diverse credential lures."
+    }
+  },
+  "comparison_with_prod_v1": {
+    "prediction_agreement_pct": 99.67948717948718,
+    "mismatched_predictions_count": 14,
+    "probability_pearson_correlation": 0.9829061191954188,
+    "probability_mean_absolute_difference": 0.04646699442222777,
+    "probability_max_absolute_difference": 0.36917680574234835,
+    "vocabulary_match_pct": 100.0,
+    "v1_vocab_size": 25000,
+    "new_vocab_size": 25000
+  },
+  "determinism_verification": {
+    "identical_predictions": true,
+    "identical_probabilities": true
+  },
+  "artifacts": {
+    "vectorizer": "services\\ml-service\\experiments\\phishing_exp_20261004_075542\\phishing_vectorizer_reproduced.joblib",
+    "vectorizer_sha256": "5464be9f620df683b98671de1f222b7244784b438cb47b6652b539612c032ce0",
+    "classifier": "services\\ml-service\\experiments\\phishing_exp_20261004_075542\\phishing_classifier_reproduced.joblib",
+    "classifier_sha256": "d6ab011e9ba1557eddae7d6cc186bf5db8b683ceadbd3fe6004df456b5b3521a"
+  }
+}

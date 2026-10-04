@@ -1,0 +1,246 @@
+{
+  "timestamp": "2026-10-04T08:52:43.131912+00:00",
+  "model_name": "CYBERGUARD Supervised Malicious URL Classifier",
+  "version": "1.0.0-reproduced",
+  "algorithm": "HistGradientBoosting",
+  "random_seed": 42,
+  "operating_threshold": 0.74,
+  "training_duration_seconds": 8.25,
+  "total_duration_seconds": 17.6,
+  "domain_statistics": {
+    "train_domains": 41756,
+    "val_domains": 5218,
+    "test_domains": 5219,
+    "total_unique_domains": 52193,
+    "shared_platforms": [
+      "ad.doubleclick.net",
+      "docs.google.com",
+      "google.com",
+      "tinyurl.com",
+      "web.archive.org",
+      "www.google.com",
+      "www.linkedin.com",
+      "www.surveymonkey.com"
+    ],
+    "domain_leakage": "0 overlap verified"
+  },
+  "validation_metrics": {
+    "threshold": 0.74,
+    "accuracy": 0.8475,
+    "balanced_accuracy": 0.8729,
+    "precision": 0.9678,
+    "recall": 0.8038,
+    "specificity": 0.9421,
+    "f1_score": 0.8782,
+    "roc_auc": 0.9432,
+    "pr_auc": 0.974,
+    "fpr": 0.0579,
+    "confusion_matrix": {
+      "tn": 4911,
+      "fp": 302,
+      "fn": 2213,
+      "tp": 9066
+    },
+    "prob_distribution": {
+      "min": 0.0004,
+      "p25": 0.1817,
+      "median": 0.9059,
+      "p75": 0.9794,
+      "max": 1.0,
+      "mean": 0.6354
+    }
+  },
+  "test_metrics": {
+    "accuracy": 0.8594,
+    "balanced_accuracy": 0.8776,
+    "precision": 0.9687,
+    "recall": 0.7955,
+    "specificity": 0.9596,
+    "f1_score": 0.8736,
+    "roc_auc": 0.9617,
+    "pr_auc": 0.9758,
+    "fpr": 0.0404,
+    "confusion_matrix": {
+      "tn": 3257,
+      "fp": 137,
+      "fn": 1089,
+      "tp": 4237
+    }
+  },
+  "production_comparison": {
+    "total_test_samples": 8720,
+    "exact_prediction_matches": 8590,
+    "prediction_agreement_pct": 98.51,
+    "probability_pearson_correlation": 0.995136,
+    "probability_mean_absolute_difference": 0.019137,
+    "probability_max_absolute_difference": 0.431821,
+    "mismatches_count": 130,
+    "sample_mismatches": [
+      {
+        "index": 42,
+        "reproduced_prob": 0.686,
+        "production_prob": 0.8306,
+        "reproduced_pred": 0,
+        "production_pred": 1,
+        "diff": 0.1445
+      },
+      {
+        "index": 46,
+        "reproduced_prob": 0.6725,
+        "production_prob": 0.7554,
+        "reproduced_pred": 0,
+        "production_pred": 1,
+        "diff": 0.083
+      },
+      {
+        "index": 52,
+        "reproduced_prob": 0.819,
+        "production_prob": 0.6751,
+        "reproduced_pred": 1,
+        "production_pred": 0,
+        "diff": 0.1439
+      },
+      {
+        "index": 99,
+        "reproduced_prob": 0.7484,
+        "production_prob": 0.7126,
+        "reproduced_pred": 1,
+        "production_pred": 0,
+        "diff": 0.0358
+      },
+      {
+        "index": 216,
+        "reproduced_prob": 0.723,
+        "production_prob": 0.7452,
+        "reproduced_pred": 0,
+        "production_pred": 1,
+        "diff": 0.0222
+      },
+      {
+        "index": 308,
+        "reproduced_prob": 0.6027,
+        "production_prob": 0.7499,
+        "reproduced_pred": 0,
+        "production_pred": 1,
+        "diff": 0.1472
+      },
+      {
+        "index": 323,
+        "reproduced_prob": 0.7229,
+        "production_prob": 0.7562,
+        "reproduced_pred": 0,
+        "production_pred": 1,
+        "diff": 0.0333
+      },
+      {
+        "index": 360,
+        "reproduced_prob": 0.7394,
+        "production_prob": 0.7624,
+        "reproduced_pred": 0,
+        "production_pred": 1,
+        "diff": 0.0231
+      },
+      {
+        "index": 366,
+        "reproduced_prob": 0.666,
+        "production_prob": 0.786,
+        "reproduced_pred": 0,
+        "production_pred": 1,
+        "diff": 0.12
+      },
+      {
+        "index": 395,
+        "reproduced_prob": 0.71,
+        "production_prob": 0.7583,
+        "reproduced_pred": 0,
+        "production_pred": 1,
+        "diff": 0.0483
+      },
+      {
+        "index": 469,
+        "reproduced_prob": 0.5284,
+        "production_prob": 0.7687,
+        "reproduced_pred": 0,
+        "production_pred": 1,
+        "diff": 0.2404
+      },
+      {
+        "index": 595,
+        "reproduced_prob": 0.7621,
+        "production_prob": 0.6358,
+        "reproduced_pred": 1,
+        "production_pred": 0,
+        "diff": 0.1263
+      },
+      {
+        "index": 602,
+        "reproduced_prob": 0.7183,
+        "production_prob": 0.8267,
+        "reproduced_pred": 0,
+        "production_pred": 1,
+        "diff": 0.1085
+      },
+      {
+        "index": 607,
+        "reproduced_prob": 0.7219,
+        "production_prob": 0.7525,
+        "reproduced_pred": 0,
+        "production_pred": 1,
+        "diff": 0.0305
+      },
+      {
+        "index": 636,
+        "reproduced_prob": 0.7474,
+        "production_prob": 0.6903,
+        "reproduced_pred": 1,
+        "production_pred": 0,
+        "diff": 0.0572
+      },
+      {
+        "index": 694,
+        "reproduced_prob": 0.5913,
+        "production_prob": 0.8414,
+        "reproduced_pred": 0,
+        "production_pred": 1,
+        "diff": 0.2501
+      },
+      {
+        "index": 725,
+        "reproduced_prob": 0.6851,
+        "production_prob": 0.7476,
+        "reproduced_pred": 0,
+        "production_pred": 1,
+        "diff": 0.0625
+      },
+      {
+        "index": 738,
+        "reproduced_prob": 0.7034,
+        "production_prob": 0.7578,
+        "reproduced_pred": 0,
+        "production_pred": 1,
+        "diff": 0.0544
+      },
+      {
+        "index": 793,
+        "reproduced_prob": 0.7208,
+        "production_prob": 0.7592,
+        "reproduced_pred": 0,
+        "production_pred": 1,
+        "diff": 0.0383
+      },
+      {
+        "index": 1136,
+        "reproduced_prob": 0.7491,
+        "production_prob": 0.7253,
+        "reproduced_pred": 1,
+        "production_pred": 0,
+        "diff": 0.0239
+      }
+    ]
+  },
+  "determinism": {
+    "determinism_pass": true,
+    "max_prob_difference": 0.0,
+    "probability_vector_sha256": "929f987ebcb4136df5b516b5c3df795207dcc1aa669acc7b6932d8ffbdea037a"
+  }
+}

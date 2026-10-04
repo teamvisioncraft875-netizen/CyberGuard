@@ -1,0 +1,78 @@
+{
+  "timestamp": "2026-10-04T04:37:54.232540+00:00",
+  "model_name": "CYBERGUARD Supervised Malicious URL Classifier",
+  "model_version": "v1.0.0",
+  "algorithm": "HistGradientBoosting",
+  "random_seed": 42,
+  "operating_threshold": 0.74,
+  "training_duration_seconds": 26.68,
+  "dataset_composition": {
+    "total_clean_urls": 125839,
+    "train_samples": 100627,
+    "validation_samples": 16492,
+    "test_samples": 8720,
+    "audit_stats": {
+      "raw_malicious_count": 74997,
+      "unique_malicious_urls": 74994,
+      "unique_malicious_domains": 40497,
+      "unique_benign_urls": 50845,
+      "unique_benign_domains": 11704,
+      "domain_overlap_count": 8,
+      "overlapping_domains": [
+        "www.surveymonkey.com",
+        "tinyurl.com",
+        "www.google.com",
+        "docs.google.com",
+        "www.linkedin.com",
+        "web.archive.org",
+        "google.com",
+        "ad.doubleclick.net"
+      ],
+      "total_combined_clean_urls": 125839
+    }
+  },
+  "candidate_comparison": {
+    "HistGradientBoosting": {
+      "accuracy": 0.8665,
+      "balanced_accuracy": 0.8725,
+      "precision": 0.9433,
+      "recall": 0.8563,
+      "f1": 0.8977,
+      "roc_auc": 0.9421
+    },
+    "RandomForest": {
+      "accuracy": 0.8425,
+      "balanced_accuracy": 0.8321,
+      "precision": 0.9046,
+      "recall": 0.8604,
+      "f1": 0.882,
+      "roc_auc": 0.9114
+    },
+    "LogisticRegression": {
+      "accuracy": 0.6196,
+      "balanced_accuracy": 0.6606,
+      "precision": 0.839,
+      "recall": 0.5493,
+      "f1": 0.6639,
+      "roc_auc": 0.7378
+    }
+  },
+  "feature_importances": {},
+  "test_benchmark_metrics": {
+    "accuracy": 0.8599,
+    "balanced_accuracy": 0.8788,
+    "precision": 0.9719,
+    "recall": 0.7935,
+    "specificity": 0.9641,
+    "f1_score": 0.8737,
+    "roc_auc": 0.9635,
+    "pr_auc": 0.9767,
+    "confusion_matrix": {
+      "tn": 3272,
+      "fp": 122,
+      "fn": 1100,
+      "tp": 4226
+    }
+  },
+  "leakage_prevention_disclosure": "1. Domain-aware GroupShuffleSplit enforced: zero domain overlap between training, validation, and test partitions. 2. Threshold selected strictly on validation split. 3. Benign URLs sourced from real verified enterprise correspondence."
+}

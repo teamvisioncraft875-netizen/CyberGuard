@@ -1,0 +1,297 @@
+{
+  "timestamp": "2026-10-04T08:57:34.834176+00:00",
+  "experiment_name": "Phase 3 Step 3: Malicious URL Candidate Comparison",
+  "dataset_composition": {
+    "total_urls": 125839,
+    "train_samples": 100627,
+    "validation_samples": 16492,
+    "test_samples": 8720
+  },
+  "feature_count": 16,
+  "features": [
+    "url_length",
+    "hostname_length",
+    "path_length",
+    "query_length",
+    "num_subdomains",
+    "dot_count",
+    "hyphen_count",
+    "digit_count",
+    "digit_ratio",
+    "special_char_count",
+    "entropy",
+    "is_https",
+    "has_ip_address",
+    "has_suspicious_keyword",
+    "is_suspicious_tld",
+    "is_brand_impersonated"
+  ],
+  "validation_candidate_comparison": {
+    "Candidate_A_HistGradientBoosting": {
+      "description": "Baseline HGB architecture (150 trees, lr=0.1, leaf_nodes=31)",
+      "fit_duration_seconds": 8.35,
+      "selected_threshold": 0.78,
+      "val_metrics": {
+        "threshold": 0.78,
+        "accuracy": 0.8417,
+        "balanced_accuracy": 0.8713,
+        "precision": 0.9726,
+        "recall": 0.7908,
+        "specificity": 0.9519,
+        "fpr": 0.0481,
+        "f1_score": 0.8723,
+        "roc_auc": 0.9432,
+        "pr_auc": 0.974,
+        "confusion_matrix": {
+          "tn": 4962,
+          "fp": 251,
+          "fn": 2360,
+          "tp": 8919
+        }
+      },
+      "domain_generalization_val": {
+        "total_unique_domains": 5218,
+        "benign_domains_count": 1192,
+        "benign_domains_with_false_positives": 106,
+        "benign_domain_fpr_pct": 8.89,
+        "malicious_domains_count": 4026,
+        "malicious_domains_detected": 3181,
+        "malicious_domain_detection_rate_pct": 79.01
+      },
+      "inference_latency_us": 3270.13,
+      "model_size_kb": 235.14
+    },
+    "Candidate_B_RandomForest": {
+      "description": "Balanced Random Forest (100 trees, max_depth=16)",
+      "fit_duration_seconds": 2.51,
+      "selected_threshold": 0.7,
+      "val_metrics": {
+        "threshold": 0.7,
+        "accuracy": 0.6566,
+        "balanced_accuracy": 0.7369,
+        "precision": 0.9617,
+        "recall": 0.5185,
+        "specificity": 0.9553,
+        "fpr": 0.0447,
+        "f1_score": 0.6737,
+        "roc_auc": 0.8994,
+        "pr_auc": 0.9505,
+        "confusion_matrix": {
+          "tn": 4980,
+          "fp": 233,
+          "fn": 5431,
+          "tp": 5848
+        }
+      },
+      "domain_generalization_val": {
+        "total_unique_domains": 5218,
+        "benign_domains_count": 1192,
+        "benign_domains_with_false_positives": 146,
+        "benign_domain_fpr_pct": 12.25,
+        "malicious_domains_count": 4026,
+        "malicious_domains_detected": 3333,
+        "malicious_domain_detection_rate_pct": 82.79
+      },
+      "inference_latency_us": 30294.07,
+      "model_size_kb": 7340.5
+    },
+    "Candidate_C_LogisticRegression": {
+      "description": "Balanced L2 Logistic Regression (C=1.0, max_iter=1000)",
+      "fit_duration_seconds": 4.54,
+      "selected_threshold": 0.5,
+      "val_metrics": {
+        "threshold": 0.5,
+        "accuracy": 0.6212,
+        "balanced_accuracy": 0.663,
+        "precision": 0.8418,
+        "recall": 0.5494,
+        "specificity": 0.7765,
+        "fpr": 0.2235,
+        "f1_score": 0.6649,
+        "roc_auc": 0.7393,
+        "pr_auc": 0.8441,
+        "confusion_matrix": {
+          "tn": 4048,
+          "fp": 1165,
+          "fn": 5082,
+          "tp": 6197
+        }
+      },
+      "domain_generalization_val": {
+        "total_unique_domains": 5218,
+        "benign_domains_count": 1192,
+        "benign_domains_with_false_positives": 513,
+        "benign_domain_fpr_pct": 43.04,
+        "malicious_domains_count": 4026,
+        "malicious_domains_detected": 3582,
+        "malicious_domain_detection_rate_pct": 88.97
+      },
+      "inference_latency_us": 883.61,
+      "model_size_kb": 0.93
+    },
+    "Candidate_D_TunedHGB": {
+      "description": "Tuned HGB (200 trees, lr=0.08, leaf_nodes=45, l2=0.5)",
+      "fit_duration_seconds": 2.71,
+      "selected_threshold": 0.76,
+      "val_metrics": {
+        "threshold": 0.76,
+        "accuracy": 0.8491,
+        "balanced_accuracy": 0.877,
+        "precision": 0.9735,
+        "recall": 0.8011,
+        "specificity": 0.9528,
+        "fpr": 0.0472,
+        "f1_score": 0.8789,
+        "roc_auc": 0.9422,
+        "pr_auc": 0.9727,
+        "confusion_matrix": {
+          "tn": 4967,
+          "fp": 246,
+          "fn": 2243,
+          "tp": 9036
+        }
+      },
+      "domain_generalization_val": {
+        "total_unique_domains": 5218,
+        "benign_domains_count": 1192,
+        "benign_domains_with_false_positives": 113,
+        "benign_domain_fpr_pct": 9.48,
+        "malicious_domains_count": 4026,
+        "malicious_domains_detected": 3269,
+        "malicious_domain_detection_rate_pct": 81.2
+      },
+      "inference_latency_us": 3139.49,
+      "model_size_kb": 450.92
+    }
+  },
+  "champion_candidate": "Candidate_D_TunedHGB",
+  "champion_threshold": 0.76,
+  "final_test_evaluation": {
+    "Candidate_A_HistGradientBoosting": {
+      "threshold": 0.78,
+      "metrics": {
+        "threshold": 0.78,
+        "accuracy": 0.8484,
+        "balanced_accuracy": 0.8704,
+        "precision": 0.9758,
+        "recall": 0.7709,
+        "specificity": 0.9699,
+        "fpr": 0.0301,
+        "f1_score": 0.8613,
+        "roc_auc": 0.9617,
+        "pr_auc": 0.9758,
+        "confusion_matrix": {
+          "tn": 3292,
+          "fp": 102,
+          "fn": 1220,
+          "tp": 4106
+        }
+      },
+      "domain_generalization_test": {
+        "total_unique_domains": 5219,
+        "benign_domains_count": 1132,
+        "benign_domains_with_false_positives": 85,
+        "benign_domain_fpr_pct": 7.51,
+        "malicious_domains_count": 4087,
+        "malicious_domains_detected": 3206,
+        "malicious_domain_detection_rate_pct": 78.44
+      }
+    },
+    "Candidate_B_RandomForest": {
+      "threshold": 0.7,
+      "metrics": {
+        "threshold": 0.7,
+        "accuracy": 0.8625,
+        "balanced_accuracy": 0.8782,
+        "precision": 0.9613,
+        "recall": 0.8074,
+        "specificity": 0.949,
+        "fpr": 0.051,
+        "f1_score": 0.8776,
+        "roc_auc": 0.9626,
+        "pr_auc": 0.9765,
+        "confusion_matrix": {
+          "tn": 3221,
+          "fp": 173,
+          "fn": 1026,
+          "tp": 4300
+        }
+      },
+      "domain_generalization_test": {
+        "total_unique_domains": 5219,
+        "benign_domains_count": 1132,
+        "benign_domains_with_false_positives": 122,
+        "benign_domain_fpr_pct": 10.78,
+        "malicious_domains_count": 4087,
+        "malicious_domains_detected": 3395,
+        "malicious_domain_detection_rate_pct": 83.07
+      }
+    },
+    "Candidate_C_LogisticRegression": {
+      "threshold": 0.5,
+      "metrics": {
+        "threshold": 0.5,
+        "accuracy": 0.8069,
+        "balanced_accuracy": 0.7953,
+        "precision": 0.838,
+        "recall": 0.8477,
+        "specificity": 0.7428,
+        "fpr": 0.2572,
+        "f1_score": 0.8428,
+        "roc_auc": 0.8702,
+        "pr_auc": 0.9082,
+        "confusion_matrix": {
+          "tn": 2521,
+          "fp": 873,
+          "fn": 811,
+          "tp": 4515
+        }
+      },
+      "domain_generalization_test": {
+        "total_unique_domains": 5219,
+        "benign_domains_count": 1132,
+        "benign_domains_with_false_positives": 477,
+        "benign_domain_fpr_pct": 42.14,
+        "malicious_domains_count": 4087,
+        "malicious_domains_detected": 3566,
+        "malicious_domain_detection_rate_pct": 87.25
+      }
+    },
+    "Candidate_D_TunedHGB": {
+      "threshold": 0.76,
+      "metrics": {
+        "threshold": 0.76,
+        "accuracy": 0.8603,
+        "balanced_accuracy": 0.8791,
+        "precision": 0.972,
+        "recall": 0.7942,
+        "specificity": 0.9641,
+        "fpr": 0.0359,
+        "f1_score": 0.8741,
+        "roc_auc": 0.9632,
+        "pr_auc": 0.9766,
+        "confusion_matrix": {
+          "tn": 3272,
+          "fp": 122,
+          "fn": 1096,
+          "tp": 4230
+        }
+      },
+      "domain_generalization_test": {
+        "total_unique_domains": 5219,
+        "benign_domains_count": 1132,
+        "benign_domains_with_false_positives": 97,
+        "benign_domain_fpr_pct": 8.57,
+        "malicious_domains_count": 4087,
+        "malicious_domains_detected": 3306,
+        "malicious_domain_detection_rate_pct": 80.89
+      }
+    }
+  },
+  "determinism": {
+    "determinism_pass": true,
+    "max_prob_difference": 0.0,
+    "probability_vector_sha256": "41417772bc089a65ecf60175ee752c5c5f475731f8c0ca48d816e1834c2b0639"
+  },
+  "total_experiment_duration_seconds": 51.59
+}

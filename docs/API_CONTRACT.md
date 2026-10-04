@@ -1208,6 +1208,45 @@ All `/internal/analyze/*` endpoints enforce the unified ML detection schema:
   }
   ```
 
+### 8.6 Analyze Malware (`POST /internal/analyze/malware` & `POST /analyze/malware`)
+- **Request Body (JSON):** `{ "file_content_base64": string, "filename"?: string }`
+- **Request Body (Multipart):** `multipart/form-data` with `file` binary payload (max 50 MB)
+- **Response Shape (`200 OK`):**
+  ```json
+  {
+    "risk_level": "Critical",
+    "risk_score": 98,
+    "explanation": "Malicious binary detected (Critical Risk, ML confidence: 99.8%). Static PE inspection of 'trojan_payload.exe' (unsigned, SHA256: 163ced46c18ef09d...) identified characteristic malware patterns across byte entropy (7.34), 6 PE sections (entry: '.text'), and 14 imported libraries.",
+    "signals": {
+      "filename": "trojan_payload.exe",
+      "sha256": "163ced46c18ef09d8e2f0ee4b16decf74a533f22ba3b599c72a6730435f32cc9",
+      "md5": "0c9d74e876fa563c19b22a07c1340b17",
+      "file_size_bytes": 1048576,
+      "is_pe_executable": true,
+      "num_sections": 6,
+      "entrypoint_section": ".text",
+      "has_digital_signature": false,
+      "num_imported_libraries": 14,
+      "num_imported_functions": 112,
+      "imported_libraries_sample": ["kernel32.dll", "user32.dll", "advapi32.dll", "ws2_32.dll"],
+      "byte_entropy": 7.34,
+      "ml_malware_probability": 0.9982,
+      "operating_threshold": 0.8336,
+      "mitre_attack_technique": "T1204.002",
+      "model_name": "EMBER_2018_LightGBM",
+      "model_version": "v1.0.0",
+      "engine": "Static PE Malware Detection Engine"
+    },
+    "recommended_actions": [
+      "Quarantine binary 'trojan_payload.exe' immediately to prevent workstation execution.",
+      "Block SHA-256 hash 163ced46c18ef09d8e2f0ee4b16decf74a533f22ba3b599c72a6730435f32cc9 across enterprise endpoint detection (EDR) agents.",
+      "Inspect host processes and parent execution trees for secondary dropping or persistence mechanisms.",
+      "Submit sample to isolated dynamic analysis sandbox for behavioral payload detonation."
+    ],
+    "confidence_score": 0.99
+  }
+  ```
+
 ---
 
 ## 9. Dashboard Analytics Endpoints

@@ -8,7 +8,7 @@ Guarantees deterministic, finite outputs and graceful handling of empty/corrupt 
 
 import math
 import re
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Set
 from urllib.parse import urlparse
 import numpy as np
 
@@ -17,7 +17,10 @@ URL_FEATURE_COLUMNS = [
     "url_length",
     "hostname_length",
     "path_length",
+    "query_length",
     "num_subdomains",
+    "dot_count",
+    "hyphen_count",
     "digit_count",
     "digit_ratio",
     "special_char_count",
@@ -26,6 +29,7 @@ URL_FEATURE_COLUMNS = [
     "has_ip_address",
     "has_suspicious_keyword",
     "is_suspicious_tld",
+    "is_brand_impersonated",
 ]
 
 SUSPICIOUS_KEYWORDS = {
@@ -120,15 +124,20 @@ def extract_url_features(url: Optional[str]) -> Dict[str, float]:
         parsed = urlparse(norm_url)
         hostname = (parsed.hostname or "").lower()
         path = parsed.path or ""
+        query = parsed.query or ""
     except Exception:
         hostname = ""
         path = ""
+        query = ""
 
     hostname_len = float(len(hostname))
     path_len = float(len(path))
+    query_len = float(len(query))
     is_https = 1.0 if url_str.lower().startswith("https://") else 0.0
 
-    # Subdomain count
+    # Subdomain, dot, and hyphen counts
+    dot_count = float(url_str.count("."))
+    hyphen_count = float(url_str.count("-"))
     if hostname:
         subdomains = [p for p in hostname.split(".") if p]
         num_subdomains = float(max(0, len(subdomains) - 2))
@@ -156,6 +165,10 @@ def extract_url_features(url: Optional[str]) -> Dict[str, float]:
             is_suspicious_tld = 1.0
             break
 
+    # Brand target detection
+    target_brand = extract_brand_target(url_str)
+    is_brand_impersonated = 1.0 if target_brand is not None else 0.0
+
     # Shannon Entropy of URL
     entropy = calculate_entropy(url_str)
 
@@ -163,7 +176,10 @@ def extract_url_features(url: Optional[str]) -> Dict[str, float]:
         "url_length": url_len,
         "hostname_length": hostname_len,
         "path_length": path_len,
+        "query_length": query_len,
         "num_subdomains": num_subdomains,
+        "dot_count": dot_count,
+        "hyphen_count": hyphen_count,
         "digit_count": digit_count,
         "digit_ratio": digit_ratio,
         "special_char_count": special_char_count,
@@ -172,21 +188,51 @@ def extract_url_features(url: Optional[str]) -> Dict[str, float]:
         "has_ip_address": has_ip_address,
         "has_suspicious_keyword": has_suspicious_keyword,
         "is_suspicious_tld": is_suspicious_tld,
+        "is_brand_impersonated": is_brand_impersonated,
     }
+
+
+AUTHENTIC_BRAND_DOMAINS: Dict[str, Set[str]] = {
+    "amazon": {"amazon.com", "amazon.co.uk", "amazon.de", "amazon.fr", "amazon.co.jp", "amazon.ca", "amazon.in"},
+    "paypal": {"paypal.com", "paypal.me"},
+    "microsoft": {"microsoft.com", "live.com", "office.com", "azure.com", "outlook.com"},
+    "apple": {"apple.com", "icloud.com"},
+    "google": {"google.com", "google.co.uk", "google.ca", "google.de", "google.co.in", "youtube.com"},
+    "facebook": {"facebook.com", "fb.com", "meta.com"},
+    "netflix": {"netflix.com"},
+    "chase": {"chase.com"},
+    "wellsfargo": {"wellsfargo.com"},
+    "bankofamerica": {"bankofamerica.com"},
+    "dhl": {"dhl.com"},
+    "fedex": {"fedex.com"},
+}
 
 
 def extract_brand_target(url: Optional[str], candidate_brands: Optional[List[str]] = None) -> Optional[str]:
     """
     Identifies which well-known brand is potentially targeted/impersonated by this URL.
-    Kept separate from generic numerical features per modular architecture.
+    Returns the brand name only if the URL mentions the brand but is NOT hosted on the
+    brand's authentic registered domain(s).
     """
     if not url or not isinstance(url, str):
         return None
     url_lower = url.lower()
+    norm_url = url_lower if (url_lower.startswith("http://") or url_lower.startswith("https://")) else f"http://{url_lower}"
+    try:
+        parsed = urlparse(norm_url)
+        hostname = (parsed.hostname or "").lower()
+    except Exception:
+        hostname = ""
+
     brands = candidate_brands or DEFAULT_CANDIDATE_BRANDS
     for brand in brands:
-        if brand.lower() in url_lower:
-            return brand.lower()
+        b_lower = brand.lower()
+        if b_lower in url_lower:
+            # Check if this hostname is the legitimate authentic domain of the brand
+            auth_domains = AUTHENTIC_BRAND_DOMAINS.get(b_lower, {f"{b_lower}.com"})
+            is_authentic = any(hostname == ad or hostname.endswith("." + ad) for ad in auth_domains)
+            if not is_authentic:
+                return b_lower
     return None
 
 
