@@ -138,6 +138,36 @@ router.post(
   firewallController.createManualFirewallCommand
 );
 
+// Attack Surface Discovery Phase B APIs
+const attackSurfaceController = require('../controllers/attackSurfaceController');
+
+// GET /api/v1/admin/attack-surface/exposures: list org attack surface exposures
+router.get(
+  '/attack-surface/exposures',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  attackSurfaceController.getExposures
+);
+
+// GET /api/v1/admin/attack-surface/overview: get fleet attack surface overview metrics
+router.get(
+  '/attack-surface/overview',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  attackSurfaceController.getOverview
+);
+
+// POST /api/v1/admin/attack-surface/scan: queue attack surface scan command for agent(s)
+router.post(
+  '/attack-surface/scan',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  attackSurfaceController.triggerScan
+);
+
 module.exports = router;
 
 

@@ -2,6 +2,7 @@ const User = require('../models/User');
 const LoginEvent = require('../models/LoginEvent');
 const TelemetryEvent = require('../models/TelemetryEvent');
 const DeviceListeningPort = require('../models/DeviceListeningPort');
+const attackSurfaceService = require('../services/attackSurfaceService');
 const { callMlEngine } = require('../utils/mlClient');
 const { persistDetectionIncident } = require('../services/incidentService');
 const { detectSecrets } = require('../services/secretDetector');
@@ -368,10 +369,18 @@ const telemetryController = {
     // 1b. Ingest Attack Surface Listening Ports (Phase A ASD Foundation - Reconciled & Bulk Upserted)
     if (hasAttackSurfaceData && deviceId && userOrgId) {
       try {
-        await DeviceListeningPort.reconcileSnapshot({
+        const reconciliation = await DeviceListeningPort.reconcileSnapshot({
           organization_id: userOrgId,
           device_id: deviceId,
           currentPorts: listeningPorts
+        });
+
+        // Phase B: Attack Surface Exposure Detection, Risk Scoring, Incident Orchestration & Auto-Resolution
+        await attackSurfaceService.processAttackSurfaceTelemetry({
+          organization_id: userOrgId,
+          device_id: deviceId,
+          currentPorts: listeningPorts,
+          closedPorts: reconciliation?.closed_ports || []
         });
       } catch (asdErr) {
         console.warn('[telemetryController.reportSystemEvent Attack Surface Ingest Error]', asdErr.message);
