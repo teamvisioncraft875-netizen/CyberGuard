@@ -2275,6 +2275,104 @@ Manually dispatches a firewall command (`block_ip` or `block_domain`) directly t
   }
   ```
 
+---
+
+## 10. DDoS Detection & Threat Monitoring Endpoints
+
+### 10.1 Trigger DDoS Scan (`POST /api/v1/admin/ddos/scan`)
+Triggers an on-demand, rule-based DDoS heuristic detection scan over a specified historical window. Evaluates request spike, POST flood, login abuse, or IP flooding patterns. Automatically creates critical incident records (`threat_type: "ddos"`, `risk_level: "critical"`, `risk_score: 95`) for newly identified threat actors and logs audit trail.
+
+| Property | Specification |
+|---|---|
+| **Method** | `POST` |
+| **Path** | `/api/v1/admin/ddos/scan` *(also available at `/api/admin/ddos/scan`)* |
+| **Auth Requirement** | Bearer JWT (Role: `admin`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Scans traffic logs for the specified `scan_type`. Evaluates thresholds, records metrics in `public.ddos_metrics`, creates incident rows with `threat_type = 'ddos'`, persists evidentiary details in `public.incident_evidence`, and logs `ddos_scan_triggered` in `public.audit_logs`. |
+
+**Request Body:**
+```json
+{
+  "scan_type": "request_spike", // Enum: "request_spike" | "post_flood" | "login_abuse" | "ip_flooding"
+  "window_minutes": 5,          // Optional integer, defaults to 5 (or 15 for login_abuse)
+  "endpoint": "/api/v1/auth/login" // Optional string, target endpoint for "post_flood"
+}
+```
+
+**Response (`200 OK`):**
+```json
+{
+  "metric_type": "request_spike",
+  "threats": [
+    {
+      "source_ip": "198.51.100.99",
+      "count": 650,
+      "threshold_exceeded": true
+    }
+  ],
+  "incidents_created": 1
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Missing or unsupported `scan_type`.
+  ```json
+  {
+    "error": "INVALID_SCAN_TYPE",
+    "message": "scan_type must be one of: request_spike, post_flood, login_abuse, ip_flooding"
+  }
+  ```
+- `401 Unauthorized`: Missing or expired authentication token.
+- `403 Forbidden`: Authenticated user is not an administrator.
+- `500 Internal Server Error`: Detection scan execution failed.
+
+---
+
+### 10.2 View Active DDoS Threats (`GET /api/v1/admin/ddos/threats`)
+Retrieves historical and active DDoS threat observations scoped to the administrator's organization.
+
+| Property | Specification |
+|---|---|
+| **Method** | `GET` |
+| **Path** | `/api/v1/admin/ddos/threats` *(also available at `/api/admin/ddos/threats`)* |
+| **Auth Requirement** | Bearer JWT (Role: `admin`) |
+| **Rate Limit** | General limiter (100 req / 15m) |
+| **Description** | Lists metric observations from `public.ddos_metrics` scoped to the caller's `organization_id`. Supports optional filtering by `scan_type` and pagination. |
+
+**Query Parameters:**
+- `scan_type` / `metric_type` (optional): Filter by attack category (`request_spike`, `post_flood`, `login_abuse`, `ip_flooding`).
+- `limit` (optional): Max records to return (1–100, default `50`).
+- `offset` (optional): Pagination offset (default `0`).
+
+**Response (`200 OK`):**
+```json
+{
+  "threats": [
+    {
+      "id": "7ca64735-868d-4cb0-a29d-7db4f5b729dc",
+      "source_ip": "198.51.100.99",
+      "metric_type": "request_spike",
+      "count": 650,
+      "endpoint": null,
+      "threshold_exceeded": true,
+      "metadata": {
+        "window_minutes": 5,
+        "threshold": 500
+      },
+      "created_at": "2026-10-04T19:50:00.000Z"
+    }
+  ],
+  "total": 1
+}
+```
+
+**Errors:**
+- `400 Bad Request`: Invalid `scan_type` filter provided.
+- `401 Unauthorized`: Missing or invalid token.
+- `403 Forbidden`: User is not an admin or has no organization.
+- `500 Internal Server Error`: Failed to retrieve threats.
+
+
 
 
 
