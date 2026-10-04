@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const LoginEvent = require('../models/LoginEvent');
 const TelemetryEvent = require('../models/TelemetryEvent');
+const DeviceListeningPort = require('../models/DeviceListeningPort');
 const { callMlEngine } = require('../utils/mlClient');
 const { persistDetectionIncident } = require('../services/incidentService');
 const { detectSecrets } = require('../services/secretDetector');
@@ -280,6 +281,38 @@ const telemetryController = {
       });
     } catch (dbErr) {
       console.warn('[telemetryController.reportSystemEvent DB Note]', dbErr.message);
+    }
+
+    // 1b. Ingest Attack Surface Listening Ports (Phase A ASD Foundation)
+    const listeningPorts = details?.attack_surface?.listening_ports 
+      || req.body?.attack_surface?.listening_ports 
+      || details?.listening_ports;
+
+    if (Array.isArray(listeningPorts) && listeningPorts.length > 0 && deviceId && userOrgId) {
+      try {
+        const portPromises = listeningPorts.map((lp) => {
+          if (!lp || !lp.port) return null;
+          return DeviceListeningPort.upsertPort({
+            organization_id: userOrgId,
+            device_id: deviceId,
+            port: lp.port,
+            protocol: lp.protocol || 'tcp',
+            bind_address: lp.bind_address || '0.0.0.0',
+            exposure_scope: lp.exposure_scope || 'unknown',
+            pid: lp.pid || null,
+            process_name: lp.process_name || null,
+            process_path: lp.process_path || null,
+            status: lp.status || 'open'
+          }).catch((pErr) => {
+            console.warn('[telemetryController.reportSystemEvent Port Upsert Note]', pErr.message);
+            return null;
+          });
+        }).filter(Boolean);
+
+        await Promise.all(portPromises);
+      } catch (asdErr) {
+        console.warn('[telemetryController.reportSystemEvent Attack Surface Ingest Error]', asdErr.message);
+      }
     }
 
     const anomalyDetected = mlResult ? (mlResult.risk_level !== 'Safe' && mlResult.risk_level !== 'Low') : true;
