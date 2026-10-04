@@ -66,15 +66,16 @@ const ResponsePolicy = {
    * @param {string} organization_id
    * @returns {Promise<Array<Object>>}
    */
-  async findEnabledByOrg(organization_id) {
+  async findEnabledByOrg(organization_id, client = null) {
     if (!organization_id) return [];
+    const dbClient = client || db;
     const text = `
       SELECT *
       FROM public.response_policies
       WHERE organization_id = $1 AND enabled = true
       ORDER BY created_at ASC;
     `;
-    const res = await db.query(text, [organization_id]);
+    const res = await dbClient.query(text, [organization_id]);
     return res.rows;
   },
 

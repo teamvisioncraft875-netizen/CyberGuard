@@ -11,7 +11,8 @@ const IncidentEvidence = {
     metadata = null,
     raw_payload = {},
     file_url = null
-  }) {
+  }, client = null) {
+    const dbClient = client || db;
     const payloadObj = typeof raw_payload === 'object' && raw_payload !== null ? raw_payload : {};
     const textData = evidence_data 
       ? String(evidence_data) 
@@ -26,7 +27,7 @@ const IncidentEvidence = {
       VALUES ($1, $2, $3, $4, NOW())
       RETURNING *;
     `;
-    const res = await db.query(text, [
+    const res = await dbClient.query(text, [
       incident_id,
       evidence_type,
       textData,

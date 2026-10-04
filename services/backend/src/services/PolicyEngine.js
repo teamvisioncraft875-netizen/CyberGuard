@@ -28,12 +28,12 @@ class PolicyEngine {
    * @param {Object} incident
    * @returns {Promise<Array<Object>>} Matching rules with policy_id attached
    */
-  static async getApplicablePolicies(incident) {
+  static async getApplicablePolicies(incident, client = null) {
     if (!incident || !incident.organization_id) {
       return [];
     }
 
-    const policies = await ResponsePolicy.findEnabledByOrg(incident.organization_id);
+    const policies = await ResponsePolicy.findEnabledByOrg(incident.organization_id, client);
     const applicableRules = [];
 
     const incidentScore = Number(incident.risk_score ?? 0);
@@ -345,13 +345,13 @@ class PolicyEngine {
    * @param {Object} incident
    * @returns {Promise<Array<Object>>} Proposed action records
    */
-  static async evaluateAndProposeActions(incident) {
+  static async evaluateAndProposeActions(incident, client = null) {
     if (!incident || !incident.organization_id || !incident.id) {
       return [];
     }
 
     try {
-      const applicablePolicies = await this.getApplicablePolicies(incident);
+      const applicablePolicies = await this.getApplicablePolicies(incident, client);
       if (!applicablePolicies || applicablePolicies.length === 0) {
         return [];
       }
@@ -371,7 +371,7 @@ class PolicyEngine {
           scheduled_at: action.scheduled_at,
           requested_by_id: action.requested_by_id,
           target_device_id: action.target_device_id || null
-        });
+        }, client);
         createdActions.push(created);
 
         // Hook into response_actions creation (Phase 1C: Notification Service)

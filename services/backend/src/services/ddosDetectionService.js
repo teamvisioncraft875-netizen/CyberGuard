@@ -1,7 +1,12 @@
+const crypto = require('crypto');
 const db = require('../config/db');
 const Incident = require('../models/Incident');
 const IncidentEvidence = require('../models/IncidentEvidence');
 const DDoSAlert = require('../models/DDoSAlert');
+const DetectionSignal = require('../models/DetectionSignal');
+const RecommendedAction = require('../models/RecommendedAction');
+const MitreMapping = require('../models/MitreMapping');
+const PolicyEngine = require('./PolicyEngine');
 const { persistDetectionIncident } = require('./incidentService');
 const { log: auditLog } = require('./auditService');
 
@@ -456,146 +461,196 @@ const ddosDetectionService = {
     const count = Number(details?.count || details?.request_count || details?.failed_attempts || 1);
     const targetSourceIp = source_ip || details?.source_ip || details?.ip_address || 'unknown';
 
-    // 0. Deduplication Check: Query incidents table for an existing OPEN DDoS incident
-    // Match: organization_id, threat_type='ddos', source_ip within last 15 minutes
+    // Deduplication Key & Diagnostic Fingerprint
+    const lockKey = `ddos:${resolvedOrgId || 'global'}:${targetSourceIp}`;
+    const dedupFingerprint = crypto
+      .createHash('sha256')
+      .update(`${resolvedOrgId || 'global'}:${targetSourceIp}:${metric_type}`)
+      .digest('hex');
+
     try {
-      const existingQuery = `
-        SELECT i.*
-        FROM public.incidents i
-        WHERE ($1::UUID IS NULL OR i.organization_id = $1::UUID)
-          AND i.threat_type = 'ddos'
-          AND i.status = 'open'
-          AND i.created_at >= NOW() - INTERVAL '15 minutes'
-          AND (
-            i.explanation ILIKE ('%' || $2::TEXT || '%')
-            OR EXISTS (
-              SELECT 1 FROM public.incident_evidence e
-              WHERE e.incident_id = i.id
-                AND (
-                  e.metadata->>'source_ip' = $2::TEXT
-                  OR e.metadata->>'ip_address' = $2::TEXT
-                )
+      const incident = await db.transaction(async (client) => {
+        // 1. Acquire transaction-level advisory lock
+        // Automatically released on COMMIT or ROLLBACK.
+        // Guarantees strict mutual exclusion for concurrent scans on the same org + source_ip.
+        await client.query('SELECT pg_advisory_xact_lock(hashtext($1));', [lockKey]);
+
+        // 2. Query incidents table for an existing OPEN DDoS incident within last 15 minutes
+        const existingQuery = `
+          SELECT i.*
+          FROM public.incidents i
+          WHERE ($1::UUID IS NULL OR i.organization_id = $1::UUID)
+            AND i.threat_type = 'ddos'
+            AND i.status = 'open'
+            AND i.created_at >= NOW() - INTERVAL '15 minutes'
+            AND (
+              i.explanation ILIKE ('%from IP ' || $2::TEXT || '.%')
+              OR i.explanation ILIKE ('%from IP ' || $2::TEXT)
+              OR EXISTS (
+                SELECT 1 FROM public.incident_evidence e
+                WHERE e.incident_id = i.id
+                  AND (
+                    e.metadata->>'source_ip' = $2::TEXT
+                    OR e.metadata->>'ip_address' = $2::TEXT
+                  )
+              )
             )
-          )
-        ORDER BY i.created_at DESC
-        LIMIT 1;
-      `;
+          ORDER BY i.created_at DESC
+          LIMIT 1;
+        `;
 
-      const existingRes = await db.query(existingQuery, [resolvedOrgId, targetSourceIp]);
-      if (existingRes && existingRes.rows && existingRes.rows.length > 0) {
-        const existingIncident = existingRes.rows[0];
-        console.log('[DDoS] Reusing existing incident', existingIncident.id);
-        if (existingIncident && typeof existingIncident === 'object') {
-          existingIncident.toString = () => existingIncident.id;
+        const existingRes = await client.query(existingQuery, [resolvedOrgId, targetSourceIp]);
+        if (existingRes && existingRes.rows && existingRes.rows.length > 0) {
+          const existingIncident = existingRes.rows[0];
+          console.log('[DDoS] Reusing existing incident', existingIncident.id);
+          existingIncident._isReused = true;
+          return existingIncident;
         }
-        return existingIncident;
-      }
-    } catch (dedupErr) {
-      console.warn('[ddosDetectionService.createDDoSIncident Deduplication Check Note]', dedupErr.message);
-    }
 
-    // 1. Call incidentService to fully initialize incident and trigger policy engine
-    const incident = await persistDetectionIncident({
-      user: {
-        id: details?.user_id || null,
-        organization_id: resolvedOrgId,
-        role: details?.user_role || 'admin'
-      },
-      threatType: 'ddos',
-      sourceType: 'ddos_detection',
-      mlResult: {
-        risk_level: 'critical',
-        risk_score: 95,
-        explanation: details?.explanation || `Automated DDoS detection: ${metric_type} pattern identified from IP ${source_ip}.`,
-        signals: [
+        // Support test failure simulation for transaction rollback verification
+        if (details?._simulate_failure) {
+          throw new Error('Simulated transaction failure midway');
+        }
+
+        // 3. Create incident record in database
+        const newIncident = await Incident.create({
+          user_id: details?.user_id || null,
+          organization_id: resolvedOrgId,
+          threat_type: 'ddos',
+          source_type: 'ddos_detection',
+          risk_level: 'critical',
+          risk_score: 95,
+          explanation: details?.explanation || `Automated DDoS detection: ${metric_type} pattern identified from IP ${targetSourceIp}.`,
+          status: 'open'
+        }, client);
+
+        // 4. Create MITRE mapping
+        const mitreTechnique = MitreMapping.getTechniqueForThreat('ddos');
+        await MitreMapping.create({
+          incident_id: newIncident.id,
+          technique_id: mitreTechnique.technique_id,
+          technique_name: mitreTechnique.technique_name
+        }, client);
+
+        // 5. Create detection signals
+        await DetectionSignal.createMany([
           {
+            incident_id: newIncident.id,
             signal_name: metric_type,
             signal_value: count,
             weight: 0.9
           }
-        ],
-        details: {
-          metric_type,
-          source_ip,
-          ip_address: source_ip,
-          count,
-          endpoint: details?.endpoint || null,
-          target_device_id: details?.target_device_id || details?.device_id || null,
-          ...details
-        },
-        confidence: 95
-      },
-      recommendedActions: details?.recommended_actions || ['block_ip', 'notify_admin']
-    });
+        ], client);
 
-    // 2. Store metric details in incident_evidence
-    try {
-      await IncidentEvidence.create({
-        incident_id: incident.id,
-        evidence_type: 'ddos_metrics',
-        raw_payload: {
+        // 6. Create recommended actions
+        const recActions = (details?.recommended_actions || ['block_ip', 'notify_admin']).map((action) => ({
+          incident_id: newIncident.id,
+          action_type: typeof action === 'string' ? action : (action.action_type || String(action)),
+          action_status: 'pending'
+        }));
+        await RecommendedAction.createMany(recActions, client);
+
+        // 7. Store metric details in incident_evidence (including dedup fingerprint)
+        await IncidentEvidence.create({
+          incident_id: newIncident.id,
+          evidence_type: 'ddos_metrics',
+          raw_payload: {
+            metric_type,
+            source_ip: targetSourceIp,
+            threshold_exceeded: true,
+            count,
+            endpoint: details?.endpoint || null,
+            dedup_fingerprint: dedupFingerprint,
+            lock_key: lockKey,
+            ...details
+          },
+          metadata: {
+            metric_type,
+            source_ip: targetSourceIp,
+            threshold_exceeded: true,
+            count,
+            endpoint: details?.endpoint || null,
+            dedup_fingerprint: dedupFingerprint,
+            lock_key: lockKey,
+            ...details
+          }
+        }, client);
+
+        // 8. Store metric for audit + trending in ddos_metrics
+        await DDoSAlert.create({
+          organization_id: resolvedOrgId,
           metric_type,
-          source_ip,
+          source_ip: targetSourceIp,
+          endpoint: details?.endpoint || null,
+          count,
+          window_start: details?.window_start || new Date(Date.now() - 5 * 60 * 1000),
+          window_end: details?.window_end || new Date(),
           threshold_exceeded: true,
-          count,
-          endpoint: details?.endpoint || null,
-          ...details
-        }
+          metadata: {
+            incident_id: newIncident.id,
+            dedup_fingerprint: dedupFingerprint,
+            ...details
+          }
+        }, client);
+
+        // 9. Log ddos_incident_created to audit_logs
+        await auditLog({
+          organization_id: resolvedOrgId,
+          user_id: details?.user_id || null,
+          actor_type: 'system_guard',
+          action: 'ddos_incident_created',
+          resource_type: 'incident',
+          resource_id: newIncident.id,
+          details: {
+            metric_type,
+            source_ip: targetSourceIp,
+            count,
+            endpoint: details?.endpoint || null,
+            incident_id: newIncident.id,
+            threat_type: 'ddos',
+            risk_score: 95,
+            dedup_fingerprint: dedupFingerprint
+          },
+          ip_address: targetSourceIp
+        }, client);
+
+        // 10. Propose policy actions in the same transaction
+        await PolicyEngine.evaluateAndProposeActions({
+          ...newIncident,
+          signals: {
+            [metric_type]: count,
+            source_ip: targetSourceIp,
+            ip_address: targetSourceIp
+          },
+          details: {
+            metric_type,
+            source_ip: targetSourceIp,
+            ip_address: targetSourceIp,
+            count,
+            endpoint: details?.endpoint || null,
+            ...details
+          },
+          target: {
+            ip_address: targetSourceIp,
+            org_wide: true
+          },
+          analysis_confidence: 95,
+          user_role: details?.user_role || 'admin'
+        }, client);
+
+        return newIncident;
       });
-    } catch (evErr) {
-      console.warn('[ddosDetectionService.createDDoSIncident Evidence Recording Note]', evErr.message);
-    }
 
-    // 3. Store metric for audit + trending in ddos_metrics
-    try {
-      await DDoSAlert.create({
-        organization_id: resolvedOrgId,
-        metric_type,
-        source_ip,
-        endpoint: details?.endpoint || null,
-        count,
-        window_start: details?.window_start || new Date(Date.now() - 5 * 60 * 1000),
-        window_end: details?.window_end || new Date(),
-        threshold_exceeded: true,
-        metadata: {
-          incident_id: incident.id,
-          ...details
-        }
-      });
-    } catch (e) {
-      console.warn('[ddosDetectionService.createDDoSIncident Metric Recording Note]', e.message);
-    }
+      // Provide toString for backward compatibility where caller expects string incident ID
+      if (incident && typeof incident === 'object') {
+        incident.toString = () => incident.id;
+      }
 
-    // 4. Log ddos_incident_created to audit_logs
-    try {
-      await auditLog({
-        organization_id: resolvedOrgId,
-        user_id: details?.user_id || null,
-        actor_type: 'system_guard',
-        action: 'ddos_incident_created',
-        resource_type: 'incident',
-        resource_id: incident.id,
-        details: {
-          metric_type,
-          source_ip,
-          count,
-          endpoint: details?.endpoint || null,
-          incident_id: incident.id,
-          threat_type: 'ddos',
-          risk_score: 95
-        },
-        ip_address: source_ip
-      });
-    } catch (auditErr) {
-      console.warn('[ddosDetectionService.createDDoSIncident Audit Log Note]', auditErr.message);
+      return incident;
+    } catch (err) {
+      console.warn('[DDoS createDDoSIncident Transaction Note]', err.message);
+      throw err;
     }
-
-    // Provide toString for backward compatibility where caller expects string incident ID
-    if (incident && typeof incident === 'object') {
-      incident.toString = () => incident.id;
-    }
-
-    return incident;
   },
 
   /**
