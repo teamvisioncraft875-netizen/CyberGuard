@@ -26,7 +26,8 @@ const AUDIT_ACTIONS = Object.freeze({
   FIREWALL_RULE_DELETED: 'firewall_rule_deleted',
   FIREWALL_RULE_DELETION_FAILED: 'firewall_rule_deletion_failed',
   FIREWALL_RULE_REVOCATION_FAILED: 'firewall_rule_deletion_failed',
-  FIREWALL_COMMAND_CREATED: 'firewall_command_created'
+  FIREWALL_COMMAND_CREATED: 'firewall_command_created',
+  ATTACK_SURFACE_SNAPSHOT_TRUNCATED: 'attack_surface_snapshot_truncated'
 });
 
 /**

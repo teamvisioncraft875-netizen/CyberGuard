@@ -238,6 +238,88 @@ const telemetryController = {
       userId = req.body.user_id;
     }
 
+    // Payload Protection (CRIT-01): Enforce MAX_PORTS_PER_SNAPSHOT before any database processing
+    const MAX_PORTS_PER_SNAPSHOT = 100;
+    let listeningPorts = [];
+    let hasAttackSurfaceData = false;
+    let isSnapshotTruncated = false;
+    let rawPortCount = 0;
+
+    const attackSurfaceContainer = details.attack_surface !== undefined 
+      ? details.attack_surface 
+      : (req.body.attack_surface !== undefined ? req.body.attack_surface : null);
+
+    if (attackSurfaceContainer !== null) {
+      hasAttackSurfaceData = true;
+      if (typeof attackSurfaceContainer !== 'object') {
+        return res.status(400).json({
+          error: 'INVALID_PAYLOAD',
+          message: 'attack_surface must be an object'
+        });
+      }
+      const rawPorts = attackSurfaceContainer.listening_ports;
+      if (rawPorts === undefined) {
+        listeningPorts = [];
+      } else if (!Array.isArray(rawPorts)) {
+        return res.status(400).json({
+          error: 'INVALID_PAYLOAD',
+          message: 'details.attack_surface.listening_ports must be an array'
+        });
+      } else {
+        rawPortCount = rawPorts.length;
+        if (rawPortCount > MAX_PORTS_PER_SNAPSHOT) {
+          listeningPorts = rawPorts.slice(0, MAX_PORTS_PER_SNAPSHOT);
+          attackSurfaceContainer.listening_ports = listeningPorts;
+          isSnapshotTruncated = true;
+          console.warn(`[telemetryController.reportSystemEvent] Attack surface snapshot truncated: received ${rawPortCount}, accepted ${MAX_PORTS_PER_SNAPSHOT}`);
+        } else {
+          listeningPorts = rawPorts;
+        }
+      }
+    } else if (details.listening_ports !== undefined) {
+      hasAttackSurfaceData = true;
+      const rawPorts = details.listening_ports;
+      if (!Array.isArray(rawPorts)) {
+        return res.status(400).json({
+          error: 'INVALID_PAYLOAD',
+          message: 'details.attack_surface.listening_ports must be an array'
+        });
+      }
+      rawPortCount = rawPorts.length;
+      if (rawPortCount > MAX_PORTS_PER_SNAPSHOT) {
+        listeningPorts = rawPorts.slice(0, MAX_PORTS_PER_SNAPSHOT);
+        details.listening_ports = listeningPorts;
+        isSnapshotTruncated = true;
+        console.warn(`[telemetryController.reportSystemEvent] Attack surface snapshot truncated: received ${rawPortCount}, accepted ${MAX_PORTS_PER_SNAPSHOT}`);
+      } else {
+        listeningPorts = rawPorts;
+      }
+    } else if (event_type === 'attack_surface_snapshot') {
+      hasAttackSurfaceData = true;
+      listeningPorts = [];
+    }
+
+    // Add audit entry if snapshot was truncated (CRIT-01 requirement)
+    if (isSnapshotTruncated && userOrgId) {
+      try {
+        await auditLog({
+          organization_id: userOrgId,
+          user_id: userId,
+          actor_type: req.agent ? 'device' : 'user',
+          action: 'attack_surface_snapshot_truncated',
+          resource_type: 'device',
+          resource_id: deviceId,
+          details: {
+            received_count: rawPortCount,
+            accepted_count: MAX_PORTS_PER_SNAPSHOT
+          },
+          ip_address: req.ip
+        });
+      } catch (auditErr) {
+        console.warn('[telemetryController.reportSystemEvent Audit Truncation Note]', auditErr.message);
+      }
+    }
+
     // Record audit log for agent device submissions
     if (req.agent) {
       try {
@@ -283,33 +365,14 @@ const telemetryController = {
       console.warn('[telemetryController.reportSystemEvent DB Note]', dbErr.message);
     }
 
-    // 1b. Ingest Attack Surface Listening Ports (Phase A ASD Foundation)
-    const listeningPorts = details?.attack_surface?.listening_ports 
-      || req.body?.attack_surface?.listening_ports 
-      || details?.listening_ports;
-
-    if (Array.isArray(listeningPorts) && listeningPorts.length > 0 && deviceId && userOrgId) {
+    // 1b. Ingest Attack Surface Listening Ports (Phase A ASD Foundation - Reconciled & Bulk Upserted)
+    if (hasAttackSurfaceData && deviceId && userOrgId) {
       try {
-        const portPromises = listeningPorts.map((lp) => {
-          if (!lp || !lp.port) return null;
-          return DeviceListeningPort.upsertPort({
-            organization_id: userOrgId,
-            device_id: deviceId,
-            port: lp.port,
-            protocol: lp.protocol || 'tcp',
-            bind_address: lp.bind_address || '0.0.0.0',
-            exposure_scope: lp.exposure_scope || 'unknown',
-            pid: lp.pid || null,
-            process_name: lp.process_name || null,
-            process_path: lp.process_path || null,
-            status: lp.status || 'open'
-          }).catch((pErr) => {
-            console.warn('[telemetryController.reportSystemEvent Port Upsert Note]', pErr.message);
-            return null;
-          });
-        }).filter(Boolean);
-
-        await Promise.all(portPromises);
+        await DeviceListeningPort.reconcileSnapshot({
+          organization_id: userOrgId,
+          device_id: deviceId,
+          currentPorts: listeningPorts
+        });
       } catch (asdErr) {
         console.warn('[telemetryController.reportSystemEvent Attack Surface Ingest Error]', asdErr.message);
       }
