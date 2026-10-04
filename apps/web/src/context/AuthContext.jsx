@@ -23,7 +23,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       const res = await authService.login(email, password);
-      setToken(res?.token || null);
+      setToken(res?.token || res?.accessToken || null);
       setUser(res?.user || null);
       return res;
     } finally {
@@ -31,11 +31,11 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const signup = useCallback(async (email, password, fullName, role) => {
+  const signup = useCallback(async (email, password, fullName, role = 'individual', organizationName = undefined) => {
     setLoading(true);
     try {
-      const res = await authService.signup(email, password, fullName, role);
-      setToken(res?.token || null);
+      const res = await authService.signup(email, password, fullName, role, organizationName);
+      setToken(res?.token || res?.accessToken || null);
       setUser(res?.user || null);
       return res;
     } finally {
@@ -43,8 +43,8 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const logout = useCallback(() => {
-    authService.logout();
+  const logout = useCallback(async () => {
+    await authService.logout();
     setToken(null);
     setUser(null);
   }, []);
@@ -92,4 +92,3 @@ export function ProtectedRoute({ children, fallback = null, onUnauthorized }) {
 
   return children;
 }
-
