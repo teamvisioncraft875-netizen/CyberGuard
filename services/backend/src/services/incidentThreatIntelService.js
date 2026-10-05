@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const threatIntelService = require('./threatIntelService');
+const reputationService = require('./reputationService');
 const { extractIOCs, normalizeIOC } = require('../utils/iocExtractor');
 
 const VALID_MATCH_CONTEXTS = new Set([
@@ -360,10 +361,53 @@ class IncidentThreatIntelService {
   }
 
   /**
+   * Queries external reputation connectors (AbuseIPDB, VirusTotal, Safe Browsing)
+   * for IOCs that did not match local threat intelligence indicators.
+   *
+   * @param {Array<{ type: string, value: string, match_context: string }>} unmatchedIOCs
+   * @param {Object} [options={}]
+   * @returns {Promise<Array<Object>>} Malicious external reputation matches
+   */
+  async queryExternalReputation(unmatchedIOCs = [], options = {}) {
+    if (!Array.isArray(unmatchedIOCs) || unmatchedIOCs.length === 0) {
+      return [];
+    }
+
+    const repMatches = [];
+    for (const ioc of unmatchedIOCs) {
+      try {
+        const rep = await reputationService.lookupIOC(ioc.type, ioc.value, options);
+        if (rep && rep.malicious) {
+          const isHighConfidence = (rep.confidence >= 80) || (rep.reputation_score >= 80);
+          const boost = isHighConfidence ? 25 : 15;
+          repMatches.push({
+            indicator_value: ioc.value,
+            indicator_type: ioc.type,
+            match_context: ioc.match_context || 'raw_input',
+            source: rep.source,
+            reputation_score: rep.reputation_score,
+            confidence: rep.confidence,
+            categories: rep.categories || [],
+            last_seen: rep.last_seen || null,
+            malicious: true,
+            boost,
+            raw: rep.raw
+          });
+        }
+      } catch (err) {
+        console.warn(`[incidentThreatIntelService] External reputation error for ${ioc.type}:${ioc.value}:`, err.message);
+      }
+    }
+
+    return repMatches;
+  }
+
+  /**
    * Pre-insert enrichment workflow:
    * 1. Extracts IOCs from incident payload/signals/explanations
    * 2. Correlates IOCs with Redis cache and DB indicators
-   * 3. Calculates dynamic threat intel risk boost
+   * 3. Queries external reputation connectors for unmatched IOCs
+   * 4. Calculates dynamic threat intel risk boost + reputation boost
    *
    * @param {Object} params
    * @returns {Promise<Object>} Enrichment result with adjusted risk score, level, and matches
@@ -394,18 +438,35 @@ class IncidentThreatIntelService {
       details: mlResult.details
     });
 
-    // 2. Correlate IOCs
+    // 2. Correlate IOCs against local threat intelligence
     const matches = await this.correlateIncidentIOCs(extractedIOCs, {
       organizationId,
       bypassCache,
       client
     });
 
-    // 3. Calculate Boost
-    const { boost, highestConfidence, highestIndicator, finalScore, enrichedRiskLevel } =
+    // 3. Query external reputation connectors for IOCs not matched locally
+    const matchedValues = new Set(matches.map((m) => m.matched_value));
+    const unmatchedIOCs = extractedIOCs.filter((ioc) => !matchedValues.has(ioc.value));
+
+    const reputationMatches = await this.queryExternalReputation(unmatchedIOCs, { bypassCache });
+
+    // 4. Calculate Boosts
+    const { boost: localBoost, highestConfidence, highestIndicator } =
       this.calculateThreatIntelBoost(matches, baseRiskScore);
 
-    // 4. Construct Enrichment Metadata
+    // External reputation boost: +25 if any high-confidence malicious, else +15 if any malicious
+    let reputationBoost = 0;
+    if (reputationMatches.length > 0) {
+      const hasHighConfidence = reputationMatches.some((r) => r.boost === 25);
+      reputationBoost = hasHighConfidence ? 25 : 15;
+    }
+
+    const totalBoost = localBoost + reputationBoost;
+    const finalScore = Math.min(100, Math.max(0, Math.round(baseRiskScore + totalBoost)));
+    const enrichedRiskLevel = this._scoreToRiskLevel(finalScore);
+
+    // 5. Construct Enrichment Metadata
     const threatIntelMetadata = {
       matched_ioc_count: matches.length,
       highest_confidence_indicator: highestIndicator ? {
@@ -418,16 +479,23 @@ class IncidentThreatIntelService {
       } : null,
       matched_feed_names: [...new Set(matches.map((m) => m.feed_source).filter(Boolean))],
       indicator_tags: [...new Set(matches.flatMap((m) => m.tags || []))],
-      threat_intel_boost: boost,
+      threat_intel_boost: localBoost,
+      reputation_boost: reputationBoost,
+      total_boost: totalBoost,
       original_risk_score: baseRiskScore,
       enriched_risk_score: finalScore,
-      enriched_risk_level: enrichedRiskLevel
+      enriched_risk_level: enrichedRiskLevel,
+      reputation_matches: reputationMatches,
+      reputation_sources: [...new Set(reputationMatches.map((r) => r.source))]
     };
 
     return {
       extracted_iocs: extractedIOCs,
       matches,
-      boost,
+      reputation_matches: reputationMatches,
+      boost: totalBoost,
+      local_boost: localBoost,
+      reputation_boost: reputationBoost,
       original_risk_score: baseRiskScore,
       enriched_risk_score: finalScore,
       enriched_risk_level: enrichedRiskLevel,
