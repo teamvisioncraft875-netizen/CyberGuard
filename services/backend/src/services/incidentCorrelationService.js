@@ -146,6 +146,21 @@ async function linkIncidents(sourceIdOrObj, targetIdParam, typeParam, confidence
       }
     }, dbClient);
 
+    // 6. Automatic Incident Grouping & Campaign Aggregation (Task 3)
+    try {
+      const incidentGroupingService = require('./incidentGroupingService');
+      await incidentGroupingService.assignGroup({
+        sourceId,
+        targetId,
+        relationshipType,
+        confidence: confidenceScore,
+        organizationId: resolvedOrgId,
+        client: dbClient
+      });
+    } catch (grpErr) {
+      console.warn('[IncidentGrouping Warning] Non-critical grouping error:', grpErr.message);
+    }
+
     return created;
   };
 
