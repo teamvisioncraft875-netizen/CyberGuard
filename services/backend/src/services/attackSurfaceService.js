@@ -767,6 +767,407 @@ const attackSurfaceService = {
   },
 
   /**
+   * PART 11: SOC Dashboard (Phase C)
+   * Returns comprehensive dashboard metrics for the attack surface SOC view.
+   * Includes exposure summary cards, risk distribution, category breakdown, top risky assets.
+   */
+  async getDashboard({ organization_id }) {
+    if (!organization_id) throw new Error('organization_id is required');
+
+    // 1. Exposure summary counts (all statuses)
+    const summaryRes = await db.query(
+      `SELECT
+         COUNT(*) FILTER (WHERE status = 'active')                             AS total_active,
+         COUNT(*) FILTER (WHERE status = 'active' AND severity = 'critical')   AS critical_active,
+         COUNT(*) FILTER (WHERE status = 'active' AND severity = 'high')       AS high_active,
+         COUNT(*) FILTER (WHERE status = 'active' AND severity = 'medium')     AS medium_active,
+         COUNT(*) FILTER (WHERE status = 'active' AND severity = 'low')        AS low_active,
+         COUNT(*) FILTER (WHERE status = 'mitigated')                          AS total_mitigated,
+         COUNT(DISTINCT device_id) FILTER (WHERE status = 'active')            AS devices_with_exposures
+       FROM public.attack_surface_exposures
+       WHERE organization_id = $1;`,
+      [organization_id]
+    );
+    const summary = summaryRes.rows[0] || {};
+
+    // 2. Open incidents count linked to attack surface exposures
+    const openIncRes = await db.query(
+      `SELECT COUNT(*) AS open_incidents
+       FROM public.incidents
+       WHERE organization_id = $1
+         AND threat_type = 'attack_surface_exposure'
+         AND status = 'open';`,
+      [organization_id]
+    );
+    const openIncidents = parseInt(openIncRes.rows[0]?.open_incidents || 0, 10);
+
+    // 3. Risk distribution by score bands (active only)
+    const riskDistRes = await db.query(
+      `SELECT
+         COUNT(*) FILTER (WHERE risk_score >= 90)             AS critical_band,
+         COUNT(*) FILTER (WHERE risk_score >= 70 AND risk_score < 90) AS high_band,
+         COUNT(*) FILTER (WHERE risk_score >= 40 AND risk_score < 70) AS medium_band,
+         COUNT(*) FILTER (WHERE risk_score  < 40)             AS low_band
+       FROM public.attack_surface_exposures
+       WHERE organization_id = $1 AND status = 'active';`,
+      [organization_id]
+    );
+    const riskDist = riskDistRes.rows[0] || {};
+
+    // 4. Exposure category breakdown (active only)
+    const catRes = await db.query(
+      `SELECT rule_id, COUNT(*) AS cnt
+       FROM public.attack_surface_exposures
+       WHERE organization_id = $1 AND status = 'active'
+       GROUP BY rule_id
+       ORDER BY cnt DESC;`,
+      [organization_id]
+    );
+
+    const RULE_CATEGORIES = {
+      'EXP-CRIT-RDP': 'RDP Exposure',
+      'EXP-CRIT-REDIS': 'Redis Exposure',
+      'EXP-CRIT-POSTGRES': 'PostgreSQL Exposure',
+      'EXP-HIGH-SSH': 'SSH Exposure',
+      'EXP-HIGH-ADMIN': 'Admin Interface Exposure',
+      'EXP-MED-PUBLIC': 'Public Service Exposure',
+      'EXP-LOW-GENERIC': 'Generic Exposure',
+    };
+
+    const categoryBreakdown = catRes.rows.map(r => ({
+      rule_id: r.rule_id,
+      category: RULE_CATEGORIES[r.rule_id] || r.rule_id,
+      count: parseInt(r.cnt, 10)
+    }));
+
+    // 5. Top 10 risky assets (devices with exposures, sorted by max risk)
+    const topAssetsRes = await db.query(
+      `SELECT
+         e.device_id,
+         d.hostname,
+         d.platform,
+         COUNT(*) AS exposure_count,
+         MAX(e.risk_score) AS max_risk_score,
+         COUNT(i.id) FILTER (WHERE i.status = 'open') AS open_incidents
+       FROM public.attack_surface_exposures e
+       JOIN public.devices d ON d.id = e.device_id
+       LEFT JOIN public.incidents i ON i.id = e.incident_id
+       WHERE e.organization_id = $1 AND e.status = 'active'
+       GROUP BY e.device_id, d.hostname, d.platform
+       ORDER BY max_risk_score DESC, exposure_count DESC
+       LIMIT 10;`,
+      [organization_id]
+    );
+    const topRiskyAssets = topAssetsRes.rows.map(r => ({
+      device_id: r.device_id,
+      hostname: r.hostname || r.device_id,
+      platform: r.platform,
+      exposure_count: parseInt(r.exposure_count, 10),
+      max_risk_score: parseInt(r.max_risk_score, 10),
+      open_incidents: parseInt(r.open_incidents, 10)
+    }));
+
+    return {
+      summary: {
+        total_active: parseInt(summary.total_active || 0, 10),
+        critical_active: parseInt(summary.critical_active || 0, 10),
+        high_active: parseInt(summary.high_active || 0, 10),
+        medium_active: parseInt(summary.medium_active || 0, 10),
+        low_active: parseInt(summary.low_active || 0, 10),
+        total_mitigated: parseInt(summary.total_mitigated || 0, 10),
+        devices_with_exposures: parseInt(summary.devices_with_exposures || 0, 10),
+        open_incidents: openIncidents
+      },
+      risk_distribution: {
+        critical: parseInt(riskDist.critical_band || 0, 10),
+        high: parseInt(riskDist.high_band || 0, 10),
+        medium: parseInt(riskDist.medium_band || 0, 10),
+        low: parseInt(riskDist.low_band || 0, 10)
+      },
+      category_breakdown: categoryBreakdown,
+      top_risky_assets: topRiskyAssets
+    };
+  },
+
+  /**
+   * PART 12: Exposure Detail (Phase C)
+   * Returns a single exposure with full port metadata, MITRE mappings, and linked incident.
+   * Enforces tenant isolation via organization_id.
+   */
+  async getExposureById({ organization_id, exposure_id }) {
+    if (!organization_id) throw new Error('organization_id is required');
+    if (!exposure_id) throw new Error('exposure_id is required');
+
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    if (!UUID_REGEX.test(exposure_id)) return null;
+
+    // Main exposure + device + port join (one query, no N+1)
+    const expRes = await db.query(
+      `SELECT
+         e.*,
+         d.hostname,
+         d.os,
+         d.platform,
+         p.port,
+         p.protocol,
+         p.bind_address,
+         p.exposure_scope,
+         p.process_name,
+         p.first_seen_at AS port_first_seen_at
+       FROM public.attack_surface_exposures e
+       JOIN public.devices d ON d.id = e.device_id
+       JOIN public.device_listening_ports p ON p.id = e.port_id
+       WHERE e.id = $1 AND e.organization_id = $2;`,
+      [exposure_id, organization_id]
+    );
+
+    if (expRes.rows.length === 0) return null;
+    const exp = expRes.rows[0];
+
+    // MITRE mappings for linked incident
+    let mitreMappings = [];
+    if (exp.incident_id) {
+      const mitreRes = await db.query(
+        `SELECT technique_id, technique_name
+         FROM public.mitre_mappings
+         WHERE incident_id = $1;`,
+        [exp.incident_id]
+      );
+      mitreMappings = mitreRes.rows;
+    }
+
+    // Linked incident summary
+    let incidentSummary = null;
+    if (exp.incident_id) {
+      const incRes = await db.query(
+        `SELECT id, status, risk_level, risk_score, explanation, created_at, resolved_at
+         FROM public.incidents
+         WHERE id = $1 AND organization_id = $2;`,
+        [exp.incident_id, organization_id]
+      );
+      if (incRes.rows.length > 0) {
+        incidentSummary = incRes.rows[0];
+      }
+    }
+
+    const rule = DETECTION_RULES[exp.rule_id] || {};
+
+    return {
+      id: exp.id,
+      organization_id: exp.organization_id,
+      device_id: exp.device_id,
+      hostname: exp.hostname,
+      os: exp.os,
+      platform: exp.platform,
+      port: exp.port,
+      protocol: exp.protocol,
+      bind_address: exp.bind_address,
+      exposure_scope: exp.exposure_scope,
+      process_name: exp.process_name,
+      rule_id: exp.rule_id,
+      severity: exp.severity,
+      risk_score: exp.risk_score,
+      status: exp.status,
+      title: exp.title || rule.title,
+      description: rule.description || null,
+      remediation: exp.remediation || rule.remediation,
+      first_seen_at: exp.first_seen_at,
+      last_seen_at: exp.last_seen_at,
+      mitigated_at: exp.mitigated_at,
+      created_at: exp.created_at,
+      incident_id: exp.incident_id,
+      incident: incidentSummary,
+      mitre_mappings: mitreMappings,
+      metadata: exp.metadata || null
+    };
+  },
+
+  /**
+   * PART 13: Exposure Analytics (Phase C)
+   * Returns time-series trend data for dashboard charts over the last 30 days.
+   */
+  async getAnalytics({ organization_id, days = 30 }) {
+    if (!organization_id) throw new Error('organization_id is required');
+
+    const safeDays = Math.min(Math.max(parseInt(days, 10) || 30, 1), 90);
+
+    // Daily active exposure counts for the last N days
+    const exposureTrendRes = await db.query(
+      `SELECT
+         gs.day::date AS date,
+         COUNT(e.id) AS active_count
+       FROM generate_series(
+         NOW() - ($2 || ' days')::interval,
+         NOW(),
+         '1 day'::interval
+       ) AS gs(day)
+       LEFT JOIN public.attack_surface_exposures e
+         ON e.organization_id = $1
+         AND e.first_seen_at <= gs.day + INTERVAL '1 day'
+         AND (e.mitigated_at IS NULL OR e.mitigated_at > gs.day)
+       GROUP BY gs.day
+       ORDER BY gs.day ASC;`,
+      [organization_id, safeDays]
+    );
+
+    // Daily incident counts (attack surface)
+    const incidentTrendRes = await db.query(
+      `SELECT
+         gs.day::date AS date,
+         COUNT(i.id) AS incident_count
+       FROM generate_series(
+         NOW() - ($2 || ' days')::interval,
+         NOW(),
+         '1 day'::interval
+       ) AS gs(day)
+       LEFT JOIN public.incidents i
+         ON i.organization_id = $1
+         AND i.threat_type = 'attack_surface_exposure'
+         AND DATE(i.created_at) = gs.day::date
+       GROUP BY gs.day
+       ORDER BY gs.day ASC;`,
+      [organization_id, safeDays]
+    );
+
+    // Daily mitigated exposure counts
+    const mitigationTrendRes = await db.query(
+      `SELECT
+         gs.day::date AS date,
+         COUNT(e.id) AS mitigated_count
+       FROM generate_series(
+         NOW() - ($2 || ' days')::interval,
+         NOW(),
+         '1 day'::interval
+       ) AS gs(day)
+       LEFT JOIN public.attack_surface_exposures e
+         ON e.organization_id = $1
+         AND DATE(e.mitigated_at) = gs.day::date
+       GROUP BY gs.day
+       ORDER BY gs.day ASC;`,
+      [organization_id, safeDays]
+    );
+
+    // Category breakdown (active exposures, for pie chart)
+    const categoryRes = await db.query(
+      `SELECT rule_id, COUNT(*) AS count
+       FROM public.attack_surface_exposures
+       WHERE organization_id = $1 AND status = 'active'
+       GROUP BY rule_id
+       ORDER BY count DESC;`,
+      [organization_id]
+    );
+
+    // Summary aggregates
+    const aggRes = await db.query(
+      `SELECT
+         COUNT(*) FILTER (WHERE status = 'active')    AS total_active,
+         COUNT(*) FILTER (WHERE status = 'mitigated') AS total_mitigated,
+         COALESCE(AVG(risk_score) FILTER (WHERE status = 'active'), 0) AS avg_risk_score,
+         COALESCE(AVG(
+           EXTRACT(EPOCH FROM (mitigated_at - first_seen_at)) / 3600.0
+         ) FILTER (WHERE status = 'mitigated' AND mitigated_at IS NOT NULL), 0) AS avg_time_to_remediate_hours
+       FROM public.attack_surface_exposures
+       WHERE organization_id = $1;`,
+      [organization_id]
+    );
+    const agg = aggRes.rows[0] || {};
+
+    return {
+      period_days: safeDays,
+      summary: {
+        total_active: parseInt(agg.total_active || 0, 10),
+        total_mitigated: parseInt(agg.total_mitigated || 0, 10),
+        avg_risk_score: Math.round(parseFloat(agg.avg_risk_score || 0)),
+        avg_time_to_remediate_hours: Math.round(parseFloat(agg.avg_time_to_remediate_hours || 0))
+      },
+      exposure_trend: exposureTrendRes.rows.map(r => ({
+        date: r.date,
+        active_count: parseInt(r.active_count || 0, 10)
+      })),
+      incident_trend: incidentTrendRes.rows.map(r => ({
+        date: r.date,
+        incident_count: parseInt(r.incident_count || 0, 10)
+      })),
+      mitigation_trend: mitigationTrendRes.rows.map(r => ({
+        date: r.date,
+        mitigated_count: parseInt(r.mitigated_count || 0, 10)
+      })),
+      category_breakdown: categoryRes.rows.map(r => ({
+        rule_id: r.rule_id,
+        label: DETECTION_RULES[r.rule_id]?.title || r.rule_id,
+        count: parseInt(r.count, 10)
+      }))
+    };
+  },
+
+  /**
+   * PART 14: Fleet Scan History (Phase C)
+   * Returns paginated agent_commands of type scan_attack_surface for the organization.
+   */
+  async getScanHistory({ organization_id, device_id = null, limit = 25, offset = 0 }) {
+    if (!organization_id) throw new Error('organization_id is required');
+
+    const safeLimit = Math.min(Math.max(parseInt(limit, 10) || 25, 1), 100);
+    const safeOffset = Math.max(parseInt(offset, 10) || 0, 0);
+
+    const params = [organization_id];
+    let filter = '';
+    let idx = 2;
+
+    if (device_id) {
+      filter += ` AND c.device_id = $${idx++}`;
+      params.push(device_id);
+    }
+
+    const countRes = await db.query(
+      `SELECT COUNT(*) AS total
+       FROM public.agent_commands c
+       WHERE c.organization_id = $1
+         AND c.command_type = 'scan_attack_surface'${filter};`,
+      params
+    );
+    const total = parseInt(countRes.rows[0]?.total || 0, 10);
+
+    params.push(safeLimit, safeOffset);
+    const rowsRes = await db.query(
+      `SELECT
+         c.id,
+         c.device_id,
+         d.hostname,
+         c.status,
+         c.command_type,
+         c.requested_by_id,
+         u.email AS requested_by_email,
+         c.created_at,
+         c.executed_at
+       FROM public.agent_commands c
+       JOIN public.devices d ON d.id = c.device_id
+       LEFT JOIN public.users u ON u.id = c.requested_by_id
+       WHERE c.organization_id = $1
+         AND c.command_type = 'scan_attack_surface'${filter}
+       ORDER BY c.created_at DESC
+       LIMIT $${idx++} OFFSET $${idx++};`,
+      params
+    );
+
+    return {
+      total,
+      limit: safeLimit,
+      offset: safeOffset,
+      scans: rowsRes.rows.map(r => ({
+        id: r.id,
+        device_id: r.device_id,
+        hostname: r.hostname || r.device_id,
+        status: r.status,
+        requested_by_id: r.requested_by_id,
+        requested_by_email: r.requested_by_email || null,
+        initiated_at: r.created_at,
+        completed_at: r.executed_at || null
+      }))
+    };
+  },
+
+  /**
    * Queues a scan_attack_surface command for device(s).
    * Supports single device or atomic set-based fleet dispatch (HIGH-02).
    */

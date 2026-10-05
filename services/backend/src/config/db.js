@@ -21,7 +21,7 @@ if (!process.env.SUPABASE_DB_URL) {
 
 const DEFAULT_POOL_MAX = 10;
 const DEFAULT_IDLE_TIMEOUT_MS = 30000;
-const DEFAULT_CONNECTION_TIMEOUT_MS = 20000;
+const DEFAULT_CONNECTION_TIMEOUT_MS = 60000;
 
 const connectionString = process.env.SUPABASE_DB_URL;
 
@@ -35,6 +35,8 @@ const pool = new Pool({
   max: DEFAULT_POOL_MAX,
   idleTimeoutMillis: DEFAULT_IDLE_TIMEOUT_MS,
   connectionTimeoutMillis: DEFAULT_CONNECTION_TIMEOUT_MS,
+  keepAlive: true,
+  keepAliveInitialDelayMillis: 10000,
 });
 
 pool.on('error', (err) => {
@@ -42,7 +44,7 @@ pool.on('error', (err) => {
 });
 
 /**
- * Execute a parameterized query against PostgreSQL.
+ * Execute a parameterized query against PostgreSQL with transient retry.
  * @param {string} text - SQL query string with $1, $2 placeholders
  * @param {Array} [params] - Query parameters
  * @returns {Promise<import('pg').QueryResult>}
@@ -53,21 +55,29 @@ async function query(text, params = []) {
   }
 
   const start = Date.now();
-  try {
-    const result = await pool.query(text, params);
-    const duration = Date.now() - start;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const result = await pool.query(text, params);
+      const duration = Date.now() - start;
 
-    if (process.env.NODE_ENV === 'development' && process.env.DEBUG_SQL === 'true') {
-      console.log('[CYBERGUARD DB Query]', { text, duration: `${duration}ms`, rows: result.rowCount });
+      if (process.env.NODE_ENV === 'development' && process.env.DEBUG_SQL === 'true') {
+        console.log('[CYBERGUARD DB Query]', { text, duration: `${duration}ms`, rows: result.rowCount });
+      }
+
+      return result;
+    } catch (error) {
+      const isTransient = error.message.includes('timeout') || error.message.includes('terminated');
+      if (attempt === 1 && isTransient) {
+        console.warn(`[CYBERGUARD DB] Retrying transient query failure (${error.message})...`);
+        await new Promise((r) => setTimeout(r, 1000));
+        continue;
+      }
+      console.error('[CYBERGUARD DB Query Error]', {
+        query: text,
+        error: error.message,
+      });
+      throw error;
     }
-
-    return result;
-  } catch (error) {
-    console.error('[CYBERGUARD DB Query Error]', {
-      query: text,
-      error: error.message,
-    });
-    throw error;
   }
 }
 

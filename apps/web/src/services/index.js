@@ -3,3 +3,4 @@ export { default as authService } from './authService';
 export { default as incidentService } from './incidentService';
 export { default as analyticsService } from './analyticsService';
 export { default as scanService } from './scanService';
+export { default as attackSurfaceService } from './attackSurfaceService';
