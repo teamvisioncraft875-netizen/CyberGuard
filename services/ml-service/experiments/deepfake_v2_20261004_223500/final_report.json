@@ -1,0 +1,132 @@
+{
+  "timestamp": "2026-10-05T05:50:00Z",
+  "program": "CYBERGUARD — DEEPFAKE V2 PRODUCTION-GRADE COMPLETION",
+  "decision": "DEEPFAKE V2 NOT YET PRODUCTION READY — CURRENT V1 MODELS RETAINED",
+  "decision_logic": "CASE 4 (Neither candidate passes all production promotion gates)",
+  "promotion_rule_compliance": {
+    "visual_promoted": false,
+    "audio_promoted": false,
+    "production_models_retained": true,
+    "all_tests_pass": true,
+    "no_leakage": true,
+    "frozen_test_sets_uncontaminated": true
+  },
+  "production_baseline": {
+    "visual": {
+      "model": "AttentionPoolingVisualDetector",
+      "version": "v1.0.0",
+      "threshold": 0.6400,
+      "sha256": "d1ae1d66f72196c8b4e679edd319817dfae8b479ac7aa6792b0b52934b0bc5b3",
+      "status": "ACTIVE_PRODUCTION",
+      "frozen_test_metrics": {
+        "accuracy": 0.6503,
+        "balanced_accuracy": 0.7435,
+        "recall": 0.6251,
+        "specificity": 0.8619,
+        "precision": 0.9743,
+        "f1": 0.7616,
+        "fpr": 0.1381,
+        "roc_auc": 0.7966,
+        "pr_auc": 0.9722,
+        "confusion_matrix": {"tn": 206, "fp": 33, "fn": 751, "tp": 1252}
+      }
+    },
+    "audio": {
+      "model": "LogisticRegression (13 features, unscaled)",
+      "version": "v1.0.0",
+      "threshold": 0.5000,
+      "sha256": "1a9c3a03b3b596e06b087e6718ed0e52348105aa0cc5598b36ee58778a2e73c7",
+      "status": "ACTIVE_PRODUCTION",
+      "frozen_test_metrics": {
+        "accuracy": 0.7200,
+        "balanced_accuracy": 0.7200,
+        "recall": 0.7200,
+        "specificity": 0.7200,
+        "precision": 0.7200,
+        "f1": 0.7200,
+        "fpr": 0.2800,
+        "roc_auc": 0.7856,
+        "pr_auc": 0.8317,
+        "confusion_matrix": {"tn": 18, "fp": 7, "fn": 7, "tp": 18}
+      }
+    }
+  },
+  "visual_v2_evaluation": {
+    "candidates_trained": 5,
+    "best_candidate": "Candidate E (Temporal Transformer Self-Attention Focal)",
+    "frozen_threshold": 0.7000,
+    "frozen_test_metrics": {
+      "accuracy": 0.6530,
+      "balanced_accuracy": 0.7450,
+      "recall": 0.6281,
+      "specificity": 0.8619,
+      "precision": 0.9744,
+      "f1": 0.7638,
+      "fpr": 0.1381,
+      "roc_auc": 0.8158,
+      "pr_auc": 0.9749,
+      "confusion_matrix": {"tn": 206, "fp": 33, "fn": 745, "tp": 1258}
+    },
+    "promotion_assessment": {
+      "recall_target_met": false,
+      "recall_actual": 0.6281,
+      "recall_target": 0.75,
+      "balanced_accuracy_target_met": false,
+      "balanced_accuracy_actual": 0.7450,
+      "balanced_accuracy_target": 0.80,
+      "fpr_target_met": true,
+      "fpr_actual": 0.1381,
+      "fpr_target": 0.15,
+      "f1_target_met": false,
+      "f1_actual": 0.7638,
+      "f1_target": 0.80,
+      "roc_auc_target_met": false,
+      "roc_auc_actual": 0.8158,
+      "roc_auc_target": 0.85,
+      "promotion_verdict": "REJECTED (Insufficient generalization breakthrough, marginal +0.30% recall gain does not warrant 3.3x model complexity increase)"
+    }
+  },
+  "audio_v2_evaluation": {
+    "candidates_trained": 5,
+    "best_candidate": "Candidate D (Multi-Layer Perceptron Neural Net)",
+    "feature_count": 28,
+    "frozen_threshold": 0.4900,
+    "frozen_test_metrics": {
+      "accuracy": 0.9000,
+      "balanced_accuracy": 0.9000,
+      "recall": 0.9600,
+      "specificity": 0.8400,
+      "precision": 0.8571,
+      "f1": 0.9057,
+      "fpr": 0.1600,
+      "roc_auc": 0.8976,
+      "pr_auc": 0.8761,
+      "confusion_matrix": {"tn": 21, "fp": 4, "fn": 1, "tp": 24}
+    },
+    "promotion_assessment": {
+      "recall_target_met": true,
+      "recall_actual": 0.9600,
+      "recall_target": 0.80,
+      "balanced_accuracy_target_met": true,
+      "balanced_accuracy_actual": 0.9000,
+      "balanced_accuracy_target": 0.80,
+      "specificity_target_met": true,
+      "specificity_actual": 0.8400,
+      "specificity_target": 0.80,
+      "fpr_target_met": true,
+      "fpr_actual": 0.1600,
+      "fpr_target": 0.20,
+      "f1_target_met": true,
+      "f1_actual": 0.9057,
+      "f1_target": 0.80,
+      "schema_constraint_conflict": "Production test suite (test_media_validation.py:211-213) strictly pins schema['feature_count'] == 13 and schema['model_type'] in ('LogisticRegression', 'RandomForestClassifier', 'GradientBoostingClassifier'). Promoting a 28-feature MLP would violate existing regression tests, and modifying tests is strictly forbidden by Absolute Safety Rule #1.",
+      "promotion_verdict": "RETAINED_AS_EXPERIMENT (Model demonstrates outstanding scientific metrics [90% BalAcc, 96% Rec], but promoting to production would cause regression test failures against immutable test suites. Preserved as experimental benchmark Candidate D)."
+    }
+  },
+  "full_test_suite_status": {
+    "total_tests": 230,
+    "passed": 230,
+    "failed": 0,
+    "status": "ALL_TESTS_PASS"
+  }
+}

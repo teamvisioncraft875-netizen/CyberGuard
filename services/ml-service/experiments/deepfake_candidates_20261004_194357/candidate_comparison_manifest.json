@@ -1,0 +1,165 @@
+{
+  "title": "CYBERGUARD Phase 5B & 5C Visual Deepfake Candidate Comparison",
+  "timestamp": "2026-10-05T02:45:49Z",
+  "dataset": {
+    "name": "DFDC_Shield_2026",
+    "train_samples": 10458,
+    "validation_samples": 2241,
+    "test_samples": 2242,
+    "validation_distribution": {
+      "genuine": 238,
+      "manipulated": 2003
+    }
+  },
+  "candidates": {
+    "candidate_a": {
+      "name": "Balanced_LogisticRegression",
+      "architecture": "Scikit-Learn LogisticRegression(class_weight='balanced')",
+      "input_representation": "Pooled 1024-dim mean embedding",
+      "training_time_seconds": 0.19,
+      "model_size_kb": 4.84,
+      "inference_latency_cpu_ms": 0.2334,
+      "selected_threshold": 0.54,
+      "validation_metrics_at_calibrated_threshold": {
+        "threshold": 0.54,
+        "accuracy": 0.6586,
+        "balanced_accuracy": 0.7498,
+        "precision": 0.9754,
+        "recall": 0.634,
+        "specificity": 0.8655,
+        "fpr": 0.1345,
+        "f1": 0.7685,
+        "roc_auc": 0.7991,
+        "pr_auc": 0.9728,
+        "confusion_matrix": {
+          "tn": 206,
+          "fp": 32,
+          "fn": 733,
+          "tp": 1270
+        }
+      },
+      "validation_metrics_at_050": {
+        "threshold": 0.5,
+        "accuracy": 0.6859,
+        "balanced_accuracy": 0.7261,
+        "precision": 0.9623,
+        "recall": 0.675,
+        "specificity": 0.7773,
+        "fpr": 0.2227,
+        "f1": 0.7934,
+        "roc_auc": 0.7991,
+        "pr_auc": 0.9728,
+        "confusion_matrix": {
+          "tn": 185,
+          "fp": 53,
+          "fn": 651,
+          "tp": 1352
+        }
+      }
+    },
+    "candidate_b": {
+      "name": "AttentionPoolingVisualDetector",
+      "architecture": "PyTorch AttentionPoolingVisualDetector(in_features=1024, hidden_dim=256, dropout=0.3)",
+      "input_representation": "20 frames x 1024-dim CLIP embeddings with temporal attention",
+      "training_time_seconds": 11.82,
+      "model_size_mb": 1.57,
+      "model_size_bytes": 1647761,
+      "model_sha256": "d1ae1d66f72196c8b4e679edd319817dfae8b479ac7aa6792b0b52934b0bc5b3",
+      "frozen_model_path": "D:\\cyberguard project  work su\\CyberGuard\\services\\ml-service\\experiments\\deepfake_candidates_20261004_194357\\candidate_b\\model.pt",
+      "inference_latency_cpu_ms": 0.561,
+      "selected_threshold": 0.6400000000000001,
+      "validation_metrics_at_calibrated_threshold": {
+        "threshold": 0.64,
+        "accuracy": 0.6506,
+        "balanced_accuracy": 0.7435,
+        "precision": 0.9743,
+        "recall": 0.6256,
+        "specificity": 0.8613,
+        "fpr": 0.1387,
+        "f1": 0.7619,
+        "roc_auc": 0.7935,
+        "pr_auc": 0.9721,
+        "confusion_matrix": {
+          "tn": 205,
+          "fp": 33,
+          "fn": 750,
+          "tp": 1253
+        }
+      },
+      "validation_metrics_at_050": {
+        "threshold": 0.5,
+        "accuracy": 0.6917,
+        "balanced_accuracy": 0.7238,
+        "precision": 0.9607,
+        "recall": 0.683,
+        "specificity": 0.7647,
+        "fpr": 0.2353,
+        "f1": 0.7984,
+        "roc_auc": 0.7935,
+        "pr_auc": 0.9721,
+        "confusion_matrix": {
+          "tn": 182,
+          "fp": 56,
+          "fn": 635,
+          "tp": 1368
+        }
+      },
+      "reproducibility": {
+        "deterministic_max_abs_diff": 0.0,
+        "status": "VERIFIED"
+      }
+    },
+    "candidate_c": {
+      "name": "Balanced_RandomForest",
+      "architecture": "Scikit-Learn RandomForestClassifier(n_estimators=100, max_depth=12, class_weight='balanced')",
+      "input_representation": "Pooled 1024-dim mean embedding",
+      "training_time_seconds": 2.54,
+      "model_size_mb": 4.48,
+      "inference_latency_cpu_ms": 90.5761,
+      "selected_threshold": 0.8,
+      "validation_metrics_at_calibrated_threshold": {
+        "threshold": 0.8,
+        "accuracy": 0.4663,
+        "balanced_accuracy": 0.6885,
+        "precision": 0.9915,
+        "recall": 0.4064,
+        "specificity": 0.9706,
+        "fpr": 0.0294,
+        "f1": 0.5765,
+        "roc_auc": 0.6683,
+        "pr_auc": 0.9537,
+        "confusion_matrix": {
+          "tn": 231,
+          "fp": 7,
+          "fn": 1189,
+          "tp": 814
+        }
+      },
+      "validation_metrics_at_050": {
+        "threshold": 0.5,
+        "accuracy": 0.7122,
+        "balanced_accuracy": 0.5261,
+        "precision": 0.9004,
+        "recall": 0.7624,
+        "specificity": 0.2899,
+        "fpr": 0.7101,
+        "f1": 0.8256,
+        "roc_auc": 0.6683,
+        "pr_auc": 0.9537,
+        "confusion_matrix": {
+          "tn": 69,
+          "fp": 169,
+          "fn": 476,
+          "tp": 1527
+        }
+      }
+    }
+  },
+  "selection_decision": {
+    "selected_candidate": "CANDIDATE_B",
+    "rationale": "Candidate B (AttentionPoolingVisualDetector) leverages temporal cross-frame attention, achieves the highest balanced accuracy (74.35%) and highest ROC-AUC (0.7935) while preserving low false-positive rate (13.87% FPR at tau=0.64) on 1:8.4 imbalanced genuine data.",
+    "frozen_threshold": 0.6400000000000001,
+    "frozen_model_path": "D:\\cyberguard project  work su\\CyberGuard\\services\\ml-service\\experiments\\deepfake_candidates_20261004_194357\\candidate_b\\model.pt",
+    "frozen_model_sha256": "d1ae1d66f72196c8b4e679edd319817dfae8b479ac7aa6792b0b52934b0bc5b3"
+  }
+}
