@@ -511,6 +511,14 @@ class IncidentThreatIntelService {
    * @param {Object} params
    * @returns {Promise<Object>}
    */
+  /**
+   * End-to-end incident enrichment method.
+   * Extracts IOCs, correlates with threat intelligence, calculates risk boosts,
+   * and optionally persists incident_ioc_matches if incidentId and dbClient are provided.
+   *
+   * @param {Object} params
+   * @returns {Promise<Object>}
+   */
   async enrichIncident(params = {}) {
     const preResult = await this.enrichIncidentPreInsert(params);
 
@@ -524,6 +532,19 @@ class IncidentThreatIntelService {
     }
 
     return preResult;
+  }
+
+  /**
+   * Evaluates response policies for an incident with its threat intelligence findings.
+   * Connects IncidentThreatIntelService -> IOC Matches -> PolicyEngine -> ResponseActions.
+   *
+   * @param {Object} incident
+   * @param {Object} [client=null]
+   * @returns {Promise<Array<Object>>} Proposed response actions
+   */
+  async evaluateIncidentPolicies(incident, client = null) {
+    const PolicyEngine = require('./PolicyEngine');
+    return PolicyEngine.evaluateAndProposeActions(incident, client);
   }
 }
 

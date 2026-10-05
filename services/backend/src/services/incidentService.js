@@ -260,6 +260,8 @@ async function persistDetectionIncident({
     signals: mlResult.signals || {},
     details: mlResult.details || {},
     target: mlResult.details || {},
+    threat_intel: incident.threat_intel || (threatIntelEnrichment ? threatIntelEnrichment.threat_intel : null),
+    ioc_matches: incident.ioc_matches || (threatIntelEnrichment ? threatIntelEnrichment.matches : []),
     analysis_confidence: mlResult.confidence ?? mlResult.analysis_confidence ?? (mlResult.signals?.confidence_score != null ? mlResult.signals.confidence_score * 100 : null) ?? 100,
     ml_degraded: mlResult.ml_degraded || mlResult.signals?.ml_degraded || false,
     user_role: effectiveUser.role || null
