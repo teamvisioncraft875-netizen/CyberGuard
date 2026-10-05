@@ -93,7 +93,7 @@ async function log({
   resource_id = null,
   details = {},
   ip_address = null
-}) {
+}, client = null) {
   try {
     const sanitizedDetails = sanitizeDetails(details);
     const validActorTypes = ['user', 'admin', 'system_policy', 'system_guard', 'device'];
@@ -111,7 +111,7 @@ async function log({
       resource_id: resource_id ? String(resource_id) : null,
       details: sanitizedDetails,
       ip_address
-    });
+    }, client);
     return record;
   } catch (err) {
     console.error('[AuditService.log Error]', err.message);

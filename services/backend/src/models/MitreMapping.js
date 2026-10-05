@@ -42,6 +42,10 @@ const THREAT_TO_MITRE = Object.freeze({
   attack_surface_exposure: Object.freeze({
     technique_id: 'T1046',
     technique_name: 'Network Service Discovery'
+  }),
+  ddos: Object.freeze({
+    technique_id: 'T1498',
+    technique_name: 'Network Denial of Service'
   })
 });
 

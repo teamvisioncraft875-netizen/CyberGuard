@@ -19,9 +19,9 @@ if (!process.env.SUPABASE_DB_URL) {
   }
 }
 
-const DEFAULT_POOL_MAX = 10;
+const DEFAULT_POOL_MAX = parseInt(process.env.DB_POOL_MAX || '10', 10);
 const DEFAULT_IDLE_TIMEOUT_MS = 30000;
-const DEFAULT_CONNECTION_TIMEOUT_MS = 60000;
+const DEFAULT_CONNECTION_TIMEOUT_MS = 0; // 0 disables client acquisition timeout for queueing
 
 const connectionString = process.env.SUPABASE_DB_URL;
 
@@ -100,16 +100,22 @@ async function getClient() {
  */
 async function transaction(callback) {
   const client = await getClient();
+  let txError = null;
   try {
     await client.query('BEGIN');
     const result = await callback(client);
     await client.query('COMMIT');
     return result;
   } catch (error) {
-    await client.query('ROLLBACK');
+    txError = error;
+    try {
+      await client.query('ROLLBACK');
+    } catch (_) {
+      // rollback error suppressed
+    }
     throw error;
   } finally {
-    client.release();
+    client.release(txError ? true : undefined);
   }
 }
 

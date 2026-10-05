@@ -1,0 +1,193 @@
+{
+  "registry_name": "CYBERGUARD Authoritative Production Model Registry",
+  "registry_version": "1.0.0",
+  "last_updated": "2026-10-04T21:05:00Z",
+  "status": "FROZEN_FOR_DEPLOYMENT",
+  "models": {
+    "phishing": {
+      "engine_name": "Phishing & Social Engineering Detection Engine",
+      "model_version": "v1.0.0",
+      "architecture": "Calibrated_LinearSVC",
+      "artifact_path": "services/ml-service/app/models/phishing/phishing_classifier_v1.0.0.joblib",
+      "artifact_sha256": "0a3f4ce38a9df04d9b852752023014b31a9748beddf8da7c339ab15b4c97c72b",
+      "file_size_bytes": 537887,
+      "file_size_mb": 0.51,
+      "companion_artifacts": [
+        {
+          "name": "phishing_vectorizer",
+          "artifact_path": "services/ml-service/app/models/phishing/phishing_vectorizer_v1.0.0.joblib",
+          "artifact_sha256": "58b6b929e4926acbbc6dd3d72d80276b3f2cbd57e1bb165adb59ccc69a34ddfe",
+          "file_size_bytes": 314154
+        }
+      ],
+      "operating_threshold": 0.3600,
+      "framework": "scikit-learn",
+      "runtime_loader": "joblib.load",
+      "production_status": "ACTIVE_PRODUCTION",
+      "evaluation_report": "docs/PHASE_6_FINAL_ML_EVALUATION.md",
+      "metrics": {
+        "accuracy": 0.9959,
+        "balanced_accuracy": 0.9893,
+        "precision": 0.9922,
+        "recall": 0.9800,
+        "specificity": 0.9987,
+        "fpr": 0.0013,
+        "f1": 0.9860,
+        "roc_auc": 0.9987,
+        "pr_auc": 0.9964
+      },
+      "rollback": {
+        "strategy": "RETAIN_CURRENT_V1",
+        "notes": "Initial authoritative production release v1.0.0. Zero rollback required."
+      }
+    },
+    "malicious_url": {
+      "engine_name": "Malicious URL Detection Engine",
+      "model_version": "v1.0.0",
+      "architecture": "HistGradientBoostingClassifier",
+      "artifact_path": "services/ml-service/app/models/url/malicious_url_classifier_v1.0.0.joblib",
+      "artifact_sha256": "c657040891cb2ba4981ef56492713f8d2f5900e0721ad2c21424dfe17c9a6d12",
+      "file_size_bytes": 241046,
+      "file_size_mb": 0.23,
+      "companion_artifacts": [],
+      "operating_threshold": 0.7400,
+      "framework": "scikit-learn",
+      "runtime_loader": "joblib.load",
+      "production_status": "ACTIVE_PRODUCTION",
+      "evaluation_report": "docs/PHASE_6_FINAL_ML_EVALUATION.md",
+      "metrics": {
+        "accuracy": 0.8599,
+        "balanced_accuracy": 0.8788,
+        "precision": 0.9720,
+        "recall": 0.7935,
+        "specificity": 0.9641,
+        "fpr": 0.0359,
+        "f1": 0.8737,
+        "roc_auc": 0.9635,
+        "pr_auc": 0.9767
+      },
+      "rollback": {
+        "strategy": "RETAIN_CURRENT_V1",
+        "notes": "Initial authoritative production release v1.0.0 with 0 domain overlap. Zero rollback required."
+      }
+    },
+    "malware": {
+      "engine_name": "Static PE Malware Detection Engine",
+      "model_version": "v1.1.0",
+      "promoted_candidate": "Candidate B (LightGBM GBDT 1000 trees, 1024 leaves, max_depth=15)",
+      "architecture": "LightGBM_GBDT",
+      "artifact_path": "services/ml-service/app/models/malware/ember_model_2018.txt",
+      "artifact_sha256": "2efaf2366ec824020feb953a29f72dec287efc530280b607a38181865d78ae12",
+      "file_size_bytes": 97563714,
+      "file_size_mb": 93.04,
+      "companion_artifacts": [
+        {
+          "name": "malware_metadata",
+          "artifact_path": "services/ml-service/app/models/malware/malware_metadata_v1.0.0.json",
+          "file_size_bytes": 1609
+        }
+      ],
+      "operating_threshold": 0.5590,
+      "framework": "LightGBM",
+      "runtime_loader": "lightgbm.Booster(model_file=...)",
+      "production_status": "PROMOTED_PRODUCTION",
+      "evaluation_report": "docs/PHASE_4_MALWARE_FINAL_REPORT.md",
+      "metrics": {
+        "accuracy": 0.97623,
+        "balanced_accuracy": 0.97623,
+        "precision": 0.98155,
+        "recall": 0.97071,
+        "specificity": 0.98175,
+        "fpr": 0.01825,
+        "f1": 0.976098,
+        "roc_auc": 0.99600224,
+        "pr_auc": 0.99659172
+      },
+      "rollback": {
+        "strategy": "FILE_RESTORE",
+        "backup_artifact_path": "services/ml-service/app/models/malware/ember_model_2018.txt.bak_v1",
+        "backup_artifact_sha256": "509de4a83e2d76b69fb3025ced0429e5f40f6a95ca40122b9eedd03317fff5e2",
+        "backup_file_size_bytes": 127284141,
+        "backup_operating_threshold": 0.8336,
+        "notes": "Copy ember_model_2018.txt.bak_v1 to ember_model_2018.txt and set threshold to 0.8336 to revert to v1.0.0 baseline."
+      }
+    },
+    "deepfake_visual": {
+      "engine_name": "Visual Deepfake Detection Engine",
+      "model_version": "v1.0.0",
+      "promoted_candidate": "Candidate B (AttentionPoolingVisualDetector)",
+      "architecture": "AttentionPoolingVisualDetector",
+      "artifact_path": "services/ml-service/app/models/deepfake_visual_classifier.pt",
+      "artifact_sha256": "d1ae1d66f72196c8b4e679edd319817dfae8b479ac7aa6792b0b52934b0bc5b3",
+      "file_size_bytes": 1647761,
+      "file_size_mb": 1.57,
+      "companion_artifacts": [
+        {
+          "name": "deepfake_visual_schema",
+          "artifact_path": "services/ml-service/app/models/deepfake_visual_schema.json",
+          "file_size_bytes": 567
+        }
+      ],
+      "operating_threshold": 0.6400,
+      "framework": "PyTorch",
+      "runtime_loader": "torch.load(..., weights_only=True)",
+      "production_status": "PROMOTED_PRODUCTION",
+      "evaluation_report": "docs/PHASE_5_DEEPFAKE_FINAL_REPORT.md",
+      "metrics": {
+        "accuracy": 0.6503,
+        "balanced_accuracy": 0.7435,
+        "precision": 0.9743,
+        "recall": 0.6251,
+        "specificity": 0.8619,
+        "fpr": 0.1381,
+        "f1": 0.7616,
+        "roc_auc": 0.7966,
+        "pr_auc": 0.9722
+      },
+      "rollback": {
+        "strategy": "FILE_RESTORE",
+        "backup_artifact_path": "services/ml-service/app/models/deepfake_visual_classifier.pt.bak_v1",
+        "backup_artifact_sha256": "708f535123e7cd42182be038f3ad4d37bc82b6bb05cdeb6e5402eb5784a058ed",
+        "backup_file_size_bytes": 1649589,
+        "backup_operating_threshold": 0.6400,
+        "notes": "Copy deepfake_visual_classifier.pt.bak_v1 to deepfake_visual_classifier.pt and retain threshold 0.6400 to revert to original production baseline AttentionPoolingVisualDetector checkpoint."
+      }
+    },
+    "deepfake_audio": {
+      "engine_name": "Audio Deepfake & Voice Cloning Engine",
+      "model_version": "v1.0.0",
+      "architecture": "LogisticRegression",
+      "artifact_path": "services/ml-service/app/models/deepfake_audio_classifier.joblib",
+      "artifact_sha256": "1a9c3a03b3b596e06b087e6718ed0e52348105aa0cc5598b36ee58778a2e73c7",
+      "file_size_bytes": 1503,
+      "file_size_mb": 0.0014,
+      "companion_artifacts": [
+        {
+          "name": "deepfake_audio_schema",
+          "artifact_path": "services/ml-service/app/models/deepfake_audio_schema.json",
+          "file_size_bytes": 642
+        }
+      ],
+      "operating_threshold": 0.5000,
+      "framework": "scikit-learn",
+      "runtime_loader": "joblib.load",
+      "production_status": "ACTIVE_PRODUCTION",
+      "evaluation_report": "docs/PHASE_5_DEEPFAKE_FINAL_REPORT.md",
+      "metrics": {
+        "accuracy": 0.7200,
+        "balanced_accuracy": 0.7200,
+        "precision": 0.7200,
+        "recall": 0.7200,
+        "specificity": 0.7200,
+        "fpr": 0.2800,
+        "f1": 0.7200,
+        "roc_auc": 0.7856,
+        "pr_auc": 0.8317
+      },
+      "rollback": {
+        "strategy": "RETAIN_CURRENT_V1",
+        "notes": "Initial authoritative production release v1.0.0. Zero rollback required."
+      }
+    }
+  }
+}

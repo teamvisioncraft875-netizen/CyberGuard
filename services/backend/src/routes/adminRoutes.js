@@ -252,4 +252,27 @@ router.patch(
   attackSurfaceController.updateIncident
 );
 
+// =========================================================================
+// DDoS Detection & Threat Monitoring Endpoints: auth + roleCheck(['admin'])
+// =========================================================================
+const ddosController = require('../controllers/ddosController');
+
+// POST /api/v1/admin/ddos/scan: trigger manual detection scan
+router.post(
+  '/ddos/scan',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  ddosController.scan
+);
+
+// GET /api/v1/admin/ddos/threats: view active threats scoped to org
+router.get(
+  '/ddos/threats',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  ddosController.getThreats
+);
+
 module.exports = router;

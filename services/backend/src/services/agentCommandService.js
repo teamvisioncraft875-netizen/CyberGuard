@@ -2,7 +2,7 @@ const db = require('../config/db');
 const firewallService = require('./firewallService');
 const FirewallRule = require('../models/FirewallRule');
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Agent Command Service — Bridge between incident response actions/policy engine
@@ -124,9 +124,30 @@ const agentCommandService = {
       }
     }
 
+    // Deduplication check: verify if an active command for this response_action already exists
+    if (response_action.id) {
+      const existingCmdRes = await db.query(
+        `SELECT id, device_id, organization_id, command_type, target_data, status, can_execute, created_at
+         FROM public.agent_commands
+         WHERE response_action_id = $1 AND status IN ('pending', 'executing', 'completed')
+         ORDER BY created_at DESC LIMIT 1;`,
+        [response_action.id]
+      );
+      if (existingCmdRes.rows && existingCmdRes.rows.length > 0) {
+        const existingCmd = existingCmdRes.rows[0];
+        return {
+          success: true,
+          reused: true,
+          command_id: existingCmd.id,
+          status: existingCmd.status,
+          command: existingCmd
+        };
+      }
+    }
+
     const requestedById = response_action.approved_by_id || response_action.requested_by_id || null;
 
-    // Enqueue command in public.agent_commands
+    // Enqueue command in public.agent_commands with response_action_id tracking
     const insertSql = `
       INSERT INTO public.agent_commands (
         device_id,
@@ -138,9 +159,13 @@ const agentCommandService = {
         can_execute,
         validation_error,
         requires_approval,
+        response_action_id,
         created_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+      ON CONFLICT (response_action_id) 
+      WHERE status IN ('pending', 'executing') AND response_action_id IS NOT NULL
+      DO NOTHING
       RETURNING id, device_id, organization_id, command_type, target_data, status, can_execute, created_at;
     `;
 
@@ -153,13 +178,53 @@ const agentCommandService = {
       requestedById,
       canExecute,
       validationError,
-      false // Already approved through response action workflow
+      false, // Already approved through response action workflow
+      response_action.id || null
     ]);
 
-    const command = cmdRes.rows[0];
+    let command = cmdRes.rows[0];
+    if (!command && response_action.id) {
+      // Conflict caught; retrieve existing command
+      const fallbackRes = await db.query(
+        `SELECT id, device_id, organization_id, command_type, target_data, status, can_execute, created_at
+         FROM public.agent_commands
+         WHERE response_action_id = $1
+         ORDER BY created_at DESC LIMIT 1;`,
+        [response_action.id]
+      );
+      command = fallbackRes.rows[0];
+      return {
+        success: true,
+        reused: true,
+        command_id: command?.id,
+        status: command?.status,
+        command
+      };
+    }
+
+    // Audit log: agent_command_sent
+    try {
+      const { log: auditLog } = require('./auditService');
+      await auditLog({
+        organization_id,
+        user_id: requestedById,
+        actor_type: 'system_policy',
+        action: 'agent_command_sent',
+        resource_type: 'agent_command',
+        resource_id: command?.id,
+        details: {
+          command_type: commandType,
+          device_id: deviceId,
+          target_data: targetData,
+          response_action_id: response_action.id || null
+        }
+      });
+    } catch (aErr) {
+      console.warn('[agentCommandService audit error]', aErr.message);
+    }
 
     // Ensure tracking record in agent_firewall_rules if this is a firewall block command
-    if ((commandType === 'block_ip' || commandType === 'block_domain') && canExecute) {
+    if ((commandType === 'block_ip' || commandType === 'block_domain') && canExecute && command) {
       try {
         const targetIp = targetData.ip_address || null;
         const targetDomain = targetData.domain || null;
@@ -181,6 +246,7 @@ const agentCommandService = {
             target_domain: targetDomain,
             status: 'pending',
             created_by_id: requestedById,
+            source_command_id: command.id,
             result: {
               source: 'response_action',
               response_action_id: response_action.id,
@@ -196,8 +262,8 @@ const agentCommandService = {
 
     return {
       success: true,
-      command_id: command.id,
-      status: command.status,
+      command_id: command?.id,
+      status: command?.status,
       command
     };
   },
