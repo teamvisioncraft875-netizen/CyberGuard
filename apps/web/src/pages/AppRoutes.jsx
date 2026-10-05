@@ -7,6 +7,7 @@ import {
   GuardianPage,
   SettingsPage,
   DesignSystemPage,
+  AttackSurfacePage,
 } from './index';
 import { LoginPage } from './LoginPage';
 import { SignupPage } from './SignupPage';
@@ -17,6 +18,9 @@ export const ROUTES = Object.freeze({
   DASHBOARD: '/',
   SCAN_CENTER: '/scan-center',
   INCIDENTS: '/incidents',
+  ATTACK_SURFACE: '/attack-surface',
+  RESPONSE_ACTIONS: '/response-actions',
+  SCANS: '/scans',
   GUARDIAN: '/guardian',
   SETTINGS: '/settings',
   DESIGN_SYSTEM: '/design-system',
@@ -90,6 +94,79 @@ export function AppRoutes({
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/pages/security/incidents"
+        element={
+          <ProtectedRoute>
+            <AppLayout onSearchFocus={onSearchFocus}>
+              <IncidentsPage onTriggerToast={onTriggerAlert} />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Attack Surface Discovery & SOC Workflow Routes */}
+      <Route
+        path="/attack-surface"
+        element={
+          <ProtectedRoute>
+            <AppLayout onSearchFocus={onSearchFocus}>
+              <AttackSurfacePage initialTab="overview" onTriggerToast={onTriggerAlert} />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pages/security/attack-surface"
+        element={
+          <ProtectedRoute>
+            <AppLayout onSearchFocus={onSearchFocus}>
+              <AttackSurfacePage initialTab="overview" onTriggerToast={onTriggerAlert} />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/response-actions"
+        element={
+          <ProtectedRoute>
+            <AppLayout onSearchFocus={onSearchFocus}>
+              <AttackSurfacePage initialTab="response-actions" onTriggerToast={onTriggerAlert} />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pages/security/response-actions"
+        element={
+          <ProtectedRoute>
+            <AppLayout onSearchFocus={onSearchFocus}>
+              <AttackSurfacePage initialTab="response-actions" onTriggerToast={onTriggerAlert} />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/scans"
+        element={
+          <ProtectedRoute>
+            <AppLayout onSearchFocus={onSearchFocus}>
+              <AttackSurfacePage initialTab="scans" onTriggerToast={onTriggerAlert} />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pages/security/scans"
+        element={
+          <ProtectedRoute>
+            <AppLayout onSearchFocus={onSearchFocus}>
+              <AttackSurfacePage initialTab="scans" onTriggerToast={onTriggerAlert} />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/guardian"
         element={

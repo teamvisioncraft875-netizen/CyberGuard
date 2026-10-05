@@ -1,6 +1,8 @@
 const User = require('../models/User');
 const LoginEvent = require('../models/LoginEvent');
 const TelemetryEvent = require('../models/TelemetryEvent');
+const DeviceListeningPort = require('../models/DeviceListeningPort');
+const attackSurfaceService = require('../services/attackSurfaceService');
 const { callMlEngine } = require('../utils/mlClient');
 const { persistDetectionIncident } = require('../services/incidentService');
 const { detectSecrets } = require('../services/secretDetector');
@@ -237,6 +239,88 @@ const telemetryController = {
       userId = req.body.user_id;
     }
 
+    // Payload Protection (CRIT-01): Enforce MAX_PORTS_PER_SNAPSHOT before any database processing
+    const MAX_PORTS_PER_SNAPSHOT = 100;
+    let listeningPorts = [];
+    let hasAttackSurfaceData = false;
+    let isSnapshotTruncated = false;
+    let rawPortCount = 0;
+
+    const attackSurfaceContainer = details.attack_surface !== undefined 
+      ? details.attack_surface 
+      : (req.body.attack_surface !== undefined ? req.body.attack_surface : null);
+
+    if (attackSurfaceContainer !== null) {
+      hasAttackSurfaceData = true;
+      if (typeof attackSurfaceContainer !== 'object') {
+        return res.status(400).json({
+          error: 'INVALID_PAYLOAD',
+          message: 'attack_surface must be an object'
+        });
+      }
+      const rawPorts = attackSurfaceContainer.listening_ports;
+      if (rawPorts === undefined) {
+        listeningPorts = [];
+      } else if (!Array.isArray(rawPorts)) {
+        return res.status(400).json({
+          error: 'INVALID_PAYLOAD',
+          message: 'details.attack_surface.listening_ports must be an array'
+        });
+      } else {
+        rawPortCount = rawPorts.length;
+        if (rawPortCount > MAX_PORTS_PER_SNAPSHOT) {
+          listeningPorts = rawPorts.slice(0, MAX_PORTS_PER_SNAPSHOT);
+          attackSurfaceContainer.listening_ports = listeningPorts;
+          isSnapshotTruncated = true;
+          console.warn(`[telemetryController.reportSystemEvent] Attack surface snapshot truncated: received ${rawPortCount}, accepted ${MAX_PORTS_PER_SNAPSHOT}`);
+        } else {
+          listeningPorts = rawPorts;
+        }
+      }
+    } else if (details.listening_ports !== undefined) {
+      hasAttackSurfaceData = true;
+      const rawPorts = details.listening_ports;
+      if (!Array.isArray(rawPorts)) {
+        return res.status(400).json({
+          error: 'INVALID_PAYLOAD',
+          message: 'details.attack_surface.listening_ports must be an array'
+        });
+      }
+      rawPortCount = rawPorts.length;
+      if (rawPortCount > MAX_PORTS_PER_SNAPSHOT) {
+        listeningPorts = rawPorts.slice(0, MAX_PORTS_PER_SNAPSHOT);
+        details.listening_ports = listeningPorts;
+        isSnapshotTruncated = true;
+        console.warn(`[telemetryController.reportSystemEvent] Attack surface snapshot truncated: received ${rawPortCount}, accepted ${MAX_PORTS_PER_SNAPSHOT}`);
+      } else {
+        listeningPorts = rawPorts;
+      }
+    } else if (event_type === 'attack_surface_snapshot') {
+      hasAttackSurfaceData = true;
+      listeningPorts = [];
+    }
+
+    // Add audit entry if snapshot was truncated (CRIT-01 requirement)
+    if (isSnapshotTruncated && userOrgId) {
+      try {
+        await auditLog({
+          organization_id: userOrgId,
+          user_id: userId,
+          actor_type: req.agent ? 'device' : 'user',
+          action: 'attack_surface_snapshot_truncated',
+          resource_type: 'device',
+          resource_id: deviceId,
+          details: {
+            received_count: rawPortCount,
+            accepted_count: MAX_PORTS_PER_SNAPSHOT
+          },
+          ip_address: req.ip
+        });
+      } catch (auditErr) {
+        console.warn('[telemetryController.reportSystemEvent Audit Truncation Note]', auditErr.message);
+      }
+    }
+
     // Record audit log for agent device submissions
     if (req.agent) {
       try {
@@ -280,6 +364,27 @@ const telemetryController = {
       });
     } catch (dbErr) {
       console.warn('[telemetryController.reportSystemEvent DB Note]', dbErr.message);
+    }
+
+    // 1b. Ingest Attack Surface Listening Ports (Phase A ASD Foundation - Reconciled & Bulk Upserted)
+    if (hasAttackSurfaceData && deviceId && userOrgId) {
+      try {
+        const reconciliation = await DeviceListeningPort.reconcileSnapshot({
+          organization_id: userOrgId,
+          device_id: deviceId,
+          currentPorts: listeningPorts
+        });
+
+        // Phase B: Attack Surface Exposure Detection, Risk Scoring, Incident Orchestration & Auto-Resolution
+        await attackSurfaceService.processAttackSurfaceTelemetry({
+          organization_id: userOrgId,
+          device_id: deviceId,
+          currentPorts: listeningPorts,
+          closedPorts: reconciliation?.closed_ports || []
+        });
+      } catch (asdErr) {
+        console.warn('[telemetryController.reportSystemEvent Attack Surface Ingest Error]', asdErr.message);
+      }
     }
 
     const anomalyDetected = mlResult ? (mlResult.risk_level !== 'Safe' && mlResult.risk_level !== 'Low') : true;

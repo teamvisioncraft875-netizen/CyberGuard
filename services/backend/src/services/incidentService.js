@@ -75,7 +75,7 @@ async function persistDetectionIncident({
   sourceType,
   mlResult,
   recommendedActions = []
-}) {
+}, client = null) {
   const riskLevel = (mlResult.risk_level || 'medium').toLowerCase();
   // Approximate fallback score based on risk_level until all engines return a real score
   const riskScore = typeof mlResult.risk_score === 'number'
@@ -86,47 +86,54 @@ async function persistDetectionIncident({
   let incident = null;
   let dbError = null;
 
+  const runInsert = async (dbClient) => {
+    // Insert into incidents
+    const newIncident = await Incident.create({
+      user_id: effectiveUser.id || null,
+      organization_id: effectiveUser.organization_id || null,
+      threat_type: threatType,
+      source_type: sourceType,
+      risk_level: riskLevel,
+      risk_score: riskScore,
+      explanation: mlResult.explanation || '',
+      status: 'open'
+    }, dbClient);
+
+    // Insert into mitre_mappings
+    const ruleId = mlResult?.details?.rule_id || mlResult?.rule_id || null;
+    const mitreTechnique = MitreMapping.getTechniqueForThreat(threatType, ruleId);
+    await MitreMapping.create({
+      incident_id: newIncident.id,
+      technique_id: mitreTechnique.technique_id,
+      technique_name: mitreTechnique.technique_name
+    }, dbClient);
+
+    // Insert into detection_signals
+    const signalsToInsert = extractDetectionSignals(mlResult.signals, newIncident.id);
+    if (signalsToInsert.length > 0) {
+      await DetectionSignal.createMany(signalsToInsert, dbClient);
+    }
+
+    // Insert into recommended_actions
+    const actionsToInsert = recommendedActions.map((action) => ({
+      incident_id: newIncident.id,
+      action_type: typeof action === 'string' ? action : (action.action_type || action.action_text || String(action)),
+      action_status: 'pending'
+    }));
+    if (actionsToInsert.length > 0) {
+      await RecommendedAction.createMany(actionsToInsert, dbClient);
+    }
+
+    return newIncident;
+  };
+
   // 1. Transaction persistence (atomic all-or-nothing)
   try {
-    incident = await transaction(async (client) => {
-      // Insert into incidents
-      const newIncident = await Incident.create({
-        user_id: effectiveUser.id || null,
-        organization_id: effectiveUser.organization_id || null,
-        threat_type: threatType,
-        source_type: sourceType,
-        risk_level: riskLevel,
-        risk_score: riskScore,
-        explanation: mlResult.explanation || '',
-        status: 'open'
-      }, client);
-
-      // Insert into mitre_mappings
-      const mitreTechnique = MitreMapping.getTechniqueForThreat(threatType);
-      await MitreMapping.create({
-        incident_id: newIncident.id,
-        technique_id: mitreTechnique.technique_id,
-        technique_name: mitreTechnique.technique_name
-      }, client);
-
-      // Insert into detection_signals
-      const signalsToInsert = extractDetectionSignals(mlResult.signals, newIncident.id);
-      if (signalsToInsert.length > 0) {
-        await DetectionSignal.createMany(signalsToInsert, client);
-      }
-
-      // Insert into recommended_actions
-      const actionsToInsert = recommendedActions.map((action) => ({
-        incident_id: newIncident.id,
-        action_type: typeof action === 'string' ? action : (action.action_type || action.action_text || String(action)),
-        action_status: 'pending'
-      }));
-      if (actionsToInsert.length > 0) {
-        await RecommendedAction.createMany(actionsToInsert, client);
-      }
-
-      return newIncident;
-    });
+    if (client) {
+      incident = await runInsert(client);
+    } else {
+      incident = await transaction(runInsert);
+    }
   } catch (err) {
     console.error('[persistDetectionIncident dbError]', err);
     dbError = err;
@@ -203,7 +210,8 @@ async function persistDetectionIncident({
     ...incident,
     signals: mlResult.signals || {},
     details: mlResult.details || {},
-    analysis_confidence: mlResult.confidence ?? mlResult.analysis_confidence ?? (mlResult.signals?.confidence_score != null ? mlResult.signals.confidence_score * 100 : null),
+    target: mlResult.details || {},
+    analysis_confidence: mlResult.confidence ?? mlResult.analysis_confidence ?? (mlResult.signals?.confidence_score != null ? mlResult.signals.confidence_score * 100 : null) ?? 100,
     ml_degraded: mlResult.ml_degraded || mlResult.signals?.ml_degraded || false,
     user_role: effectiveUser.role || null
   }).catch((policyErr) => {
@@ -217,10 +225,25 @@ async function persistDetectionIncident({
   return incident;
 }
 
+/**
+ * Resolves an incident by setting its status to 'resolved'.
+ */
+async function resolveIncident(incidentId, client = null) {
+  const dbClient = client || require('../config/db');
+  const res = await dbClient.query(
+    `UPDATE public.incidents
+     SET status = 'resolved', resolved_at = NOW()
+     WHERE id = $1 AND status = 'open'
+     RETURNING *;`,
+    [incidentId]
+  );
+  return res.rows[0] || null;
+}
 
 module.exports = {
   persistDetectionIncident,
   extractDetectionSignals,
+  resolveIncident,
   FALLBACK_SCORES,
   METADATA_KEYS
 };

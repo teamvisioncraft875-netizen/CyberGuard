@@ -11,7 +11,8 @@ const ALLOWED_ACTION_TYPES = [
   'block_ip',
   'block_domain',
   'suspend_device',
-  'isolate_device'
+  'isolate_device',
+  'block_port'
 ];
 
 const ALLOWED_ACTION_MODES = ['shadow', 'live'];
@@ -108,6 +109,48 @@ class PolicyEngine {
       }
     }
 
+    // Built-in Platform Response Policy for attack_surface_exposure incidents
+    if (incidentThreatType === 'attack_surface_exposure') {
+      const hasNotifyAdmin = applicableRules.some((r) => r.action_type === 'notify_admin');
+      if (!hasNotifyAdmin && incidentScore >= 70) {
+        applicableRules.push({
+          threat_type: 'attack_surface_exposure',
+          min_score: 70,
+          action_type: 'notify_admin',
+          action_mode: 'shadow',
+          requires_approval: false,
+          policy_id: null,
+          policy_name: 'Default Attack Surface Admin Alert'
+        });
+      }
+
+      const hasBlockPort = applicableRules.some((r) => r.action_type === 'block_port');
+      if (!hasBlockPort && incidentScore >= 70) {
+        applicableRules.push({
+          threat_type: 'attack_surface_exposure',
+          min_score: 70,
+          action_type: 'block_port',
+          action_mode: 'shadow',
+          requires_approval: true,
+          policy_id: null,
+          policy_name: 'Default Attack Surface Block Port Proposal'
+        });
+      }
+
+      const hasIsolateDevice = applicableRules.some((r) => r.action_type === 'isolate_device');
+      if (!hasIsolateDevice && incidentScore >= 90) {
+        applicableRules.push({
+          threat_type: 'attack_surface_exposure',
+          min_score: 90,
+          action_type: 'isolate_device',
+          action_mode: 'shadow',
+          requires_approval: true,
+          policy_id: null,
+          policy_name: 'Default Critical Exposure Device Isolation Proposal'
+        });
+      }
+    }
+
     return applicableRules;
   }
 
@@ -187,6 +230,9 @@ class PolicyEngine {
    */
   static _isOrgLevelAction(action_type, incident = {}) {
     if (action_type === 'block_domain') {
+      return true;
+    }
+    if (action_type === 'block_port') {
       return true;
     }
     if (action_type === 'block_ip') {
@@ -279,6 +325,13 @@ class PolicyEngine {
         return {
           organization_id: incident.organization_id || null,
           incident_id: incident.id || null
+        };
+
+      case 'block_port':
+        return {
+          port: explicitTarget.port || details.port || signals.port || (Array.isArray(signals) ? signals.find((s) => s.signal_name === 'public_exposed_service')?.signal_value : null),
+          protocol: explicitTarget.protocol || details.protocol || 'tcp',
+          device_id: explicitTarget.device_id || incident.device_id || signals.device_id || null
         };
 
       default:

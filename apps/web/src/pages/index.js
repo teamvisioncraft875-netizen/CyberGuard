@@ -7,4 +7,5 @@ export * from './DesignSystemPage';
 export * from './DesignSystemShowcase';
 export * from './LoginPage';
 export * from './SignupPage';
+export * from './AttackSurfacePage';
 export * from './AppRoutes';

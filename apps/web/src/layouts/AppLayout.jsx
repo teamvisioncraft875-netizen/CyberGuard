@@ -14,6 +14,7 @@ import {
   Search,
   Bell,
   HelpCircle,
+  Crosshair,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 
@@ -56,6 +57,7 @@ export function AppLayout({
 
   const navigationItems = [
     { id: 'dashboard', path: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'attack-surface', path: '/attack-surface', label: 'Attack Surface', icon: Crosshair, badge: 'Live', badgeColor: 'bg-amber-500/15 text-amber-500 border border-amber-500/30' },
     { id: 'scan-center', path: '/scan-center', label: 'Scan Center', icon: Radar },
     { id: 'incidents', path: '/incidents', label: 'Incidents', icon: AlertTriangle, badge: '8', badgeColor: 'bg-destructive/15 text-destructive border border-destructive/30' },
     { id: 'guardian', path: '/guardian', label: 'Guardian', icon: Bot },

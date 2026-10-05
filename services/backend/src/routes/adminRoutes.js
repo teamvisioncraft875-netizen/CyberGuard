@@ -138,6 +138,120 @@ router.post(
   firewallController.createManualFirewallCommand
 );
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Attack Surface Discovery — Phase B + Phase C APIs
+// ─────────────────────────────────────────────────────────────────────────────
+const attackSurfaceController = require('../controllers/attackSurfaceController');
+
+// ── Phase B ──────────────────────────────────────────────────────────────────
+
+// GET /api/v1/admin/attack-surface/exposures
+router.get(
+  '/attack-surface/exposures',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  attackSurfaceController.getExposures
+);
+
+// GET /api/v1/admin/attack-surface/overview
+router.get(
+  '/attack-surface/overview',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  attackSurfaceController.getOverview
+);
+
+// POST /api/v1/admin/attack-surface/scan
+router.post(
+  '/attack-surface/scan',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  attackSurfaceController.triggerScan
+);
+
+// ── Phase C ──────────────────────────────────────────────────────────────────
+
+// GET /api/v1/admin/attack-surface/dashboard
+// SOC dashboard: summary cards, risk distribution, category breakdown, top risky assets
+router.get(
+  '/attack-surface/dashboard',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  attackSurfaceController.getDashboard
+);
+
+// GET /api/v1/admin/attack-surface/exposures/:id
+// Exposure detail: port metadata, MITRE mappings, linked incident timeline
+// (Registered after the bare /exposures route — express matches literal first)
+router.get(
+  '/attack-surface/exposures/:id',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  attackSurfaceController.getExposureById
+);
+
+// GET /api/v1/admin/attack-surface/analytics
+// Time-series charts: exposure_trend, incident_trend, mitigation_trend, category_breakdown
+router.get(
+  '/attack-surface/analytics',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  attackSurfaceController.getAnalytics
+);
+
+// GET /api/v1/admin/attack-surface/scans
+// Fleet scan history (paginated scan_attack_surface agent commands)
+router.get(
+  '/attack-surface/scans',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  attackSurfaceController.getScanHistory
+);
+
+// PATCH /api/v1/admin/attack-surface/response-actions/:id
+// Analyst approve/reject a proposed response action (shadow mode — no automatic execution)
+router.patch(
+  '/attack-surface/response-actions/:id',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  attackSurfaceController.updateResponseAction
+);
+
+// PATCH /api/v1/admin/attack-surface/incidents/:id
+// Analyst update incident status, assign analyst, or add a note
+router.patch(
+  '/attack-surface/incidents/:id',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  attackSurfaceController.updateIncident
+);
+
+// Aliases for direct admin endpoint routes
+router.patch(
+  '/response-actions/:id',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  attackSurfaceController.updateResponseAction
+);
+
+router.patch(
+  '/incidents/:id',
+  auth,
+  roleCheck(['admin']),
+  generalLimiter,
+  attackSurfaceController.updateIncident
+);
+
 // =========================================================================
 // DDoS Detection & Threat Monitoring Endpoints: auth + roleCheck(['admin'])
 // =========================================================================
@@ -162,6 +276,3 @@ router.get(
 );
 
 module.exports = router;
-
-
-
