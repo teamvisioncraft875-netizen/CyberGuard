@@ -31,7 +31,10 @@ const AUDIT_ACTIONS = Object.freeze({
   ATTACK_SURFACE_EXPOSURE_RESOLVED: 'attack_surface_exposure_resolved',
   FEED_SYNC_STARTED: 'feed_sync_started',
   FEED_SYNC_COMPLETED: 'feed_sync_completed',
-  FEED_SYNC_FAILED: 'feed_sync_failed'
+  FEED_SYNC_FAILED: 'feed_sync_failed',
+  THREAT_DASHBOARD_VIEWED: 'threat_dashboard_viewed',
+  THREAT_INDICATOR_VIEWED: 'threat_indicator_viewed',
+  THREAT_FEED_HEALTH_VIEWED: 'threat_feed_health_viewed'
 });
 
 /**

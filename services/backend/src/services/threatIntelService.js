@@ -369,6 +369,293 @@ class ThreatIntelService {
 
     return indicator;
   }
+
+  /**
+   * Retrieves high-level threat intelligence dashboard metrics for the SOC dashboard.
+   *
+   * @param {string|null} [organizationId=null]
+   * @returns {Promise<Object>} Dashboard overview object
+   */
+  async getThreatDashboard(organizationId = null) {
+    const orgId = organizationId || null;
+
+    // 1. Indicators metrics
+    const indMetricsQuery = `
+      SELECT
+        COUNT(*)::int AS total_indicators,
+        COUNT(*) FILTER (WHERE is_active = true AND (expires_at IS NULL OR expires_at > NOW()))::int AS active_indicators,
+        COUNT(*) FILTER (WHERE expires_at IS NOT NULL AND expires_at <= NOW())::int AS expired_indicators,
+        COUNT(*) FILTER (WHERE severity IN ('high', 'critical') AND is_active = true)::int AS malicious_indicators,
+        COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours')::int AS indicators_last_24h
+      FROM public.threat_indicators
+      WHERE ($1::uuid IS NULL AND organization_id IS NULL)
+         OR ($1::uuid IS NOT NULL AND (organization_id IS NULL OR organization_id = $1));
+    `;
+    const indRes = await db.query(indMetricsQuery, [orgId]);
+    const indMetrics = indRes.rows[0] || {
+      total_indicators: 0,
+      active_indicators: 0,
+      expired_indicators: 0,
+      malicious_indicators: 0,
+      indicators_last_24h: 0
+    };
+
+    // 2. Matches last 24h
+    const matchMetricsQuery = `
+      SELECT COUNT(*)::int AS matches_last_24h
+      FROM public.incident_ioc_matches
+      WHERE matched_at >= NOW() - INTERVAL '24 hours'
+        AND ($1::uuid IS NULL OR organization_id = $1);
+    `;
+    const matchRes = await db.query(matchMetricsQuery, [orgId]);
+    const matchesLast24h = matchRes.rows[0]?.matches_last_24h || 0;
+
+    // 3. Top indicator types
+    const typesQuery = `
+      SELECT indicator_type, COUNT(*)::int AS count
+      FROM public.threat_indicators
+      WHERE ($1::uuid IS NULL AND organization_id IS NULL)
+         OR ($1::uuid IS NOT NULL AND (organization_id IS NULL OR organization_id = $1))
+      GROUP BY indicator_type
+      ORDER BY count DESC
+      LIMIT 5;
+    `;
+    const typesRes = await db.query(typesQuery, [orgId]);
+    const topIndicatorTypes = typesRes.rows || [];
+
+    // 4. Feed metrics (from threatFeedService)
+    const feedHealth = await this.getFeedHealth(orgId);
+    const totalFeeds = feedHealth.total_feeds || 0;
+    const failedFeeds = (feedHealth.failed_feeds || 0) + (feedHealth.circuit_broken_feeds || 0);
+    const healthyFeeds = Math.max(0, (feedHealth.active_feeds || 0) - failedFeeds);
+
+    return {
+      total_indicators: indMetrics.total_indicators,
+      active_indicators: indMetrics.active_indicators,
+      expired_indicators: indMetrics.expired_indicators,
+      malicious_indicators: indMetrics.malicious_indicators,
+      total_feeds: totalFeeds,
+      healthy_feeds: healthyFeeds,
+      failed_feeds: failedFeeds,
+      indicators_last_24h: indMetrics.indicators_last_24h,
+      matches_last_24h: matchesLast24h,
+      top_indicator_types: topIndicatorTypes
+    };
+  }
+
+  /**
+   * Retrieves paginated indicators with multi-field filtering and tenant scoping.
+   *
+   * @param {Object} [filters={}]
+   * @returns {Promise<Object>} { total, limit, offset, indicators }
+   */
+  async getIndicators(filters = {}) {
+    const {
+      organization_id = null,
+      organizationId = null,
+      type = null,
+      indicator_type = null,
+      severity = null,
+      is_active = null,
+      search = null,
+      q = null,
+      sort_by = 'created_at',
+      sort_order = 'DESC',
+      limit = 50,
+      offset = 0
+    } = filters;
+
+    const orgId = organization_id || organizationId || null;
+    const resolvedType = type || indicator_type || null;
+    const resolvedSearch = search || q || null;
+
+    const conditions = [];
+    const params = [];
+
+    // Tenant scoping: global indicators + tenant-specific indicators
+    params.push(orgId);
+    conditions.push(`($${params.length}::uuid IS NULL AND ti.organization_id IS NULL OR $${params.length}::uuid IS NOT NULL AND (ti.organization_id IS NULL OR ti.organization_id = $${params.length}))`);
+
+    // Type filter
+    if (resolvedType) {
+      params.push(resolvedType.toLowerCase());
+      conditions.push(`ti.indicator_type = $${params.length}`);
+    }
+
+    // Severity filter
+    if (severity) {
+      params.push(severity.toLowerCase());
+      conditions.push(`ti.severity = $${params.length}`);
+    }
+
+    // is_active filter
+    if (is_active !== null && is_active !== undefined) {
+      const activeBool = is_active === true || is_active === 'true';
+      params.push(activeBool);
+      conditions.push(`ti.is_active = $${params.length}`);
+    }
+
+    // Search filter
+    if (resolvedSearch && typeof resolvedSearch === 'string' && resolvedSearch.trim()) {
+      params.push(`%${resolvedSearch.trim()}%`);
+      conditions.push(`(
+        ti.indicator_value ILIKE $${params.length}
+        OR ti.threat_actor ILIKE $${params.length}
+        OR ti.malware_family ILIKE $${params.length}
+      )`);
+    }
+
+    const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    // Count query
+    const countRes = await db.query(
+      `SELECT COUNT(*)::int AS total FROM public.threat_indicators ti ${whereClause};`,
+      params
+    );
+    const total = countRes.rows[0]?.total || 0;
+
+    // Sorting whitelist
+    const ALLOWED_SORT_COLS = {
+      created_at: 'ti.created_at',
+      updated_at: 'ti.updated_at',
+      confidence_score: 'ti.confidence_score',
+      severity: 'ti.severity',
+      indicator_value: 'ti.indicator_value'
+    };
+    const sortCol = ALLOWED_SORT_COLS[sort_by] || 'ti.created_at';
+    const sortDirection = String(sort_order).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+    // Pagination clamp
+    const safeLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 50));
+    const safeOffset = Math.max(0, parseInt(offset, 10) || 0);
+
+    params.push(safeLimit);
+    const limitPlaceholder = `$${params.length}`;
+    params.push(safeOffset);
+    const offsetPlaceholder = `$${params.length}`;
+
+    const queryText = `
+      SELECT ti.id, ti.organization_id, ti.feed_id, ti.indicator_type, ti.indicator_value,
+             ti.severity, ti.confidence_score, ti.threat_actor, ti.malware_family,
+             ti.tags, ti.observation_count, ti.first_seen_at, ti.last_seen_at,
+             ti.expires_at, ti.is_active, ti.metadata, ti.created_at, ti.updated_at,
+             tf.feed_name, tf.feed_slug
+      FROM public.threat_indicators ti
+      LEFT JOIN public.threat_feeds tf ON tf.id = ti.feed_id
+      ${whereClause}
+      ORDER BY ${sortCol} ${sortDirection}
+      LIMIT ${limitPlaceholder} OFFSET ${offsetPlaceholder};
+    `;
+
+    const res = await db.query(queryText, params);
+
+    return {
+      total,
+      limit: safeLimit,
+      offset: safeOffset,
+      indicators: res.rows || []
+    };
+  }
+
+  /**
+   * Retrieves an indicator by its unique UUID with tenant scoping.
+   *
+   * @param {string} id
+   * @param {string|null} [organizationId=null]
+   * @returns {Promise<Object|null>}
+   */
+  async getIndicatorById(id, organizationId = null) {
+    const orgId = organizationId || null;
+    const queryText = `
+      SELECT ti.id, ti.organization_id, ti.feed_id, ti.indicator_type, ti.indicator_value,
+             ti.severity, ti.confidence_score, ti.threat_actor, ti.malware_family,
+             ti.tags, ti.observation_count, ti.first_seen_at, ti.last_seen_at,
+             ti.expires_at, ti.is_active, ti.metadata, ti.created_at, ti.updated_at,
+             tf.feed_name, tf.feed_slug
+      FROM public.threat_indicators ti
+      LEFT JOIN public.threat_feeds tf ON tf.id = ti.feed_id
+      WHERE ti.id = $1
+        AND ($2::uuid IS NULL AND ti.organization_id IS NULL OR $2::uuid IS NOT NULL AND (ti.organization_id IS NULL OR ti.organization_id = $2));
+    `;
+    const res = await db.query(queryText, [id, orgId]);
+    return res.rows[0] || null;
+  }
+
+  /**
+   * Retrieves feed health summary.
+   *
+   * @param {string|null} [organizationId=null]
+   * @returns {Promise<Object>}
+   */
+  async getFeedHealth(organizationId = null) {
+    const threatFeedService = require('./threatFeedService');
+    return await threatFeedService.getFeedHealth(organizationId);
+  }
+
+  /**
+   * Retrieves feed statistics summary.
+   *
+   * @param {string|null} [organizationId=null]
+   * @returns {Promise<Object>}
+   */
+  async getFeedStatistics(organizationId = null) {
+    const threatFeedService = require('./threatFeedService');
+    return await threatFeedService.getFeedStatistics(organizationId);
+  }
+
+  /**
+   * Retrieves recent incident IOC matches with analyst metadata and tenant isolation.
+   *
+   * @param {string|null} [organizationId=null]
+   * @param {Object} [options={}]
+   * @returns {Promise<Object>} { total, limit, offset, matches }
+   */
+  async getRecentMatches(organizationId = null, options = {}) {
+    const orgId = organizationId || null;
+    const { limit = 50, offset = 0 } = options;
+    const safeLimit = Math.max(1, Math.min(100, parseInt(limit, 10) || 50));
+    const safeOffset = Math.max(0, parseInt(offset, 10) || 0);
+
+    const countQuery = `
+      SELECT COUNT(*)::int AS total
+      FROM public.incident_ioc_matches
+      WHERE ($1::uuid IS NULL OR organization_id = $1);
+    `;
+    const countRes = await db.query(countQuery, [orgId]);
+    const total = countRes.rows[0]?.total || 0;
+
+    const queryText = `
+      SELECT
+        iim.id,
+        iim.incident_id,
+        iim.organization_id,
+        iim.matched_value AS indicator_value,
+        COALESCE(ti.indicator_type, iim.metadata->>'indicator_type', 'unknown') AS indicator_type,
+        iim.reputation_score AS confidence_score,
+        iim.feed_source AS source_feed,
+        iim.matched_at,
+        iim.severity AS threat_level,
+        iim.match_context,
+        inc.threat_type AS incident_threat_type,
+        inc.risk_score AS incident_risk_score,
+        inc.status AS incident_status
+      FROM public.incident_ioc_matches iim
+      LEFT JOIN public.threat_indicators ti ON ti.id = iim.indicator_id
+      LEFT JOIN public.incidents inc ON inc.id = iim.incident_id
+      WHERE ($1::uuid IS NULL OR iim.organization_id = $1)
+      ORDER BY iim.matched_at DESC
+      LIMIT $2 OFFSET $3;
+    `;
+
+    const res = await db.query(queryText, [orgId, safeLimit, safeOffset]);
+
+    return {
+      total,
+      limit: safeLimit,
+      offset: safeOffset,
+      matches: res.rows || []
+    };
+  }
 }
 
 const threatIntelService = new ThreatIntelService();
