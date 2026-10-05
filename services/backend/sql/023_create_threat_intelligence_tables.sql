@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS public.threat_feeds (
   organization_id             UUID NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
   feed_name                   TEXT NOT NULL,
   feed_slug                   TEXT NOT NULL,
-  feed_type                   TEXT NOT NULL CHECK (feed_type IN ('abuseipdb', 'virustotal', 'otx', 'misp', 'stix_taxii', 'csv', 'json_custom')),
+  feed_type                   TEXT NOT NULL CHECK (feed_type IN ('abuseipdb', 'virustotal', 'otx', 'misp', 'stix_taxii', 'csv', 'json_custom', 'text', 'plain_text')),
   feed_url                    TEXT NOT NULL,
   auth_config                 JSONB NOT NULL DEFAULT '{}'::jsonb,
   polling_frequency_minutes   INTEGER NOT NULL DEFAULT 60 CHECK (polling_frequency_minutes >= 5),
