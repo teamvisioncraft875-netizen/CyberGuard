@@ -161,6 +161,16 @@ async function linkIncidents(sourceIdOrObj, targetIdParam, typeParam, confidence
       console.warn('[IncidentGrouping Warning] Non-critical grouping error:', grpErr.message);
     }
 
+    // 7. Automatic Attack Chain Snapshot Generation (Task 4)
+    if (relationshipType === 'attack_chain_step') {
+      try {
+        const attackChainService = require('./attackChainService');
+        await attackChainService.generateSnapshot(sourceId, resolvedOrgId, dbClient);
+      } catch (acErr) {
+        console.warn('[AttackChain Warning] Non-critical snapshot error:', acErr.message);
+      }
+    }
+
     return created;
   };
 
@@ -244,6 +254,26 @@ async function correlateIncident(incidentId, organizationId, client = null) {
       iocsByInc.set(ioc.incident_id, new Set());
     }
     iocsByInc.get(ioc.incident_id).add(ioc.indicator_id);
+  }
+
+  // 4b. Pre-fetch MITRE tactics for progression analysis (Rules AC1-AC4)
+  const mitreRes = await dbClient.query(
+    `SELECT incident_id, technique_id, technique_name
+     FROM public.mitre_mappings
+     WHERE incident_id = ANY($1::uuid[]);`,
+    [allIncidentIds]
+  );
+
+  const tacticsByInc = new Map();
+  const attackChainService = require('./attackChainService');
+  for (const m of mitreRes.rows) {
+    const tac = attackChainService.resolveTactic(m.technique_id, m.technique_name);
+    if (tac) {
+      if (!tacticsByInc.has(m.incident_id)) {
+        tacticsByInc.set(m.incident_id, new Set());
+      }
+      tacticsByInc.get(m.incident_id).add(tac);
+    }
   }
 
   const currentSignals = signalsByInc.get(currentIncident.id) || [];
@@ -417,6 +447,41 @@ async function correlateIncident(incidentId, organizationId, client = null) {
             rule: 'R5',
             rule_name: 'Same infrastructure',
             shared_domains: sharedDomains
+          }
+        });
+        if (edge) createdRelationships.push(edge);
+      }
+    }
+
+    // ====================================================
+    // RULES AC1–AC4: MITRE ATT&CK Progression
+    // Sequence: TA0001 -> TA0002 -> TA0004 -> TA0011
+    // ====================================================
+    const currentTactics = tacticsByInc.get(currentIncident.id) || new Set();
+    const candidateTactics = tacticsByInc.get(candidate.id) || new Set();
+
+    if (currentTactics.size > 0 && candidateTactics.size > 0) {
+      const progression = attackChainService.evaluateProgression({
+        incidentA: currentIncident,
+        tacticsA: Array.from(currentTactics),
+        incidentB: candidate,
+        tacticsB: Array.from(candidateTactics)
+      });
+
+      if (progression && progression.matched) {
+        const edge = await linkIncidents({
+          sourceId: progression.fromId,
+          targetId: progression.toId,
+          type: 'attack_chain_step',
+          confidence: progression.confidence,
+          ruleId: progression.ruleId,
+          organizationId,
+          client: dbClient,
+          metadata: {
+            rule: progression.ruleId,
+            rule_name: `Attack Chain Step (${progression.fromTactic} -> ${progression.toTactic})`,
+            from_tactic: progression.fromTactic,
+            to_tactic: progression.toTactic
           }
         });
         if (edge) createdRelationships.push(edge);
