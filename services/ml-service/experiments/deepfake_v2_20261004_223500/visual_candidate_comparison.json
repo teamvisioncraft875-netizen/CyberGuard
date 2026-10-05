@@ -1,0 +1,142 @@
+[
+  {
+    "name": "Candidate A (Enhanced Attention Pooling Focal)",
+    "architecture": "EnhancedAttentionPooling",
+    "train_time_sec": 11.45,
+    "selected_threshold": 0.75,
+    "val_metrics": {
+      "threshold": 0.75,
+      "accuracy": 0.6506,
+      "balanced_accuracy": 0.7453,
+      "precision": 0.9751,
+      "recall": 0.6251,
+      "specificity": 0.8655,
+      "fpr": 0.1345,
+      "f1": 0.7618,
+      "roc_auc": 0.8089,
+      "pr_auc": 0.974,
+      "confusion_matrix": {
+        "tn": 206,
+        "fp": 32,
+        "fn": 751,
+        "tp": 1252
+      }
+    },
+    "latency_ms": 0.6216,
+    "size_bytes": 1256669,
+    "artifact_path": "D:\\cyberguard project  work su\\CyberGuard\\services\\ml-service\\experiments\\deepfake_v2_20261004_223500\\candidate_a_enhanced_attention_pooling_focal.pt",
+    "sha256": "078d82c74d9cecc6b7ae3562f5246f4af452e8b5373b9b223304e8f1a332ee37"
+  },
+  {
+    "name": "Candidate B (Tri-Pool Temporal Fusion Focal)",
+    "architecture": "TriPoolFusionVisualDetector",
+    "train_time_sec": 12.9,
+    "selected_threshold": 0.75,
+    "val_metrics": {
+      "threshold": 0.75,
+      "accuracy": 0.6444,
+      "balanced_accuracy": 0.74,
+      "precision": 0.9741,
+      "recall": 0.6186,
+      "specificity": 0.8613,
+      "fpr": 0.1387,
+      "f1": 0.7566,
+      "roc_auc": 0.8141,
+      "pr_auc": 0.9749,
+      "confusion_matrix": {
+        "tn": 205,
+        "fp": 33,
+        "fn": 764,
+        "tp": 1239
+      }
+    },
+    "latency_ms": 1.1079,
+    "size_bytes": 1980789,
+    "artifact_path": "D:\\cyberguard project  work su\\CyberGuard\\services\\ml-service\\experiments\\deepfake_v2_20261004_223500\\candidate_b_tri_pool_temporal_fusion_focal.pt",
+    "sha256": "7ae8f7b2436d8b840fa63565714bd0d8519a17306efdf0fbbdae1e8ebd4a6f79"
+  },
+  {
+    "name": "Candidate C (Temporal Delta Residual Focal)",
+    "architecture": "TemporalDeltaVisualDetector",
+    "train_time_sec": 11.93,
+    "selected_threshold": 0.77,
+    "val_metrics": {
+      "threshold": 0.77,
+      "accuracy": 0.6354,
+      "balanced_accuracy": 0.7405,
+      "precision": 0.9759,
+      "recall": 0.6071,
+      "specificity": 0.8739,
+      "fpr": 0.1261,
+      "f1": 0.7485,
+      "roc_auc": 0.8086,
+      "pr_auc": 0.9733,
+      "confusion_matrix": {
+        "tn": 208,
+        "fp": 30,
+        "fn": 787,
+        "tp": 1216
+      }
+    },
+    "latency_ms": 1.2389,
+    "size_bytes": 2245657,
+    "artifact_path": "D:\\cyberguard project  work su\\CyberGuard\\services\\ml-service\\experiments\\deepfake_v2_20261004_223500\\candidate_c_temporal_delta_residual_focal.pt",
+    "sha256": "52447e6961f97721d8f2c82d627ad8e870482ef97fde985e85833cac20cf2eaa"
+  },
+  {
+    "name": "Candidate D (Hybrid Spatio-Temporal Balanced BCE)",
+    "architecture": "HybridSpatioTemporalVisualDetector",
+    "train_time_sec": 12.38,
+    "selected_threshold": 0.55,
+    "val_metrics": {
+      "threshold": 0.55,
+      "accuracy": 0.6296,
+      "balanced_accuracy": 0.728,
+      "precision": 0.9718,
+      "recall": 0.6031,
+      "specificity": 0.8529,
+      "fpr": 0.1471,
+      "f1": 0.7443,
+      "roc_auc": 0.804,
+      "pr_auc": 0.9731,
+      "confusion_matrix": {
+        "tn": 203,
+        "fp": 35,
+        "fn": 795,
+        "tp": 1208
+      }
+    },
+    "latency_ms": 1.5917,
+    "size_bytes": 2770113,
+    "artifact_path": "D:\\cyberguard project  work su\\CyberGuard\\services\\ml-service\\experiments\\deepfake_v2_20261004_223500\\candidate_d_hybrid_spatio_temporal_balanced_bce.pt",
+    "sha256": "042ea36701daae821574475cf3b5ecb0ebdd0addf09bb192e7d5dbc7931220a4"
+  },
+  {
+    "name": "Candidate E (Temporal Transformer Self-Attention Focal)",
+    "architecture": "TransformerTemporalVisualDetector",
+    "train_time_sec": 18.39,
+    "selected_threshold": 0.7,
+    "val_metrics": {
+      "threshold": 0.7,
+      "accuracy": 0.6586,
+      "balanced_accuracy": 0.7461,
+      "precision": 0.974,
+      "recall": 0.635,
+      "specificity": 0.8571,
+      "fpr": 0.1429,
+      "f1": 0.7688,
+      "roc_auc": 0.8131,
+      "pr_auc": 0.9746,
+      "confusion_matrix": {
+        "tn": 204,
+        "fp": 34,
+        "fn": 731,
+        "tp": 1272
+      }
+    },
+    "latency_ms": 1.9266,
+    "size_bytes": 5610243,
+    "artifact_path": "D:\\cyberguard project  work su\\CyberGuard\\services\\ml-service\\experiments\\deepfake_v2_20261004_223500\\candidate_e_temporal_transformer_self_attention_focal.pt",
+    "sha256": "37396d6bd41b2d3f0df4dd555bfe91b9dc0b350728a8aef4024985a6a5db7943"
+  }
+]

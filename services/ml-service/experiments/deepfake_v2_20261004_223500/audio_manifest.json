@@ -1,0 +1,38 @@
+{
+  "dataset_name": "Curated Deepfake Audio Benchmark",
+  "total_samples": 240,
+  "audio_standardization": "16 kHz mono float32 normalized",
+  "splits": {
+    "train": {
+      "count": 140,
+      "genuine": 70,
+      "manipulated": 70,
+      "unique_speakers": 47
+    },
+    "validation": {
+      "count": 50,
+      "genuine": 25,
+      "manipulated": 25,
+      "unique_speakers": 23
+    },
+    "test": {
+      "count": 50,
+      "genuine": 25,
+      "manipulated": 25,
+      "unique_speakers": 17
+    }
+  },
+  "manipulation_types": {
+    "none": 120,
+    "ElevenLabs Neural TTS": 41,
+    "Amazon Polly Concatenative/Neural": 36,
+    "Luvvoice TTS": 18,
+    "Kokoro / HuggingFace TTS": 13,
+    "Hume AI Expressive Voice": 12
+  },
+  "speaker_overlap": {
+    "train_val": 0,
+    "train_test": 0,
+    "val_test": 0
+  }
+}

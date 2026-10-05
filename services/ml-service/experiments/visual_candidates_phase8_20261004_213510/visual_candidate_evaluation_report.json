@@ -1,0 +1,151 @@
+{
+  "timestamp": "2026-10-05T04:35:34Z",
+  "phase": "PHASE 8.2 \u2014 VISUAL MODEL CANDIDATE TRAINING & VALIDATION",
+  "device": "cuda (NVIDIA GeForce RTX 2050)",
+  "pytorch_version": "2.14.0+cu126",
+  "candidates_evaluated": [
+    {
+      "name": "Candidate A (Balanced Attention Pooling)",
+      "best_epoch": 5,
+      "train_time_sec": 5.83,
+      "selected_threshold": 0.58,
+      "val_metrics": {
+        "threshold": 0.58,
+        "accuracy": 0.6283,
+        "balanced_accuracy": 0.7347,
+        "precision": 0.9748,
+        "recall": 0.5996,
+        "specificity": 0.8697,
+        "fpr": 0.1303,
+        "f1": 0.7425,
+        "roc_auc": 0.7898,
+        "pr_auc": 0.9714,
+        "confusion_matrix": {
+          "tn": 207,
+          "fp": 31,
+          "fn": 802,
+          "tp": 1201
+        }
+      },
+      "latency_ms": 0.2358,
+      "size_bytes": 1648057
+    },
+    {
+      "name": "Candidate B (Dual Temporal Fusion Unweighted)",
+      "best_epoch": 8,
+      "train_time_sec": 5.63,
+      "selected_threshold": 0.95,
+      "val_metrics": {
+        "threshold": 0.95,
+        "accuracy": 0.6212,
+        "balanced_accuracy": 0.7436,
+        "precision": 0.98,
+        "recall": 0.5881,
+        "specificity": 0.8992,
+        "fpr": 0.1008,
+        "f1": 0.7351,
+        "roc_auc": 0.7947,
+        "pr_auc": 0.9723,
+        "confusion_matrix": {
+          "tn": 214,
+          "fp": 24,
+          "fn": 825,
+          "tp": 1178
+        }
+      },
+      "latency_ms": 0.3734,
+      "size_bytes": 2713587
+    },
+    {
+      "name": "Candidate C (Dual Temporal Fusion Balanced)",
+      "best_epoch": 6,
+      "train_time_sec": 5.66,
+      "selected_threshold": 0.5099999999999999,
+      "val_metrics": {
+        "threshold": 0.51,
+        "accuracy": 0.6292,
+        "balanced_accuracy": 0.7352,
+        "precision": 0.9749,
+        "recall": 0.6006,
+        "specificity": 0.8697,
+        "fpr": 0.1303,
+        "f1": 0.7433,
+        "roc_auc": 0.7947,
+        "pr_auc": 0.9721,
+        "confusion_matrix": {
+          "tn": 207,
+          "fp": 31,
+          "fn": 800,
+          "tp": 1203
+        }
+      },
+      "latency_ms": 0.3176,
+      "size_bytes": 2713587
+    }
+  ],
+  "winning_candidate": {
+    "name": "Candidate B (Dual Temporal Fusion Unweighted)",
+    "selected_threshold": 0.95,
+    "val_metrics": {
+      "threshold": 0.95,
+      "accuracy": 0.6212,
+      "balanced_accuracy": 0.7436,
+      "precision": 0.98,
+      "recall": 0.5881,
+      "specificity": 0.8992,
+      "fpr": 0.1008,
+      "f1": 0.7351,
+      "roc_auc": 0.7947,
+      "pr_auc": 0.9723,
+      "confusion_matrix": {
+        "tn": 214,
+        "fp": 24,
+        "fn": 825,
+        "tp": 1178
+      }
+    },
+    "final_test_metrics": {
+      "threshold": 0.95,
+      "accuracy": 0.6186,
+      "balanced_accuracy": 0.7368,
+      "precision": 0.9775,
+      "recall": 0.5866,
+      "specificity": 0.887,
+      "fpr": 0.113,
+      "f1": 0.7332,
+      "roc_auc": 0.7931,
+      "pr_auc": 0.9717,
+      "confusion_matrix": {
+        "tn": 212,
+        "fp": 27,
+        "fn": 828,
+        "tp": 1175
+      }
+    },
+    "latency_ms": 0.3189,
+    "size_bytes": 2713587,
+    "artifact_path": "D:\\cyberguard project  work su\\CyberGuard\\services\\ml-service\\experiments\\visual_candidates_phase8_20261004_213510\\candidate_b_(dual_temporal_fusion_unweighted).pt",
+    "sha256": "3a7eeeeef8caab770abcc0bdd169bbb6995f825074dcb79482968329d3b0dd1a"
+  },
+  "baseline_metrics": {
+    "model": "AttentionPoolingVisualDetector (Baseline v1.0.0)",
+    "threshold": 0.64,
+    "accuracy": 0.6503,
+    "balanced_accuracy": 0.7435,
+    "precision": 0.9743,
+    "recall": 0.6251,
+    "specificity": 0.8619,
+    "fpr": 0.1381,
+    "f1": 0.7616,
+    "roc_auc": 0.7966,
+    "pr_auc": 0.9722,
+    "confusion_matrix": {
+      "tn": 206,
+      "fp": 33,
+      "fn": 751,
+      "tp": 1252
+    },
+    "latency_ms": 0.588,
+    "size_bytes": 1647761
+  }
+}

@@ -1,0 +1,201 @@
+{
+  "title": "CYBERGUARD Phase 6 Final Cross-Engine ML Evaluation Metrics",
+  "generated_at": "2026-10-04T20:36:00Z",
+  "version": "1.0.0",
+  "engines": {
+    "phishing": {
+      "engine_name": "Phishing & Social Engineering Detection Engine",
+      "model_name": "Calibrated_LinearSVC",
+      "model_version": "v1.0.0",
+      "artifact_path": "services/ml-service/app/models/phishing/phishing_classifier_v1.0.0.joblib",
+      "artifact_sha256": "0a3f4ce38a9df04d9b852752023014b31a9748beddf8da7c339ab15b4c97c72b",
+      "vectorizer_path": "services/ml-service/app/models/phishing/phishing_vectorizer_v1.0.0.joblib",
+      "vectorizer_sha256": "58b6b929e4926acbbc6dd3d72d80276b3f2cbd57e1bb165adb59ccc69a34ddfe",
+      "model_size_bytes": 537887,
+      "model_size_mb": 0.51,
+      "modality": "Text (Email & SMS)",
+      "dataset_name": "Nazario, Nigerian Fraud, CEAS 08, Enron, SpamAssassin",
+      "total_dataset_samples": 43680,
+      "test_partition_samples": 4368,
+      "test_class_distribution": {
+        "benign": 3719,
+        "phishing": 649
+      },
+      "operating_threshold": 0.36,
+      "metrics": {
+        "accuracy": 0.9959,
+        "balanced_accuracy": 0.9893,
+        "precision": 0.9922,
+        "recall": 0.9800,
+        "specificity": 0.9987,
+        "fpr": 0.0013,
+        "f1": 0.9860,
+        "roc_auc": 0.9987,
+        "pr_auc": 0.9964,
+        "confusion_matrix": {
+          "tn": 3714,
+          "fp": 5,
+          "fn": 13,
+          "tp": 636
+        }
+      },
+      "inference_latency_ms": 2.5088,
+      "production_readiness": "GREEN"
+    },
+    "malicious_url": {
+      "engine_name": "Malicious URL Detection Engine",
+      "model_name": "HistGradientBoostingClassifier",
+      "model_version": "v1.0.0",
+      "artifact_path": "services/ml-service/app/models/url/malicious_url_classifier_v1.0.0.joblib",
+      "artifact_sha256": "c657040891cb2ba4981ef56492713f8d2f5900e0721ad2c21424dfe17c9a6d12",
+      "model_size_bytes": 241046,
+      "model_size_mb": 0.23,
+      "modality": "URL Strings (Lexical, Structural, Brand Impersonation)",
+      "dataset_name": "URLHaus, OpenPhish, PhishTank, Alexa/Tranco, Corporate Correspondence",
+      "total_dataset_samples": 125839,
+      "test_partition_samples": 8720,
+      "test_class_distribution": {
+        "benign": 3394,
+        "malicious": 5326
+      },
+      "operating_threshold": 0.74,
+      "metrics": {
+        "accuracy": 0.8599,
+        "balanced_accuracy": 0.8788,
+        "precision": 0.9719,
+        "recall": 0.7935,
+        "specificity": 0.9641,
+        "fpr": 0.0359,
+        "f1": 0.8737,
+        "roc_auc": 0.9635,
+        "pr_auc": 0.9767,
+        "confusion_matrix": {
+          "tn": 3272,
+          "fp": 122,
+          "fn": 1100,
+          "tp": 4226
+        }
+      },
+      "inference_latency_ms": 2.9307,
+      "production_readiness": "GREEN"
+    },
+    "malware": {
+      "engine_name": "Static PE Malware Detection Engine",
+      "model_name": "LightGBM_GBDT (Candidate B Regularized)",
+      "model_version": "v1.1.0",
+      "artifact_path": "services/ml-service/app/models/malware/ember_model_2018.txt",
+      "artifact_sha256": "2efaf2366ec824020feb953a29f72dec287efc530280b607a38181865d78ae12",
+      "model_size_bytes": 97563714,
+      "model_size_mb": 93.04,
+      "modality": "Binary PE32/PE32+ (2,381-dim Static Feature Vector)",
+      "dataset_name": "EMBER 2018 v2 Benchmark",
+      "total_dataset_samples": 800000,
+      "test_partition_samples": 200000,
+      "test_class_distribution": {
+        "benign": 100000,
+        "malware": 100000
+      },
+      "operating_threshold": 0.5590,
+      "metrics": {
+        "accuracy": 0.97623,
+        "balanced_accuracy": 0.97623,
+        "precision": 0.98155,
+        "recall": 0.97071,
+        "specificity": 0.98175,
+        "fpr": 0.01825,
+        "f1": 0.976098,
+        "roc_auc": 0.99600224,
+        "pr_auc": 0.99659172,
+        "confusion_matrix": {
+          "tn": 98175,
+          "fp": 1825,
+          "fn": 2929,
+          "tp": 97071
+        }
+      },
+      "inference_latency_ms": 0.5607,
+      "production_readiness": "GREEN"
+    },
+    "deepfake_visual": {
+      "engine_name": "Visual Deepfake Detection Engine",
+      "model_name": "AttentionPoolingVisualDetector + 2D FFT Analyzer",
+      "model_version": "v1.0.0",
+      "artifact_path": "services/ml-service/app/models/deepfake_visual_classifier.pt",
+      "artifact_sha256": "d1ae1d66f72196c8b4e679edd319817dfae8b479ac7aa6792b0b52934b0bc5b3",
+      "model_size_bytes": 1647761,
+      "model_size_mb": 1.57,
+      "modality": "Image & Video Frames (CLIP ViT-H/14 embeddings + 2D FFT)",
+      "dataset_name": "DFDC Shield 2026 (DFDC-10 + FF++ C23 + Celeb-DF v2)",
+      "total_dataset_samples": 14941,
+      "test_partition_samples": 2242,
+      "test_class_distribution": {
+        "genuine": 239,
+        "manipulated": 2003
+      },
+      "operating_threshold": 0.6400,
+      "metrics": {
+        "accuracy": 0.6503,
+        "balanced_accuracy": 0.7435,
+        "precision": 0.9743,
+        "recall": 0.6251,
+        "specificity": 0.8619,
+        "fpr": 0.1381,
+        "f1": 0.7616,
+        "roc_auc": 0.7966,
+        "pr_auc": 0.9722,
+        "confusion_matrix": {
+          "tn": 206,
+          "fp": 33,
+          "fn": 751,
+          "tp": 1252
+        }
+      },
+      "inference_latency_ms": 0.5880,
+      "production_readiness": "YELLOW"
+    },
+    "deepfake_audio": {
+      "engine_name": "Audio Deepfake & Voice Cloning Engine",
+      "model_name": "LogisticRegression (13 Acoustic Features)",
+      "model_version": "v1.0.0",
+      "artifact_path": "services/ml-service/app/models/deepfake_audio_classifier.joblib",
+      "artifact_sha256": "1a9c3a03b3b596e06b087e6718ed0e52348105aa0cc5598b36ee58778a2e73c7",
+      "model_size_bytes": 1503,
+      "model_size_mb": 0.001,
+      "modality": "Audio (16 kHz Mono Standardized Speech)",
+      "dataset_name": "Curated Deepfake Audio Benchmark (87 disjoint sources)",
+      "total_dataset_samples": 240,
+      "test_partition_samples": 50,
+      "test_class_distribution": {
+        "genuine": 25,
+        "manipulated": 25
+      },
+      "operating_threshold": 0.5000,
+      "metrics": {
+        "accuracy": 0.7200,
+        "balanced_accuracy": 0.7200,
+        "precision": 0.7200,
+        "recall": 0.7200,
+        "specificity": 0.7200,
+        "fpr": 0.2800,
+        "f1": 0.7200,
+        "roc_auc": 0.7856,
+        "pr_auc": 0.8317,
+        "confusion_matrix": {
+          "tn": 18,
+          "fp": 7,
+          "fn": 7,
+          "tp": 18
+        }
+      },
+      "inference_latency_ms": 86.12,
+      "production_readiness": "YELLOW"
+    }
+  },
+  "overall_verification": {
+    "total_ml_tests": 230,
+    "tests_passed": 230,
+    "pass_rate_percent": 100.0,
+    "synthetic_samples_used": 0,
+    "test_set_isolation": "PRESERVED"
+  }
+}

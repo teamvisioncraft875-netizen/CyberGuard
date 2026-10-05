@@ -189,4 +189,7 @@ datasets/Phishing/
 
 # Large ML model artifact - keep locally, do not commit
 services/ml-service/app/models/malware/ember_model_2018.txt
+services/ml-service/app/models/malware/*.bak*
+services/ml-service/experiments/**/model.txt
+*.npy
 *.flac

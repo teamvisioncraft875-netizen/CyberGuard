@@ -1,0 +1,38 @@
+{
+  "dataset_name": "DFDC Shield 2026 Benchmark",
+  "representation": "CLIP ViT-B/16 (20 frames x 1024 dims)",
+  "partitions": {
+    "train": {
+      "samples": 10458,
+      "manipulated": 9346,
+      "genuine": 1112,
+      "imbalance_ratio": 8.4,
+      "shape": [
+        10458,
+        20,
+        1024
+      ]
+    },
+    "validation": {
+      "samples": 2241,
+      "manipulated": 2003,
+      "genuine": 238,
+      "imbalance_ratio": 8.42,
+      "shape": [
+        2241,
+        20,
+        1024
+      ]
+    },
+    "frozen_test": {
+      "samples": 2242,
+      "status": "QUARANTINED_IMMUTABLE"
+    }
+  },
+  "integrity": {
+    "train_nans": 0,
+    "val_nans": 0,
+    "train_infs": 0,
+    "val_infs": 0
+  }
+}
