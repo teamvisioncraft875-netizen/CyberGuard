@@ -45,6 +45,23 @@ const ResponseAction = {
     target_device_id = null
   }, client = null) {
     const dbClient = client || db;
+    const targetJsonStr = typeof target === 'string' ? target : JSON.stringify(target || {});
+
+    // 1. Dedup check: Query existing active response action
+    const existingCheckSql = `
+      SELECT * FROM public.response_actions
+      WHERE incident_id = $1
+        AND action_type = $2
+        AND target::text = $3
+        AND status NOT IN ('rejected', 'failed', 'expired', 'rolled_back')
+      LIMIT 1;
+    `;
+    const existingRes = await dbClient.query(existingCheckSql, [incident_id, action_type, targetJsonStr]);
+    if (existingRes.rows && existingRes.rows.length > 0) {
+      return existingRes.rows[0];
+    }
+
+    // 2. Insert with ON CONFLICT DO NOTHING using the partial unique index
     const text = `
       INSERT INTO public.response_actions (
         organization_id,
@@ -65,6 +82,9 @@ const ResponseAction = {
         target_device_id
       )
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), $12, $13, $14, $15)
+      ON CONFLICT (incident_id, action_type, (target::text))
+      WHERE status NOT IN ('rejected', 'failed', 'expired', 'rolled_back')
+      DO NOTHING
       RETURNING *;
     `;
     const res = await dbClient.query(text, [
@@ -77,14 +97,21 @@ const ResponseAction = {
       requested_by_id,
       approved_by_id,
       approved_at,
-      typeof target === 'string' ? target : JSON.stringify(target || {}),
+      targetJsonStr,
       result ? (typeof result === 'string' ? result : JSON.stringify(result)) : null,
       scheduled_at,
       executed_at,
       expires_at,
       target_device_id
     ]);
-    return res.rows[0];
+
+    if (res.rows && res.rows.length > 0) {
+      return res.rows[0];
+    }
+
+    // 3. Fallback: If ON CONFLICT prevented insert, return the newly created row
+    const fallbackRes = await dbClient.query(existingCheckSql, [incident_id, action_type, targetJsonStr]);
+    return fallbackRes.rows[0] || null;
   },
 
   /**
