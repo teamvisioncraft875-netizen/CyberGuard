@@ -184,6 +184,106 @@ class ThreatIntelService {
   }
 
   /**
+   * Looks up a batch of IOCs using a Redis-first strategy and a single SQL query for cache misses.
+   *
+   * @param {Array<{ type: string, value: string }>} iocs
+   * @param {Object} [options={}]
+   * @param {string|null} [options.organizationId=null]
+   * @param {boolean} [options.bypassCache=false]
+   * @param {Object|null} [options.client=null]
+   * @returns {Promise<Map<string, Object>>} Map keyed by `${norm.type}:${norm.value}` -> indicator
+   */
+  async lookupBatchIOCs(iocs, options = {}) {
+    const { organizationId = null, bypassCache = false, client = null } = options;
+    const dbClient = client || db;
+    const results = new Map();
+
+    if (!Array.isArray(iocs) || iocs.length === 0) {
+      return results;
+    }
+
+    // 1. Normalize and deduplicate input items
+    const normalizedMap = new Map();
+    for (const item of iocs) {
+      if (!item) continue;
+      const type = item.type || item.indicator_type;
+      const val = item.value || item.indicator_value;
+      const norm = normalizeIOC(type, val);
+      if (norm) {
+        const key = `${norm.type}:${norm.value}`;
+        if (!normalizedMap.has(key)) {
+          normalizedMap.set(key, norm);
+        }
+      }
+    }
+
+    if (normalizedMap.size === 0) {
+      return results;
+    }
+
+    const missingIOCs = [];
+
+    // 2. Check Cache first
+    if (!bypassCache) {
+      for (const [key, norm] of normalizedMap.entries()) {
+        let cached = null;
+        if (organizationId) {
+          cached = await this.getCachedIOC(norm.type, norm.value, organizationId);
+        }
+        if (!cached) {
+          cached = await this.getCachedIOC(norm.type, norm.value, null);
+        }
+
+        if (cached) {
+          results.set(key, { ...cached, _cached: true });
+        } else {
+          missingIOCs.push(norm);
+        }
+      }
+    } else {
+      missingIOCs.push(...normalizedMap.values());
+    }
+
+    if (missingIOCs.length === 0) {
+      return results;
+    }
+
+    // 3. Batch DB Lookup for cache misses
+    try {
+      const distinctValues = Array.from(new Set(missingIOCs.map((i) => i.value)));
+      const queryText = `
+        SELECT ti.id, ti.organization_id, ti.feed_id, ti.indicator_type, ti.indicator_value,
+               ti.threat_actor, ti.malware_family, ti.severity, ti.confidence_score, ti.tags,
+               ti.observation_count, ti.first_seen_at, ti.last_seen_at, ti.expires_at, ti.is_active, ti.metadata,
+               tf.feed_name, tf.feed_slug
+        FROM public.threat_indicators ti
+        LEFT JOIN public.threat_feeds tf ON tf.id = ti.feed_id
+        WHERE ti.is_active = true
+          AND (ti.organization_id IS NULL OR ti.organization_id = $1)
+          AND ti.indicator_value = ANY($2::text[])
+        ORDER BY (ti.organization_id IS NOT NULL) DESC, ti.confidence_score DESC;
+      `;
+
+      const res = await dbClient.query(queryText, [organizationId, distinctValues]);
+      if (res.rows && res.rows.length > 0) {
+        for (const row of res.rows) {
+          const normType = (row.indicator_type === 'ipv4' || row.indicator_type === 'ipv6') ? 'ip' : row.indicator_type;
+          const key = `${normType}:${row.indicator_value}`;
+
+          if (!results.has(key)) {
+            results.set(key, row);
+            await this.cacheIOC(normType, row.indicator_value, row, DEFAULT_CACHE_TTL_SECONDS, row.organization_id);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('[threatIntelService.lookupBatchIOCs] Batch lookup error:', err.message);
+    }
+
+    return results;
+  }
+
+  /**
    * Ingests or updates an indicator in the threat_indicators table.
    *
    * @param {Object} data

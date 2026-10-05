@@ -87,7 +87,7 @@ CREATE INDEX IF NOT EXISTS idx_threat_indicators_expires
 -- 3. Incident IOC Matches (Correlation Junction)
 CREATE TABLE IF NOT EXISTS public.incident_ioc_matches (
   id                          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  organization_id             UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  organization_id             UUID NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
   incident_id                 UUID NOT NULL REFERENCES public.incidents(id) ON DELETE CASCADE,
   indicator_id                UUID NOT NULL REFERENCES public.threat_indicators(id) ON DELETE RESTRICT,
   signal_id                   UUID NULL REFERENCES public.detection_signals(id) ON DELETE SET NULL,

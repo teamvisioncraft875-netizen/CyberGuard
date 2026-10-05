@@ -6,6 +6,7 @@ const RecommendedAction = require('../models/RecommendedAction');
 const GuardianLink = require('../models/GuardianLink');
 const MitreMapping = require('../models/MitreMapping');
 const PolicyEngine = require('./PolicyEngine');
+const incidentThreatIntelService = require('./incidentThreatIntelService');
 
 // Keys representing context/metadata rather than individual detection indicators
 const METADATA_KEYS = new Set(['url', 'file_url', 'media_type', 'model_type', 'source_type']);
@@ -87,14 +88,36 @@ async function persistDetectionIncident({
   let dbError = null;
 
   const runInsert = async (dbClient) => {
+    // 0. Threat Intelligence Correlation & Risk Boost (pre-insert)
+    let threatIntelEnrichment = null;
+    let finalRiskScore = riskScore;
+    let finalRiskLevel = riskLevel;
+
+    try {
+      threatIntelEnrichment = await incidentThreatIntelService.enrichIncidentPreInsert({
+        threatType,
+        sourceType,
+        mlResult,
+        organizationId: effectiveUser.organization_id || null,
+        client: dbClient
+      });
+
+      if (threatIntelEnrichment) {
+        finalRiskScore = threatIntelEnrichment.enriched_risk_score;
+        finalRiskLevel = threatIntelEnrichment.enriched_risk_level || riskLevel;
+      }
+    } catch (tiErr) {
+      console.warn('[persistDetectionIncident Threat Intel Warning]', tiErr.message);
+    }
+
     // Insert into incidents
     const newIncident = await Incident.create({
       user_id: effectiveUser.id || null,
       organization_id: effectiveUser.organization_id || null,
       threat_type: threatType,
       source_type: sourceType,
-      risk_level: riskLevel,
-      risk_score: riskScore,
+      risk_level: finalRiskLevel,
+      risk_score: finalRiskScore,
       explanation: mlResult.explanation || '',
       status: 'open'
     }, dbClient);
@@ -114,6 +137,20 @@ async function persistDetectionIncident({
       await DetectionSignal.createMany(signalsToInsert, dbClient);
     }
 
+    // Persist incident_ioc_matches within same transaction
+    if (threatIntelEnrichment && threatIntelEnrichment.matches && threatIntelEnrichment.matches.length > 0) {
+      try {
+        await incidentThreatIntelService.persistIncidentIOCMatches(
+          newIncident.id,
+          effectiveUser.organization_id || null,
+          threatIntelEnrichment.matches,
+          dbClient
+        );
+      } catch (matchErr) {
+        console.warn('[persistDetectionIncident Match Persistence Warning]', matchErr.message);
+      }
+    }
+
     // Insert into recommended_actions
     const actionsToInsert = recommendedActions.map((action) => ({
       incident_id: newIncident.id,
@@ -122,6 +159,16 @@ async function persistDetectionIncident({
     }));
     if (actionsToInsert.length > 0) {
       await RecommendedAction.createMany(actionsToInsert, dbClient);
+    }
+
+    // Attach threat intelligence enrichment metadata to returned object
+    if (threatIntelEnrichment) {
+      newIncident.threat_intel = threatIntelEnrichment.threat_intel;
+      newIncident.ioc_matches = threatIntelEnrichment.matches;
+    }
+
+    if (newIncident && newIncident.risk_score !== undefined && newIncident.risk_score !== null) {
+      newIncident.risk_score = Number(newIncident.risk_score);
     }
 
     return newIncident;
@@ -166,7 +213,9 @@ async function persistDetectionIncident({
         status: incident.status,
         created_at: incident.created_at,
         recommended_actions: recommendedActions,
-        signals: mlResult.signals || {}
+        signals: mlResult.signals || {},
+        threat_intel: incident.threat_intel || null,
+        ioc_matches: incident.ioc_matches || []
       };
 
       // Construct deduplicated set of authorized rooms (user, tenant org, active guardians)
