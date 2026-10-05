@@ -7,6 +7,7 @@ const GuardianLink = require('../models/GuardianLink');
 const MitreMapping = require('../models/MitreMapping');
 const PolicyEngine = require('./PolicyEngine');
 const incidentDeduplicationService = require('./incidentDeduplicationService');
+const incidentCorrelationService = require('./incidentCorrelationService');
 const { log: auditLog, AUDIT_ACTIONS } = require('./auditService');
 
 // Keys representing context/metadata rather than individual detection indicators
@@ -296,6 +297,16 @@ async function persistDetectionIncident({
   }).catch((policyErr) => {
     console.error('[PolicyEngine Background Evaluation Error]', policyErr.message);
   });
+
+  // 4. Incident Correlation Engine — Correlate with historical open incidents (Task 2)
+  // Wrapped in try/catch: correlation failures must NEVER fail incident creation
+  if (incident && incident.id && incident.organization_id) {
+    try {
+      await incidentCorrelationService.correlateIncident(incident.id, incident.organization_id);
+    } catch (corrErr) {
+      console.warn('[IncidentCorrelation Warning] Non-critical correlation error:', corrErr.message);
+    }
+  }
 
   if (dbError && process.env.NODE_ENV !== 'test' && process.env.STRICT_DB === 'true') {
     throw dbError;

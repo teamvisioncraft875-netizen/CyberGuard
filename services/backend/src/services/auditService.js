@@ -30,7 +30,11 @@ const AUDIT_ACTIONS = Object.freeze({
   ATTACK_SURFACE_SNAPSHOT_TRUNCATED: 'attack_surface_snapshot_truncated',
   ATTACK_SURFACE_EXPOSURE_RESOLVED: 'attack_surface_exposure_resolved',
   INCIDENT_DEDUPLICATED: 'incident_deduplicated',
-  INCIDENT_CONSOLIDATED: 'incident_consolidated'
+  INCIDENT_CONSOLIDATED: 'incident_consolidated',
+  INCIDENT_CORRELATED: 'INCIDENT_CORRELATED',
+  INCIDENT_RELATIONSHIP_CREATED: 'INCIDENT_RELATIONSHIP_CREATED',
+  incident_correlated: 'INCIDENT_CORRELATED',
+  incident_relationship_created: 'INCIDENT_RELATIONSHIP_CREATED'
 });
 
 /**
