@@ -24,6 +24,17 @@ class ReputationService {
       virustotal: { failures: 0, state: 'CLOSED', nextAttemptAt: 0 },
       safebrowsing: { failures: 0, state: 'CLOSED', nextAttemptAt: 0 }
     };
+
+    // Reputation provider analytics metrics
+    this.metrics = {
+      virustotal_queries: 0,
+      abuseipdb_queries: 0,
+      safebrowsing_queries: 0,
+      cache_hits: 0,
+      cache_misses: 0,
+      total_query_time_ms: 0,
+      total_queries: 0
+    };
   }
 
   // ==========================================
@@ -106,6 +117,7 @@ class ReputationService {
       if (redis.isConnected()) {
         const cached = await redis.get(cacheKey);
         if (cached) {
+          this.metrics.cache_hits++;
           const parsed = JSON.parse(cached);
           parsed._cached = true;
           return parsed;
@@ -115,16 +127,20 @@ class ReputationService {
         if (entry) {
           if (entry.expiresAt && Date.now() > entry.expiresAt) {
             this.fallbackCache.delete(cacheKey);
+            this.metrics.cache_misses++;
             return null;
           }
+          this.metrics.cache_hits++;
           const parsed = JSON.parse(entry.payload);
           parsed._cached = true;
           return parsed;
         }
       }
+      this.metrics.cache_misses++;
       return null;
     } catch (err) {
       console.warn(`[reputationService.getCachedReputation] Cache read error for ${cacheKey}:`, err.message);
+      this.metrics.cache_misses++;
       return null;
     }
   }
@@ -161,6 +177,12 @@ class ReputationService {
       return null;
     }
 
+    const providerKey = `${provider}_queries`;
+    if (this.metrics[providerKey] !== undefined) {
+      this.metrics[providerKey]++;
+    }
+
+    const startTime = Date.now();
     const timeoutMs = options.timeoutMs || DEFAULT_TIMEOUT_MS;
     let attempt = 0;
     let lastError = null;
@@ -175,6 +197,10 @@ class ReputationService {
           signal: controller.signal
         });
         clearTimeout(timer);
+
+        const elapsed = Date.now() - startTime;
+        this.metrics.total_query_time_ms += elapsed;
+        this.metrics.total_queries++;
 
         if (response.ok) {
           this.recordSuccess(provider);
@@ -199,9 +225,38 @@ class ReputationService {
       }
     }
 
+    const elapsed = Date.now() - startTime;
+    this.metrics.total_query_time_ms += elapsed;
+    this.metrics.total_queries++;
+
     this.recordFailure(provider);
     console.warn(`[reputationService] ${provider} lookup failed after ${retries + 1} attempts:`, lastError?.message);
     return null;
+  }
+
+  /**
+   * Returns reputation provider metrics and cache performance.
+   *
+   * @returns {{
+   *   virustotal_queries: number,
+   *   abuseipdb_queries: number,
+   *   safebrowsing_queries: number,
+   *   cache_hits: number,
+   *   cache_misses: number,
+   *   avg_provider_response_time: number
+   * }}
+   */
+  getMetrics() {
+    return {
+      virustotal_queries: this.metrics.virustotal_queries,
+      abuseipdb_queries: this.metrics.abuseipdb_queries,
+      safebrowsing_queries: this.metrics.safebrowsing_queries,
+      cache_hits: this.metrics.cache_hits,
+      cache_misses: this.metrics.cache_misses,
+      avg_provider_response_time: this.metrics.total_queries > 0
+        ? Math.round(this.metrics.total_query_time_ms / this.metrics.total_queries)
+        : 0
+    };
   }
 
   // ==========================================
@@ -526,6 +581,13 @@ class ReputationService {
       return await this.lookupHash(norm.value, options);
     }
     return null;
+  }
+
+  /**
+   * Universal lookup convenience helper.
+   */
+  async lookup(value, type = 'ip', options = {}) {
+    return this.lookupIOC(type, value, options);
   }
 }
 

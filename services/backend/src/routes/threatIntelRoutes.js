@@ -3,6 +3,7 @@ const auth = require('../middlewares/auth');
 const roleCheck = require('../middlewares/roleCheck');
 const { generalLimiter } = require('../middlewares/rateLimiter');
 const threatIntelController = require('../controllers/threatIntelController');
+const threatIntelAnalyticsRoutes = require('./threatIntelAnalyticsRoutes');
 
 const router = express.Router();
 
@@ -10,6 +11,9 @@ const router = express.Router();
 router.use(auth);
 router.use(roleCheck(['admin', 'analyst']));
 router.use(generalLimiter);
+
+// Analytics & Executive Reporting sub-routes (/api/v1/threat-intel/analytics/*)
+router.use('/analytics', threatIntelAnalyticsRoutes);
 
 // Threat Intelligence API endpoints
 router.get('/dashboard', threatIntelController.getDashboard);

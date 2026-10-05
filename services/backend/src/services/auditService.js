@@ -37,7 +37,9 @@ const AUDIT_ACTIONS = Object.freeze({
   THREAT_FEED_HEALTH_VIEWED: 'threat_feed_health_viewed',
   THREAT_POLICY_TRIGGERED: 'threat_policy_triggered',
   THREAT_ACTION_PROPOSED: 'threat_action_proposed',
-  THREAT_ACTION_SUPPRESSED_DUPLICATE: 'threat_action_suppressed_duplicate'
+  THREAT_ACTION_SUPPRESSED_DUPLICATE: 'threat_action_suppressed_duplicate',
+  THREAT_ANALYTICS_VIEWED: 'threat_analytics_viewed',
+  THREAT_EXECUTIVE_REPORT_VIEWED: 'threat_executive_report_viewed'
 });
 
 /**
