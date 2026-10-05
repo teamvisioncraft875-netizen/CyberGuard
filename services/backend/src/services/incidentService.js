@@ -6,6 +6,8 @@ const RecommendedAction = require('../models/RecommendedAction');
 const GuardianLink = require('../models/GuardianLink');
 const MitreMapping = require('../models/MitreMapping');
 const PolicyEngine = require('./PolicyEngine');
+const incidentDeduplicationService = require('./incidentDeduplicationService');
+const { log: auditLog, AUDIT_ACTIONS } = require('./auditService');
 
 // Keys representing context/metadata rather than individual detection indicators
 const METADATA_KEYS = new Set(['url', 'file_url', 'media_type', 'model_type', 'source_type']);
@@ -83,11 +85,83 @@ async function persistDetectionIncident({
     : (FALLBACK_SCORES[riskLevel] ?? 50);
 
   const effectiveUser = user || {};
+  const organizationId = effectiveUser.organization_id || null;
+  const deviceId = effectiveUser.device_id || mlResult?.details?.device_id || mlResult?.signals?.device_id || null;
+
+  // 1. Generate Deterministic Fingerprint
+  const fingerprint = incidentDeduplicationService.generateFingerprint({
+    organization_id: organizationId,
+    threat_type: threatType,
+    user_id: effectiveUser.id || null,
+    device_id: deviceId,
+    signals: mlResult?.signals || {},
+    details: mlResult?.details || {},
+    ...mlResult?.details
+  });
+
+  const windowMinutes = incidentDeduplicationService.getDedupWindow(threatType);
+
+  // 2. Pre-Insert Duplicate Check
+  try {
+    const { isDuplicate, incident: existingIncident } = await incidentDeduplicationService.checkDuplicate({
+      organizationId,
+      fingerprint,
+      windowMinutes,
+      client
+    });
+
+    if (isDuplicate && existingIncident) {
+      // 3. Consolidate Existing Incident
+      const consolidated = await incidentDeduplicationService.consolidateIncident({
+        incidentId: existingIncident.id,
+        client
+      });
+
+      // Write audit logs
+      auditLog({
+        organization_id: organizationId,
+        user_id: effectiveUser.id || null,
+        actor_type: 'system_guard',
+        action: AUDIT_ACTIONS.INCIDENT_DEDUPLICATED,
+        resource_type: 'incident',
+        resource_id: existingIncident.id,
+        details: {
+          incident_id: existingIncident.id,
+          fingerprint,
+          occurrence_count: consolidated?.occurrence_count || (existingIncident.occurrence_count + 1)
+        }
+      }, client);
+
+      auditLog({
+        organization_id: organizationId,
+        user_id: effectiveUser.id || null,
+        actor_type: 'system_guard',
+        action: AUDIT_ACTIONS.INCIDENT_CONSOLIDATED,
+        resource_type: 'incident',
+        resource_id: existingIncident.id,
+        details: {
+          incident_id: existingIncident.id,
+          fingerprint,
+          occurrence_count: consolidated?.occurrence_count || (existingIncident.occurrence_count + 1)
+        }
+      }, client);
+
+      const targetIncident = consolidated || existingIncident;
+      return {
+        deduplicated: true,
+        incident: targetIncident,
+        ...targetIncident
+      };
+    }
+  } catch (dedupErr) {
+    console.warn('[Deduplication Pre-Check Warning]', dedupErr.message);
+  }
+
   let incident = null;
   let dbError = null;
 
   const runInsert = async (dbClient) => {
-    // Insert into incidents
+    // Insert into incidents with fingerprint metadata
     const newIncident = await Incident.create({
       user_id: effectiveUser.id || null,
       organization_id: effectiveUser.organization_id || null,
@@ -96,7 +170,12 @@ async function persistDetectionIncident({
       risk_level: riskLevel,
       risk_score: riskScore,
       explanation: mlResult.explanation || '',
-      status: 'open'
+      status: 'open',
+      fingerprint,
+      device_id: deviceId,
+      first_seen_at: new Date(),
+      last_seen_at: new Date(),
+      occurrence_count: 1
     }, dbClient);
 
     // Insert into mitre_mappings

@@ -12,7 +12,12 @@ const Incident = {
     risk_level = null,
     risk_score = 0,
     explanation = '',
-    status = 'open'
+    status = 'open',
+    fingerprint = null,
+    device_id = null,
+    first_seen_at = null,
+    last_seen_at = null,
+    occurrence_count = 1
   }, client = null) {
     const dbClient = client || db;
     const resolvedThreatType = (threat_type || 'phishing').toLowerCase();
@@ -22,9 +27,10 @@ const Incident = {
 
     const text = `
       INSERT INTO incidents (
-        user_id, organization_id, threat_type, source_type, risk_level, risk_score, explanation, status, created_at
+        user_id, organization_id, threat_type, source_type, risk_level, risk_score, explanation, status,
+        fingerprint, device_id, first_seen_at, last_seen_at, occurrence_count, created_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE($11, NOW()), COALESCE($12, NOW()), COALESCE($13, 1), NOW())
       RETURNING *;
     `;
     const res = await dbClient.query(text, [
@@ -35,7 +41,12 @@ const Incident = {
       resolvedRiskLevel,
       risk_score,
       explanation,
-      status
+      status,
+      fingerprint,
+      device_id,
+      first_seen_at,
+      last_seen_at,
+      occurrence_count
     ]);
 
     return res.rows[0];
