@@ -1,0 +1,116 @@
+{
+  "audit_timestamp": "2026-10-05T04:27:19Z",
+  "phase": "PHASE 8.1 \u2014 DATASET HARDENING & INTEGRITY AUDIT",
+  "status": "PASSED",
+  "visual_dataset": {
+    "file_hashes": {
+      "X_train": "da3a604c01e27ae837a6fcd40f4ca6ba6a656e3d9c6ea74a0e976d09ac4bb193",
+      "y_train": "30b1361664b48a4b5139671084d2affea6c6c952b524b6586201f82ea4dfa7a4",
+      "X_val": "3bc6894da2f104748bbf53bc6a261a81a5d1ee8c71ee54993659c8c022ef03c9",
+      "y_val": "048a3b1fe96ec22f75abe730a49b280fe961019f218a2de53c5bf1e1382be314",
+      "X_test": "450e0cfca0b186f9a01206945f45a7a9d1d53d5bee3d607b1a76e82714a22aa1",
+      "y_test": "b6dbde9991a98adf2cd7bcc2a6a656e9b638fcd9153f869ddbe1ecb28aa66b01"
+    },
+    "file_sizes": {
+      "X_train": 856720937,
+      "y_train": 85225,
+      "X_val": 183584219,
+      "y_val": 19483,
+      "X_test": 183666146,
+      "y_test": 19490
+    },
+    "train_samples": 10458,
+    "val_samples": 2241,
+    "test_samples": 2242,
+    "class_distribution_train": {
+      "manipulated": 9346,
+      "genuine": 1112,
+      "ratio_manip_to_gen": 8.4
+    },
+    "class_distribution_val": {
+      "manipulated": 2003,
+      "genuine": 238,
+      "ratio_manip_to_gen": 8.42
+    },
+    "train_val_hash_overlap": 0,
+    "augmentation_specification": {
+      "temporal_frame_sampling": "random_subsample_16_of_20",
+      "embedding_gaussian_jitter_std": 0.015,
+      "l2_renormalization": true,
+      "loss_formulation": "Balanced Focal Loss (gamma=2.0, alpha=0.5) OR Balanced BCE (w0=4.702, w1=0.559)",
+      "effective_class_weights": {
+        "genuine_w0": 4.7023,
+        "manipulated_w1": 0.5595
+      }
+    }
+  },
+  "audio_dataset": {
+    "manifest_path": "datasets\\deepfake-audio-detection\\manifest.csv",
+    "manifest_sha256": "d12a83bf85f03ed52b8bbd76101611a90889a3725ab1fd0e2df361257ba18d55",
+    "total_samples": 240,
+    "split_counts": {
+      "train": 140,
+      "validation": 50,
+      "test": 50
+    },
+    "source_counts": {
+      "train": 47,
+      "validation": 23,
+      "test": 17
+    },
+    "overlap_leakage_detected": false,
+    "duplicate_files_detected": false,
+    "expanded_features_count": 28,
+    "expanded_features_list": [
+      "zero_crossing_rate",
+      "spectral_centroid_hz",
+      "spectral_rolloff_85_hz",
+      "spectral_rolloff_95_hz",
+      "spectral_flux",
+      "subband_ratio_4k_to_8k",
+      "subband_ratio_2k_to_4k",
+      "high_freq_ratio_4k",
+      "spectral_flatness",
+      "high_freq_cutoff_detected",
+      "mean_f0_hz",
+      "pitch_jitter_pct",
+      "anomaly_score",
+      "mfcc_1_mean",
+      "mfcc_2_mean",
+      "mfcc_3_mean",
+      "mfcc_4_mean",
+      "mfcc_5_mean",
+      "mfcc_6_mean",
+      "mfcc_7_mean",
+      "mfcc_8_mean",
+      "mfcc_9_mean",
+      "mfcc_10_mean",
+      "spectral_contrast_b1",
+      "spectral_contrast_b2",
+      "spectral_contrast_b3",
+      "spectral_contrast_b4",
+      "spectral_bandwidth_hz"
+    ],
+    "augmentation_specification": {
+      "target_sample_rate": 16000,
+      "standardization": "polyphase resample to 16 kHz mono, DC offset removed, peak normalized to [-1.0, 1.0]",
+      "training_augmentation": {
+        "mild_gain_variation_db": [
+          -3.0,
+          3.0
+        ],
+        "subtle_snr_gaussian_noise_db": 35.0,
+        "mild_pitch_perturbation_pct": 0.02
+      },
+      "feature_scaling": "StandardScaler pipeline to eliminate rolloff magnitude dominance (5 orders of magnitude difference)"
+    }
+  },
+  "test_set_isolation": {
+    "visual_frozen_test_samples": 2242,
+    "visual_test_labels_used": false,
+    "audio_frozen_test_samples": 50,
+    "audio_test_sources_count": 17,
+    "audio_test_labels_used": false,
+    "assertion": "CONFIRMED: Visual and Audio test sets remain 100% frozen, isolated, and untouched."
+  }
+}

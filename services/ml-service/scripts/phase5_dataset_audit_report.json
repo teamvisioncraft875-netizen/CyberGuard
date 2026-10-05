@@ -1,0 +1,145 @@
+{
+  "audit_title": "CYBERGUARD Phase 5A: Deepfake Dataset and Feature Audit",
+  "timestamp": "2026-10-05T02:41:06.361003+00:00",
+  "environment": {
+    "python": "3.14.6",
+    "torch": "2.14.0+cu126",
+    "cuda_available": true,
+    "cuda_device": "NVIDIA GeForce RTX 2050"
+  },
+  "dfdc_visual_dataset": {
+    "train": {
+      "tensor_shape": [
+        10458,
+        20,
+        1024
+      ],
+      "sample_count": 10458,
+      "genuine_count": 1112,
+      "manipulated_count": 9346,
+      "genuine_percentage": 10.63,
+      "manipulated_percentage": 89.37,
+      "nan_count": 0,
+      "inf_count": 0,
+      "x_file": {
+        "filename": "X_train.pt",
+        "size_bytes": 856720937,
+        "size_mb": 817.03,
+        "sha256": "da3a604c01e27ae837a6fcd40f4ca6ba6a656e3d9c6ea74a0e976d09ac4bb193"
+      },
+      "y_file": {
+        "filename": "y_train.pt",
+        "size_bytes": 85225,
+        "size_mb": 0.08,
+        "sha256": "30b1361664b48a4b5139671084d2affea6c6c952b524b6586201f82ea4dfa7a4"
+      },
+      "statistics": {
+        "min": -0.451837,
+        "max": 0.523283,
+        "mean": 0.000101,
+        "std": 0.03125,
+        "mean_l2_norm": 1.0,
+        "std_l2_norm": 0.0
+      }
+    },
+    "val": {
+      "tensor_shape": [
+        2241,
+        20,
+        1024
+      ],
+      "sample_count": 2241,
+      "genuine_count": 238,
+      "manipulated_count": 2003,
+      "genuine_percentage": 10.62,
+      "manipulated_percentage": 89.38,
+      "nan_count": 0,
+      "inf_count": 0,
+      "x_file": {
+        "filename": "X_val.pt",
+        "size_bytes": 183584219,
+        "size_mb": 175.08,
+        "sha256": "3bc6894da2f104748bbf53bc6a261a81a5d1ee8c71ee54993659c8c022ef03c9"
+      },
+      "y_file": {
+        "filename": "y_val.pt",
+        "size_bytes": 19483,
+        "size_mb": 0.02,
+        "sha256": "048a3b1fe96ec22f75abe730a49b280fe961019f218a2de53c5bf1e1382be314"
+      },
+      "statistics": {
+        "min": -0.458937,
+        "max": 0.537207,
+        "mean": 6.6e-05,
+        "std": 0.03125,
+        "mean_l2_norm": 1.0,
+        "std_l2_norm": 0.0
+      }
+    },
+    "test": {
+      "tensor_shape": [
+        2242,
+        20,
+        1024
+      ],
+      "sample_count": 2242,
+      "genuine_count": 239,
+      "manipulated_count": 2003,
+      "genuine_percentage": 10.66,
+      "manipulated_percentage": 89.34,
+      "nan_count": 0,
+      "inf_count": 0,
+      "x_file": {
+        "filename": "X_test.pt",
+        "size_bytes": 183666146,
+        "size_mb": 175.16,
+        "sha256": "450e0cfca0b186f9a01206945f45a7a9d1d53d5bee3d607b1a76e82714a22aa1"
+      },
+      "y_file": {
+        "filename": "y_test.pt",
+        "size_bytes": 19490,
+        "size_mb": 0.02,
+        "sha256": "b6dbde9991a98adf2cd7bcc2a6a656e9b638fcd9153f869ddbe1ecb28aa66b01"
+      },
+      "statistics": {
+        "min": -0.45319,
+        "max": 0.53159,
+        "mean": 8.9e-05,
+        "std": 0.03125,
+        "mean_l2_norm": 1.0,
+        "std_l2_norm": 0.0
+      }
+    },
+    "cross_partition_isolation": {
+      "train_val_exact_overlap": 0,
+      "train_test_exact_overlap": 0,
+      "val_test_exact_overlap": 0,
+      "status": "STRICTLY_DISJOINT"
+    }
+  },
+  "deepfake_audio_dataset": {
+    "manifest_path": "D:\\cyberguard project  work su\\CyberGuard\\datasets\\deepfake-audio-detection\\manifest.csv",
+    "manifest_sha256": "d12a83bf85f03ed52b8bbd76101611a90889a3725ab1fd0e2df361257ba18d55",
+    "total_samples": 240,
+    "splits": {
+      "train": 140,
+      "validation": 50,
+      "test": 50
+    },
+    "labels": {
+      "genuine": 120,
+      "manipulated": 120
+    },
+    "unique_sources": 87,
+    "source_disjointness": {
+      "train_sources_count": 47,
+      "val_sources_count": 0,
+      "test_sources_count": 17,
+      "train_val_source_overlap": 0,
+      "train_test_source_overlap": 0,
+      "val_test_source_overlap": 0,
+      "status": "SOURCE_DISJOINT_VERIFIED"
+    }
+  },
+  "overall_status": "PASS"
+}

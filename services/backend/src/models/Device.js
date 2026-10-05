@@ -40,6 +40,43 @@ const Device = {
     return res.rows;
   },
 
+  async findAndCountByOrg(organization_id, { limit = 25, offset = 0, status = null } = {}) {
+    const whereClauses = ['organization_id = $1'];
+    const params = [organization_id];
+
+    if (status) {
+      params.push(status);
+      whereClauses.push(`status = $${params.length}`);
+    }
+
+    const whereSql = whereClauses.join(' AND ');
+
+    const countSql = `SELECT COUNT(*)::int AS total FROM public.devices WHERE ${whereSql};`;
+    const countRes = await db.query(countSql, params);
+    const total = countRes.rows[0]?.total || 0;
+
+    const dataParams = [...params, limit, offset];
+    const dataSql = `
+      SELECT 
+        id,
+        organization_id,
+        hostname,
+        os,
+        platform,
+        status,
+        last_heartbeat,
+        agent_version,
+        created_at
+      FROM public.devices
+      WHERE ${whereSql}
+      ORDER BY last_heartbeat DESC NULLS LAST, created_at DESC
+      LIMIT $${dataParams.length - 1} OFFSET $${dataParams.length};
+    `;
+
+    const dataRes = await db.query(dataSql, dataParams);
+    return { total, rows: dataRes.rows };
+  },
+
   async updateStatus(device_id, status) {
     const text = `
       UPDATE public.devices

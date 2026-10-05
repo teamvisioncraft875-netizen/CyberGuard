@@ -26,7 +26,9 @@ const AUDIT_ACTIONS = Object.freeze({
   FIREWALL_RULE_DELETED: 'firewall_rule_deleted',
   FIREWALL_RULE_DELETION_FAILED: 'firewall_rule_deletion_failed',
   FIREWALL_RULE_REVOCATION_FAILED: 'firewall_rule_deletion_failed',
-  FIREWALL_COMMAND_CREATED: 'firewall_command_created'
+  FIREWALL_COMMAND_CREATED: 'firewall_command_created',
+  ATTACK_SURFACE_SNAPSHOT_TRUNCATED: 'attack_surface_snapshot_truncated',
+  ATTACK_SURFACE_EXPOSURE_RESOLVED: 'attack_surface_exposure_resolved'
 });
 
 /**
@@ -91,7 +93,7 @@ async function log({
   resource_id = null,
   details = {},
   ip_address = null
-}) {
+}, client = null) {
   try {
     const sanitizedDetails = sanitizeDetails(details);
     const validActorTypes = ['user', 'admin', 'system_policy', 'system_guard', 'device'];
@@ -109,7 +111,7 @@ async function log({
       resource_id: resource_id ? String(resource_id) : null,
       details: sanitizedDetails,
       ip_address
-    });
+    }, client);
     return record;
   } catch (err) {
     console.error('[AuditService.log Error]', err.message);

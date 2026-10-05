@@ -14,6 +14,7 @@ const FirewallRule = {
     target_ip = null,
     target_domain = null,
     rule_id_local = null,
+    rule_hash = null,
     status = 'pending',
     created_by_id = null,
     expires_at = null,
@@ -28,6 +29,7 @@ const FirewallRule = {
         target_ip,
         target_domain,
         rule_id_local,
+        rule_hash,
         status,
         created_by_id,
         expires_at,
@@ -35,7 +37,9 @@ const FirewallRule = {
         result,
         created_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+      ON CONFLICT (agent_id, rule_hash) WHERE status IN ('pending', 'active') AND rule_hash IS NOT NULL
+      DO NOTHING
       RETURNING *;
     `;
     const params = [
@@ -45,6 +49,7 @@ const FirewallRule = {
       target_ip,
       target_domain,
       rule_id_local,
+      rule_hash,
       status,
       created_by_id,
       expires_at,
@@ -52,7 +57,27 @@ const FirewallRule = {
       JSON.stringify(result || {})
     ];
     const res = await db.query(text, params);
-    return res.rows[0];
+    if (res.rows && res.rows.length > 0) {
+      return res.rows[0];
+    }
+    // Conflict fallback
+    if (rule_hash) {
+      return await this.findActiveByHash(agent_id, rule_hash);
+    }
+    return null;
+  },
+
+  /**
+   * Finds an active or pending rule matching agent_id and rule_hash.
+   */
+  async findActiveByHash(agent_id, rule_hash) {
+    const text = `
+      SELECT * FROM public.agent_firewall_rules
+      WHERE agent_id = $1 AND rule_hash = $2 AND status IN ('pending', 'active')
+      ORDER BY created_at DESC LIMIT 1;
+    `;
+    const res = await db.query(text, [agent_id, rule_hash]);
+    return res.rows[0] || null;
   },
 
   /**

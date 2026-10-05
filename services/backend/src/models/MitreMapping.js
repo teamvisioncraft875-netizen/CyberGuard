@@ -38,6 +38,14 @@ const THREAT_TO_MITRE = Object.freeze({
   exposed_secret: Object.freeze({
     technique_id: 'T1552',
     technique_name: 'Unsecured Credentials'
+  }),
+  attack_surface_exposure: Object.freeze({
+    technique_id: 'T1046',
+    technique_name: 'Network Service Discovery'
+  }),
+  ddos: Object.freeze({
+    technique_id: 'T1498',
+    technique_name: 'Network Denial of Service'
   })
 });
 
@@ -47,9 +55,42 @@ const THREAT_TO_MITRE = Object.freeze({
 const MitreMapping = {
   THREAT_TO_MITRE,
 
-  getTechniqueForThreat(threatType) {
+  getTechniqueForAttackSurface(ruleId) {
+    const cleanRule = String(ruleId || '').toUpperCase().trim();
+    if (cleanRule === 'EXP-CRIT-RDP') {
+      return {
+        technique_id: 'T1021.001',
+        technique_name: 'Remote Services: Remote Desktop Protocol'
+      };
+    }
+    if (cleanRule === 'EXP-HIGH-SSH') {
+      return {
+        technique_id: 'T1133',
+        technique_name: 'External Remote Services'
+      };
+    }
+    if (
+      cleanRule.startsWith('EXP-CRIT-') ||
+      cleanRule.startsWith('EXP-HIGH-') ||
+      cleanRule === 'EXP-MED-HTTP'
+    ) {
+      return {
+        technique_id: 'T1190',
+        technique_name: 'Exploit Public-Facing Application'
+      };
+    }
+    return {
+      technique_id: 'T1046',
+      technique_name: 'Network Service Discovery'
+    };
+  },
+
+  getTechniqueForThreat(threatType, ruleId = null) {
     if (!threatType) return THREAT_TO_MITRE.phishing;
     const key = String(threatType).toLowerCase().trim();
+    if (key === 'attack_surface_exposure' && ruleId) {
+      return this.getTechniqueForAttackSurface(ruleId);
+    }
     return THREAT_TO_MITRE[key] || THREAT_TO_MITRE.phishing;
   },
 

@@ -5,6 +5,7 @@ Gracefully handles offline states or network interruptions without terminating a
 """
 
 import os
+import json
 from typing import Dict, Any, Optional
 from datetime import datetime, timezone
 import requests
@@ -41,7 +42,21 @@ def report_telemetry(
         "device_id": device_id,
         "data": telemetry_data,
         "details": telemetry_data,
+        "attack_surface": telemetry_data.get("attack_surface", {"listening_ports": []}),
     }
+
+    # Payload-size protection (Max 64 KB = 65536 bytes)
+    try:
+        serialized = json.dumps(payload)
+        if len(serialized.encode("utf-8")) > 65536:
+            logger.warning("Telemetry payload exceeds 64 KB limit. Truncating attack_surface section.")
+            payload["attack_surface"] = {"listening_ports": []}
+            if isinstance(payload.get("data"), dict) and "attack_surface" in payload["data"]:
+                payload["data"]["attack_surface"] = {"listening_ports": []}
+            if isinstance(payload.get("details"), dict) and "attack_surface" in payload["details"]:
+                payload["details"]["attack_surface"] = {"listening_ports": []}
+    except Exception as e:
+        logger.debug(f"Payload size serialization check note: {e}")
 
     if linked_user_id:
         payload["user_id"] = linked_user_id

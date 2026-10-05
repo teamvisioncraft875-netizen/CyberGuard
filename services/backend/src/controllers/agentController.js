@@ -411,6 +411,101 @@ const agentController = {
         updated_at: new Date().toISOString()
       });
     }
+  },
+
+  /**
+   * GET /api/v1/admin/agents
+   * Lists enrolled devices/agents for the authenticated admin's organization.
+   * Query params: limit (default 25, max 100), offset (default 0), status (online | offline | disabled | pending)
+   */
+  async listAgents(req, res) {
+    try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Admin must belong to an organization to list agents'
+        });
+      }
+
+      const { limit: queryLimit, offset: queryOffset, status: queryStatus } = req.query || {};
+
+      let limit = 25;
+      if (queryLimit !== undefined) {
+        const parsedLimit = parseInt(queryLimit, 10);
+        if (isNaN(parsedLimit) || parsedLimit < 1 || parsedLimit > 100) {
+          return res.status(400).json({
+            error: 'INVALID_QUERY_PARAMS',
+            message: 'limit must be a positive integer between 1 and 100'
+          });
+        }
+        limit = parsedLimit;
+      }
+
+      let offset = 0;
+      if (queryOffset !== undefined) {
+        const parsedOffset = parseInt(queryOffset, 10);
+        if (isNaN(parsedOffset) || parsedOffset < 0) {
+          return res.status(400).json({
+            error: 'INVALID_QUERY_PARAMS',
+            message: 'offset must be a non-negative integer'
+          });
+        }
+        offset = parsedOffset;
+      }
+
+      let status = null;
+      if (queryStatus !== undefined) {
+        const trimmedStatus = String(queryStatus).toLowerCase().trim();
+        const ALLOWED_STATUSES = new Set(['online', 'offline', 'disabled', 'pending']);
+        if (!ALLOWED_STATUSES.has(trimmedStatus)) {
+          return res.status(400).json({
+            error: 'INVALID_QUERY_PARAMS',
+            message: `status must be one of: ${Array.from(ALLOWED_STATUSES).join(', ')}`
+          });
+        }
+        status = trimmedStatus;
+      }
+
+      const Device = require('../models/Device');
+      const { total, rows } = await Device.findAndCountByOrg(organization_id, {
+        limit,
+        offset,
+        status
+      });
+
+      const agents = rows.map((device) => {
+        const lastHeartbeatAgeSeconds = device.last_heartbeat
+          ? Math.max(0, Math.floor((Date.now() - new Date(device.last_heartbeat).getTime()) / 1000))
+          : null;
+
+        return {
+          id: device.id,
+          organization_id: device.organization_id,
+          hostname: device.hostname || null,
+          os: device.os || null,
+          platform: device.platform || null,
+          status: device.status || 'pending',
+          last_heartbeat: device.last_heartbeat ? new Date(device.last_heartbeat).toISOString() : null,
+          last_heartbeat_age_seconds: lastHeartbeatAgeSeconds,
+          agent_version: device.agent_version || '1.0.0',
+          created_at: device.created_at ? new Date(device.created_at).toISOString() : null
+        };
+      });
+
+      return res.status(200).json({
+        total,
+        limit,
+        offset,
+        agents
+      });
+    } catch (err) {
+      console.error('[agentController.listAgents error]', err.message);
+      return res.status(500).json({
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to retrieve agents list'
+      });
+    }
   }
 };
 

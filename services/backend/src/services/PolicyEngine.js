@@ -11,7 +11,8 @@ const ALLOWED_ACTION_TYPES = [
   'block_ip',
   'block_domain',
   'suspend_device',
-  'isolate_device'
+  'isolate_device',
+  'block_port'
 ];
 
 const ALLOWED_ACTION_MODES = ['shadow', 'live'];
@@ -28,12 +29,12 @@ class PolicyEngine {
    * @param {Object} incident
    * @returns {Promise<Array<Object>>} Matching rules with policy_id attached
    */
-  static async getApplicablePolicies(incident) {
+  static async getApplicablePolicies(incident, client = null) {
     if (!incident || !incident.organization_id) {
       return [];
     }
 
-    const policies = await ResponsePolicy.findEnabledByOrg(incident.organization_id);
+    const policies = await ResponsePolicy.findEnabledByOrg(incident.organization_id, client);
     const applicableRules = [];
 
     const incidentScore = Number(incident.risk_score ?? 0);
@@ -64,8 +65,9 @@ class PolicyEngine {
         if (incidentScore < minScore) continue;
 
         // Target filter match (e.g. user_roles)
-        if (rule.target_filter && Array.isArray(rule.target_filter.user_roles) && incident.user_role) {
-          if (!rule.target_filter.user_roles.includes(incident.user_role)) {
+        if (rule.target_filter && Array.isArray(rule.target_filter.user_roles)) {
+          const roles = rule.target_filter.user_roles;
+          if (!roles.includes('*') && incident.user_role && !roles.includes(incident.user_role)) {
             continue;
           }
         }
@@ -103,6 +105,48 @@ class PolicyEngine {
           requires_approval: false,
           policy_id: null,
           policy_name: 'Default Exposed Secret User Alert'
+        });
+      }
+    }
+
+    // Built-in Platform Response Policy for attack_surface_exposure incidents
+    if (incidentThreatType === 'attack_surface_exposure') {
+      const hasNotifyAdmin = applicableRules.some((r) => r.action_type === 'notify_admin');
+      if (!hasNotifyAdmin && incidentScore >= 70) {
+        applicableRules.push({
+          threat_type: 'attack_surface_exposure',
+          min_score: 70,
+          action_type: 'notify_admin',
+          action_mode: 'shadow',
+          requires_approval: false,
+          policy_id: null,
+          policy_name: 'Default Attack Surface Admin Alert'
+        });
+      }
+
+      const hasBlockPort = applicableRules.some((r) => r.action_type === 'block_port');
+      if (!hasBlockPort && incidentScore >= 70) {
+        applicableRules.push({
+          threat_type: 'attack_surface_exposure',
+          min_score: 70,
+          action_type: 'block_port',
+          action_mode: 'shadow',
+          requires_approval: true,
+          policy_id: null,
+          policy_name: 'Default Attack Surface Block Port Proposal'
+        });
+      }
+
+      const hasIsolateDevice = applicableRules.some((r) => r.action_type === 'isolate_device');
+      if (!hasIsolateDevice && incidentScore >= 90) {
+        applicableRules.push({
+          threat_type: 'attack_surface_exposure',
+          min_score: 90,
+          action_type: 'isolate_device',
+          action_mode: 'shadow',
+          requires_approval: true,
+          policy_id: null,
+          policy_name: 'Default Critical Exposure Device Isolation Proposal'
         });
       }
     }
@@ -148,7 +192,8 @@ class PolicyEngine {
         requires_approval: requiresApproval,
         target,
         scheduled_at: scheduledAt,
-        requested_by_id: null
+        requested_by_id: null,
+        target_device_id: rule.target_device_id || incident.target_device_id || incident.device_id || target.device_id || null
       });
     }
 
@@ -185,6 +230,9 @@ class PolicyEngine {
    */
   static _isOrgLevelAction(action_type, incident = {}) {
     if (action_type === 'block_domain') {
+      return true;
+    }
+    if (action_type === 'block_port') {
       return true;
     }
     if (action_type === 'block_ip') {
@@ -240,10 +288,13 @@ class PolicyEngine {
     const explicitTarget = incident.target || {};
 
     switch (action_type) {
-      case 'block_ip':
+      case 'block_ip': {
+        const ip = explicitTarget.ip_address || signals.ip_address || details.ip_address || incident.ip_address || signals.source_ip || details.source_ip || incident.source_ip || null;
         return {
-          ip_address: explicitTarget.ip_address || signals.ip_address || details.ip_address || incident.ip_address || null
+          ip_address: ip,
+          org_wide: explicitTarget.org_wide !== undefined ? explicitTarget.org_wide : true
         };
+      }
 
       case 'block_domain':
         return {
@@ -274,6 +325,13 @@ class PolicyEngine {
         return {
           organization_id: incident.organization_id || null,
           incident_id: incident.id || null
+        };
+
+      case 'block_port':
+        return {
+          port: explicitTarget.port || details.port || signals.port || (Array.isArray(signals) ? signals.find((s) => s.signal_name === 'public_exposed_service')?.signal_value : null),
+          protocol: explicitTarget.protocol || details.protocol || 'tcp',
+          device_id: explicitTarget.device_id || incident.device_id || signals.device_id || null
         };
 
       default:
@@ -340,21 +398,46 @@ class PolicyEngine {
    * @param {Object} incident
    * @returns {Promise<Array<Object>>} Proposed action records
    */
-  static async evaluateAndProposeActions(incident) {
+  static async evaluateAndProposeActions(incident, client = null) {
     if (!incident || !incident.organization_id || !incident.id) {
       return [];
     }
 
     try {
-      const applicablePolicies = await this.getApplicablePolicies(incident);
+      if (client) {
+        await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`policy_eval:${incident.id}`]);
+      }
+
+      const applicablePolicies = await this.getApplicablePolicies(incident, client);
       if (!applicablePolicies || applicablePolicies.length === 0) {
         return [];
       }
 
+      const { log: auditLog } = require('./auditService');
+      await auditLog({
+        organization_id: incident.organization_id,
+        user_id: null,
+        actor_type: 'system_policy',
+        action: 'policy_matched',
+        resource_type: 'incident',
+        resource_id: incident.id,
+        details: {
+          matched_policies_count: applicablePolicies.length,
+          policies: applicablePolicies.map((p) => ({ policy_id: p.policy_id, name: p.policy_name, action_type: p.action_type }))
+        }
+      }, client);
+
       const calculatedActions = this.calculateActions(incident, applicablePolicies);
       const createdActions = [];
+      const seenActionKeys = new Set();
 
       for (const action of calculatedActions) {
+        const actionKey = `${action.action_type}:${JSON.stringify(action.target || {})}`;
+        if (seenActionKeys.has(actionKey)) {
+          continue; // In-memory dedup within same batch
+        }
+        seenActionKeys.add(actionKey);
+
         const created = await ResponseAction.create({
           organization_id: action.organization_id,
           incident_id: action.incident_id,
@@ -364,16 +447,34 @@ class PolicyEngine {
           status: 'proposed',
           target: action.target,
           scheduled_at: action.scheduled_at,
-          requested_by_id: action.requested_by_id
-        });
-        createdActions.push(created);
+          requested_by_id: action.requested_by_id,
+          target_device_id: action.target_device_id || null
+        }, client);
+        
+        if (created) {
+          createdActions.push(created);
 
-        // Hook into response_actions creation (Phase 1C: Notification Service)
-        // Fire-and-forget: never block execution or fail incident response
-        const matchingPolicy = applicablePolicies.find((p) => p.policy_id === action.policy_id);
-        notificationService.sendActionNotification(created, incident, matchingPolicy).catch((nErr) => {
-          console.error('[NotificationService Hook Error]', nErr.message);
-        });
+          await auditLog({
+            organization_id: action.organization_id,
+            user_id: null,
+            actor_type: 'system_policy',
+            action: 'action_proposed',
+            resource_type: 'response_action',
+            resource_id: created.id,
+            details: {
+              action_type: created.action_type,
+              target: created.target,
+              incident_id: incident.id,
+              policy_id: created.policy_id
+            }
+          }, client);
+
+          // Hook into response_actions creation (Phase 1C: Notification Service)
+          const matchingPolicy = applicablePolicies.find((p) => p.policy_id === action.policy_id);
+          notificationService.sendActionNotification(created, incident, matchingPolicy).catch((nErr) => {
+            console.error('[NotificationService Hook Error]', nErr.message);
+          });
+        }
       }
 
       return createdActions;

@@ -9,6 +9,7 @@ import sys
 import socket
 import platform
 import getpass
+import ipaddress
 from datetime import datetime, timezone
 from typing import Dict, Any, List
 import psutil
@@ -114,6 +115,160 @@ def get_top_processes(limit: int = 10) -> List[Dict[str, Any]]:
         return processes[:limit]
 
 
+
+# Allowed well-known UDP service ports for Attack Surface Discovery (Phase A)
+ALLOWED_UDP_SERVICE_PORTS = {53, 67, 68, 69, 123, 161, 162, 514}
+
+
+def classify_exposure_scope(bind_address: str) -> str:
+    """
+    Classifies an IP bind address into 'loopback', 'private', 'public', or 'unknown'.
+    - 127.0.0.1 / ::1 -> loopback
+    - RFC1918 ranges (10.x.x.x, 172.16-31.x.x, 192.168.x.x) -> private
+    - IPv6 private (fc00::/7, fd00::/8, fe80::/10) -> private
+    - 0.0.0.0 / :: -> public
+    - otherwise -> unknown
+    """
+    if not bind_address or not isinstance(bind_address, str):
+        return "unknown"
+
+    clean_ip = bind_address.strip().lower()
+
+    if clean_ip in ("127.0.0.1", "::1", "localhost"):
+        return "loopback"
+
+    if clean_ip in ("0.0.0.0", "::", "*"):
+        return "public"
+
+    try:
+        ip_obj = ipaddress.ip_address(clean_ip)
+        if ip_obj.is_loopback:
+            return "loopback"
+
+        # Explicit RFC 1918 private IPv4 subnets
+        rfc1918_networks = (
+            ipaddress.ip_network("10.0.0.0/8"),
+            ipaddress.ip_network("172.16.0.0/12"),
+            ipaddress.ip_network("192.168.0.0/16"),
+        )
+        if any(ip_obj in net for net in rfc1918_networks):
+            return "private"
+
+        # Explicit IPv6 Private / ULA / Link-Local subnets
+        ipv6_private_subnets = (
+            ipaddress.ip_network("fc00::/7"),
+            ipaddress.ip_network("fd00::/8"),
+            ipaddress.ip_network("fe80::/10"),
+        )
+        if any(ip_obj in net for net in ipv6_private_subnets) or getattr(ip_obj, "is_link_local", False):
+            return "private"
+
+        return "unknown"
+    except ValueError:
+        return "unknown"
+
+
+def collect_listening_ports(max_ports: int = 100) -> List[Dict[str, Any]]:
+    """
+    Safely gathers listening TCP sockets and allowed UDP service sockets.
+    - Collects only TCP sockets with status == psutil.CONN_LISTEN.
+    - Collects only UDP sockets matching ALLOWED_UDP_SERVICE_PORTS without remote addr.
+    - All ephemeral UDP client sockets (DNS/NTP/WebRTC clients) are ignored.
+    - NEVER collects established outbound connections.
+    - NEVER collects command-line arguments or environment variables.
+    - Normalizes file paths to POSIX slashes ('/').
+    - Gracefully handles AccessDenied, NoSuchProcess, and restricted environments.
+    - Capped at max_ports (default 100).
+    """
+    listening_ports = []
+    seen = set()
+
+    try:
+        connections = psutil.net_connections(kind="inet")
+    except (psutil.AccessDenied, PermissionError, ProcessLookupError) as e:
+        logger.debug(f"Permission restricted reading listening connections: {e}")
+        return []
+    except Exception as e:
+        logger.debug(f"Exception querying net_connections: {e}")
+        return []
+
+    listen_status = getattr(psutil, "CONN_LISTEN", "LISTEN")
+
+    for conn in connections:
+        if len(listening_ports) >= max_ports:
+            break
+
+        try:
+            if not conn.laddr or not hasattr(conn.laddr, "port"):
+                continue
+
+            port = int(conn.laddr.port)
+            if port <= 0 or port > 65535:
+                continue
+
+            # Check for LISTEN state (TCP) or allowed well-known UDP service socket
+            is_tcp_listen = (conn.type == socket.SOCK_STREAM and conn.status == listen_status)
+            is_udp_listen = (
+                conn.type == socket.SOCK_DGRAM
+                and not conn.raddr
+                and port in ALLOWED_UDP_SERVICE_PORTS
+            )
+
+            if not (is_tcp_listen or is_udp_listen):
+                continue
+
+            bind_addr = str(conn.laddr.ip) if hasattr(conn.laddr, "ip") else "0.0.0.0"
+            proto = "tcp" if conn.type == socket.SOCK_STREAM else "udp"
+
+            dedup_key = (port, proto, bind_addr)
+            if dedup_key in seen:
+                continue
+            seen.add(dedup_key)
+
+            scope = classify_exposure_scope(bind_addr)
+
+            pid = conn.pid
+            process_name = None
+            process_path = None
+
+            if pid:
+                try:
+                    proc = psutil.Process(pid)
+                    try:
+                        process_name = proc.name()
+                    except (psutil.AccessDenied, psutil.NoSuchProcess, psutil.ZombieProcess, Exception):
+                        process_name = None
+
+                    try:
+                        exe_path = proc.exe()
+                        if exe_path:
+                            # Normalize Windows backslashes to forward slashes
+                            exe_path = exe_path.replace("\\", "/")
+                            if len(exe_path) > 255:
+                                exe_path = exe_path[:255]
+                        process_path = exe_path
+                    except (psutil.AccessDenied, psutil.NoSuchProcess, psutil.ZombieProcess, Exception):
+                        process_path = None
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess, Exception):
+                    process_name = None
+                    process_path = None
+
+            listening_ports.append({
+                "port": port,
+                "protocol": proto,
+                "bind_address": bind_addr,
+                "exposure_scope": scope,
+                "pid": pid,
+                "process_name": process_name,
+                "process_path": process_path,
+            })
+        except Exception as conn_err:
+            logger.debug(f"Skipping listening socket entry due to error: {conn_err}")
+            continue
+
+    return listening_ports
+
+
 def collect_system_telemetry() -> Dict[str, Any]:
     """
     Gathers the complete OS telemetry snapshot payload.
@@ -147,6 +302,12 @@ def collect_system_telemetry() -> Dict[str, Any]:
     except Exception:
         top_procs = []
 
+    try:
+        listening_ports = collect_listening_ports(max_ports=100)
+    except Exception as e:
+        logger.debug(f"Error collecting listening ports: {e}")
+        listening_ports = []
+
     now_iso = datetime.now(timezone.utc).isoformat()
 
     telemetry = {
@@ -157,9 +318,14 @@ def collect_system_telemetry() -> Dict[str, Any]:
         "top_processes": top_procs,
         "user": user,
         "timestamp": now_iso,
+        "attack_surface": {
+            "listening_ports": listening_ports
+        }
     }
 
     logger.debug(
-        f"Collected telemetry: host={hostname}, conns={conn_count}, procs={len(top_procs)}"
+        f"Collected telemetry: host={hostname}, conns={conn_count}, procs={len(top_procs)}, "
+        f"listening_ports={len(listening_ports)}"
     )
     return telemetry
+
