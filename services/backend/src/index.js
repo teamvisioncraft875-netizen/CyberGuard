@@ -20,6 +20,8 @@ const adminRoutes = require('./routes/adminRoutes');
 const agentRoutes = require('./routes/agentRoutes');
 const attackSurfaceRoutes = require('./routes/attackSurfaceRoutes');
 const responseActionRoutes = require('./routes/responseActionRoutes');
+const incidentGroupRoutes = require('./routes/incidentGroupRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 const threatIntelRoutes = require('./routes/threatIntelRoutes');
 const threatIntelAnalyticsRoutes = require('./routes/threatIntelAnalyticsRoutes');
 
@@ -82,6 +84,8 @@ v1Router.use('/admin', adminRoutes);
 v1Router.use('/agents', agentRoutes);
 v1Router.use('/attack-surface', generalLimiter, attackSurfaceRoutes);
 v1Router.use('/response-actions', generalLimiter, responseActionRoutes);
+v1Router.use('/incident-groups', generalLimiter, incidentGroupRoutes);
+v1Router.use('/dashboard', generalLimiter, dashboardRoutes);
 v1Router.use('/threat-intel/analytics', generalLimiter, threatIntelAnalyticsRoutes);
 v1Router.use('/threat-intel', generalLimiter, threatIntelRoutes);
 

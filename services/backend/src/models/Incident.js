@@ -12,7 +12,16 @@ const Incident = {
     risk_level = null,
     risk_score = 0,
     explanation = '',
-    status = 'open'
+    status = 'open',
+    fingerprint = null,
+    device_id = null,
+    first_seen_at = null,
+    last_seen_at = null,
+    occurrence_count = 1,
+    priority = 'P3',
+    assigned_to = null,
+    assigned_at = null,
+    escalated_at = null
   }, client = null) {
     const dbClient = client || db;
     const resolvedThreatType = (threat_type || 'phishing').toLowerCase();
@@ -22,9 +31,10 @@ const Incident = {
 
     const text = `
       INSERT INTO incidents (
-        user_id, organization_id, threat_type, source_type, risk_level, risk_score, explanation, status, created_at
+        user_id, organization_id, threat_type, source_type, risk_level, risk_score, explanation, status,
+        fingerprint, device_id, first_seen_at, last_seen_at, occurrence_count, priority, assigned_to, assigned_at, escalated_at, created_at
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, COALESCE($11, NOW()), COALESCE($12, NOW()), COALESCE($13, 1), $14, $15, $16, $17, NOW())
       RETURNING *;
     `;
     const res = await dbClient.query(text, [
@@ -35,7 +45,16 @@ const Incident = {
       resolvedRiskLevel,
       risk_score,
       explanation,
-      status
+      status,
+      fingerprint,
+      device_id,
+      first_seen_at,
+      last_seen_at,
+      occurrence_count,
+      priority,
+      assigned_to,
+      assigned_at,
+      escalated_at
     ]);
 
     return res.rows[0];
@@ -158,6 +177,106 @@ const Incident = {
       RETURNING id, status, resolved_by, resolved_at;
     `;
     const res = await db.query(text, values);
+    return res.rows[0] || null;
+  },
+
+  async assign(id, userId, organization_id = null, client = null) {
+    const dbClient = client || db;
+    const conditions = ['id = $1'];
+    const values = [id, userId];
+
+    if (organization_id) {
+      values.push(organization_id);
+      conditions.push(`organization_id = $${values.length}`);
+    }
+
+    const text = `
+      UPDATE incidents
+      SET assigned_to = $2, assigned_at = NOW()
+      WHERE ${conditions.join(' AND ')}
+      RETURNING *;
+    `;
+    const res = await dbClient.query(text, values);
+    return res.rows[0] || null;
+  },
+
+  async escalate(id, organization_id = null, client = null) {
+    const dbClient = client || db;
+    const conditions = ['id = $1'];
+    const values = [id];
+
+    if (organization_id) {
+      values.push(organization_id);
+      conditions.push(`organization_id = $${values.length}`);
+    }
+
+    const text = `
+      UPDATE incidents
+      SET priority = 'P1', escalated_at = NOW()
+      WHERE ${conditions.join(' AND ')}
+      RETURNING *;
+    `;
+    const res = await dbClient.query(text, values);
+    return res.rows[0] || null;
+  },
+
+  async reopen(id, organization_id = null, client = null) {
+    const dbClient = client || db;
+    const conditions = ['id = $1'];
+    const values = [id];
+
+    if (organization_id) {
+      values.push(organization_id);
+      conditions.push(`organization_id = $${values.length}`);
+    }
+
+    const text = `
+      UPDATE incidents
+      SET status = 'open'::incident_status, resolved_at = NULL, resolved_by = NULL
+      WHERE ${conditions.join(' AND ')}
+      RETURNING *;
+    `;
+    const res = await dbClient.query(text, values);
+    return res.rows[0] || null;
+  },
+
+  async updateRiskScore(id, riskScore, riskLevel, organization_id = null, client = null) {
+    const dbClient = client || db;
+    const conditions = ['id = $1'];
+    const values = [id, riskScore, riskLevel.toLowerCase()];
+
+    if (organization_id) {
+      values.push(organization_id);
+      conditions.push(`organization_id = $${values.length}`);
+    }
+
+    const text = `
+      UPDATE incidents
+      SET risk_score = $2, risk_level = $3::risk_level
+      WHERE ${conditions.join(' AND ')}
+      RETURNING *;
+    `;
+    const res = await dbClient.query(text, values);
+    return res.rows[0] || null;
+  },
+
+  async updatePriority(id, priority, organization_id = null, client = null) {
+    const dbClient = client || db;
+    const conditions = ['id = $1'];
+    const values = [id, priority.toUpperCase()];
+
+    if (organization_id) {
+      values.push(organization_id);
+      conditions.push(`organization_id = $${values.length}`);
+    }
+
+    const text = `
+      UPDATE incidents
+      SET priority = $2
+      WHERE ${conditions.join(' AND ')}
+      RETURNING *;
+    `;
+    const res = await dbClient.query(text, values);
     return res.rows[0] || null;
   },
 
