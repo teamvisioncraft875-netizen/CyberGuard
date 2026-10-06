@@ -51,28 +51,61 @@ const IncidentRelationship = {
   /**
    * Finds all relationships associated with a given incident (as source or target).
    */
-  async findByIncident(incidentId, client = null) {
-    const dbClient = client || db;
-    const text = `
-      SELECT
-        id,
-        organization_id,
-        source_incident_id,
-        target_incident_id,
-        relationship_type,
-        confidence_score::float AS confidence_score,
-        rule_id,
-        metadata,
-        created_at,
-        CASE
-          WHEN source_incident_id = $1 THEN target_incident_id
-          ELSE source_incident_id
-        END AS related_incident_id
-      FROM incident_relationships
-      WHERE source_incident_id = $1 OR target_incident_id = $1
-      ORDER BY created_at DESC;
-    `;
-    const res = await dbClient.query(text, [incidentId]);
+  async findByIncident(incidentId, organizationId = null, client = null) {
+    const dbClient = (organizationId && typeof organizationId === 'object' && organizationId.query)
+      ? organizationId
+      : (client || db);
+    const orgId = (organizationId && typeof organizationId === 'string') ? organizationId : null;
+
+    let text;
+    let params;
+
+    if (orgId) {
+      text = `
+        SELECT
+          id,
+          organization_id,
+          source_incident_id,
+          target_incident_id,
+          relationship_type,
+          confidence_score::float AS confidence_score,
+          rule_id,
+          metadata,
+          created_at,
+          CASE
+            WHEN source_incident_id = $1 THEN target_incident_id
+            ELSE source_incident_id
+          END AS related_incident_id
+        FROM incident_relationships
+        WHERE (source_incident_id = $1 OR target_incident_id = $1)
+          AND organization_id = $2
+        ORDER BY created_at DESC;
+      `;
+      params = [incidentId, orgId];
+    } else {
+      text = `
+        SELECT
+          id,
+          organization_id,
+          source_incident_id,
+          target_incident_id,
+          relationship_type,
+          confidence_score::float AS confidence_score,
+          rule_id,
+          metadata,
+          created_at,
+          CASE
+            WHEN source_incident_id = $1 THEN target_incident_id
+            ELSE source_incident_id
+          END AS related_incident_id
+        FROM incident_relationships
+        WHERE source_incident_id = $1 OR target_incident_id = $1
+        ORDER BY created_at DESC;
+      `;
+      params = [incidentId];
+    }
+
+    const res = await dbClient.query(text, params);
     return res.rows;
   },
 

@@ -7,7 +7,8 @@ ALTER TABLE public.incidents
   ADD COLUMN IF NOT EXISTS priority VARCHAR(10) NOT NULL DEFAULT 'P3' CHECK (priority IN ('P1', 'P2', 'P3', 'P4')),
   ADD COLUMN IF NOT EXISTS assigned_to UUID NULL REFERENCES public.users(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS assigned_at TIMESTAMPTZ NULL,
-  ADD COLUMN IF NOT EXISTS escalated_at TIMESTAMPTZ NULL;
+  ADD COLUMN IF NOT EXISTS escalated_at TIMESTAMPTZ NULL,
+  ADD COLUMN IF NOT EXISTS baseline_severity VARCHAR(20) NULL;
 
 -- 2. Incident Notes Table
 CREATE TABLE IF NOT EXISTS public.incident_notes (

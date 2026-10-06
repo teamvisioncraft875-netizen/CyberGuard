@@ -11,10 +11,10 @@ const router = express.Router();
  */
 
 // List incident groups with filtering
-router.get('/', auth, incidentGroupController.listGroups);
+router.get('/', auth, roleCheck(['admin', 'analyst']), incidentGroupController.listGroups);
 
 // Get incident group details, members, and aggregate metrics
-router.get('/:id', auth, incidentGroupController.getGroupById);
+router.get('/:id', auth, roleCheck(['admin', 'analyst']), incidentGroupController.getGroupById);
 
 // Resolve an incident group and its member incidents (admin only)
 router.post('/:id/resolve', auth, roleCheck(['admin']), incidentGroupController.resolveGroup);

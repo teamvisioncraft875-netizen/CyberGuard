@@ -25,10 +25,17 @@ const attackChainController = {
     try {
       const orgId = req.user?.organization_id;
 
+      if (!orgId) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'User is not associated with an organization'
+        });
+      }
+
       // Verify incident exists and belongs to the user's organization
       const incRes = await db.query(
-        `SELECT id, organization_id FROM public.incidents WHERE id = $1;`,
-        [id]
+        `SELECT id, organization_id FROM public.incidents WHERE id = $1 AND organization_id = $2;`,
+        [id, orgId]
       );
 
       if (incRes.rows.length === 0) {
@@ -38,20 +45,11 @@ const attackChainController = {
         });
       }
 
-      const incident = incRes.rows[0];
-      if (orgId && incident.organization_id && incident.organization_id !== orgId) {
-        return res.status(404).json({
-          error: 'NOT_FOUND',
-          message: 'Incident not found'
-        });
-      }
-
-      const effectiveOrgId = orgId || incident.organization_id;
-      const chain = await attackChainService.getAttackChain(id, effectiveOrgId);
+      const chain = await attackChainService.getAttackChain(id, orgId);
 
       // Audit log: ATTACK_CHAIN_VIEWED
       await auditLog({
-        organization_id: effectiveOrgId,
+        organization_id: orgId,
         user_id: req.user?.id || null,
         actor_type: req.user?.role === 'admin' ? 'admin' : 'user',
         action: AUDIT_ACTIONS.ATTACK_CHAIN_VIEWED || 'ATTACK_CHAIN_VIEWED',
@@ -96,10 +94,17 @@ const attackChainController = {
     try {
       const orgId = req.user?.organization_id;
 
+      if (!orgId) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'User is not associated with an organization'
+        });
+      }
+
       // Verify incident exists and belongs to user's organization
       const incRes = await db.query(
-        `SELECT id, organization_id FROM public.incidents WHERE id = $1;`,
-        [id]
+        `SELECT id, organization_id FROM public.incidents WHERE id = $1 AND organization_id = $2;`,
+        [id, orgId]
       );
 
       if (incRes.rows.length === 0) {
@@ -109,16 +114,7 @@ const attackChainController = {
         });
       }
 
-      const incident = incRes.rows[0];
-      if (orgId && incident.organization_id && incident.organization_id !== orgId) {
-        return res.status(404).json({
-          error: 'NOT_FOUND',
-          message: 'Incident not found'
-        });
-      }
-
-      const effectiveOrgId = orgId || incident.organization_id;
-      const graph = await attackChainService.getAttackChainGraph(id, effectiveOrgId);
+      const graph = await attackChainService.getAttackChainGraph(id, orgId);
 
       return res.status(200).json(graph);
     } catch (err) {

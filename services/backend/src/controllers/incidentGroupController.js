@@ -15,6 +15,14 @@ const incidentGroupController = {
   async listGroups(req, res) {
     try {
       const orgId = req.user?.organization_id;
+
+      if (!orgId) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'User is not associated with an organization'
+        });
+      }
+
       const { status, group_type, page = 1 } = req.query;
       const limit = Math.max(1, Math.min(parseInt(req.query.limit, 10) || 25, 100));
       const parsedPage = Math.max(1, parseInt(page, 10) || 1);
@@ -70,17 +78,17 @@ const incidentGroupController = {
 
     try {
       const orgId = req.user?.organization_id;
-      const group = await IncidentGroup.findById(id);
 
-      if (!group) {
-        return res.status(404).json({
-          error: 'NOT_FOUND',
-          message: 'Incident group not found'
+      if (!orgId) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'User is not associated with an organization'
         });
       }
 
-      // Tenant isolation check
-      if (orgId && group.organization_id && group.organization_id !== orgId) {
+      const group = await IncidentGroup.findById(id, orgId);
+
+      if (!group) {
         return res.status(404).json({
           error: 'NOT_FOUND',
           message: 'Incident group not found'
@@ -122,6 +130,14 @@ const incidentGroupController = {
 
     try {
       const orgId = req.user?.organization_id;
+
+      if (!orgId) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'User is not associated with an organization'
+        });
+      }
+
       const resolvedById = req.user?.id || null;
 
       const result = await incidentGroupingService.resolveGroup(id, orgId, resolvedById);

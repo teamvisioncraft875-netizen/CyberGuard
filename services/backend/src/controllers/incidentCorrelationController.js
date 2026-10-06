@@ -24,10 +24,19 @@ const incidentCorrelationController = {
 
     const orgId = req.user?.organization_id;
 
+    if (!orgId) {
+      return res.status(403).json({
+        error: 'FORBIDDEN',
+        message: 'User is not associated with an organization'
+      });
+    }
+
     try {
       // 1. Verify incident exists and belongs to the user's organization
-      let incidentQuery = `SELECT id, organization_id FROM public.incidents WHERE id = $1;`;
-      const incRes = await db.query(incidentQuery, [id]);
+      const incRes = await db.query(
+        `SELECT id, organization_id FROM public.incidents WHERE id = $1 AND organization_id = $2;`,
+        [id, orgId]
+      );
 
       if (incRes.rows.length === 0) {
         return res.status(404).json({
@@ -36,26 +45,11 @@ const incidentCorrelationController = {
         });
       }
 
-      const incident = incRes.rows[0];
-
-      // Strict tenant isolation: user's org must match incident's org
-      if (orgId && incident.organization_id && incident.organization_id !== orgId) {
-        return res.status(404).json({
-          error: 'NOT_FOUND',
-          message: 'Incident not found'
-        });
-      }
-
-      // 2. Fetch all relationships where this incident is source or target
-      const relationships = await IncidentRelationship.findByIncident(id);
-
-      // Filter by tenant organization if applicable
-      const tenantFiltered = orgId
-        ? relationships.filter(r => !r.organization_id || r.organization_id === orgId)
-        : relationships;
+      // 2. Fetch all relationships where this incident is source or target in this organization
+      const relationships = await IncidentRelationship.findByIncident(id, orgId);
 
       // 3. Format response as specified in API contract
-      const formatted = tenantFiltered.map(r => ({
+      const formatted = relationships.map(r => ({
         relationship_type: r.relationship_type,
         confidence_score: typeof r.confidence_score === 'number' ? r.confidence_score : parseFloat(r.confidence_score),
         related_incident_id: r.related_incident_id,

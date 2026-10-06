@@ -45,7 +45,7 @@ class RiskScoringService {
 
     // 1. Fetch incident record with strict tenant isolation
     const incRes = await dbClient.query(
-      `SELECT id, user_id, organization_id, threat_type, risk_level, risk_score, occurrence_count, device_id
+      `SELECT id, user_id, organization_id, threat_type, risk_level, risk_score, occurrence_count, device_id, baseline_severity
        FROM public.incidents
        WHERE id = $1 AND organization_id = $2;`,
       [incidentId, organizationId]
@@ -57,10 +57,10 @@ class RiskScoringService {
 
     const incident = incRes.rows[0];
 
-    // 2. Incident Severity Weight aligned to level scale (0-25 Low, 26-50 Medium, 51-75 High, 76-100 Critical)
+    // 2. Baseline Severity Weight (derived from immutable baseline_severity to prevent feedback inflation)
     let severityWeight = 28;
-    const currentLevel = (incident.risk_level || '').toLowerCase();
-    switch (currentLevel) {
+    const baselineLevel = (incident.baseline_severity || incident.risk_level || '').toLowerCase();
+    switch (baselineLevel) {
       case 'critical':
         severityWeight = 76;
         break;
@@ -185,9 +185,9 @@ class RiskScoringService {
 
     await dbClient.query(
       `UPDATE public.incidents
-       SET risk_score = $1, risk_level = $2::risk_level
+       SET risk_score = $1, risk_level = $2::risk_level, baseline_severity = COALESCE(baseline_severity, $5)
        WHERE id = $3 AND organization_id = $4;`,
-      [finalScore, newRiskLevel, incidentId, organizationId]
+      [finalScore, newRiskLevel, incidentId, organizationId, baselineLevel]
     );
 
     // Audit log if score changed

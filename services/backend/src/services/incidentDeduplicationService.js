@@ -211,8 +211,10 @@ class IncidentDeduplicationService {
     const sql = `
       SELECT *
       FROM public.incidents
-      WHERE ($1::uuid IS NULL AND organization_id IS NULL)
-         OR ($1::uuid IS NOT NULL AND organization_id = $1::uuid)
+      WHERE (
+        ($1::uuid IS NULL AND organization_id IS NULL)
+        OR ($1::uuid IS NOT NULL AND organization_id = $1::uuid)
+      )
       AND fingerprint = $2
       AND status = 'open'
       AND last_seen_at >= NOW() - ($3 || ' minutes')::interval

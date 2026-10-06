@@ -150,9 +150,21 @@ class IncidentPrioritizationService {
         ig.id as campaign_id
       FROM public.incidents i
       LEFT JOIN public.users u ON u.id = i.assigned_to
-      LEFT JOIN public.attack_chain_snapshots acs ON acs.root_incident_id = i.id
-      LEFT JOIN public.incident_group_members igm ON igm.incident_id = i.id
-      LEFT JOIN public.incident_groups ig ON ig.id = igm.group_id
+      LEFT JOIN LATERAL (
+        SELECT chain_length
+        FROM public.attack_chain_snapshots
+        WHERE root_incident_id = i.id
+        ORDER BY chain_length DESC, created_at DESC
+        LIMIT 1
+      ) acs ON true
+      LEFT JOIN LATERAL (
+        SELECT ig.id, ig.title
+        FROM public.incident_group_members igm
+        JOIN public.incident_groups ig ON ig.id = igm.group_id
+        WHERE igm.incident_id = i.id
+        ORDER BY igm.joined_at DESC
+        LIMIT 1
+      ) ig ON true
       WHERE ${conditions.join(' AND ')}
       ORDER BY 
         CASE i.priority
@@ -216,9 +228,21 @@ class IncidentPrioritizationService {
         ig.title as campaign_name
       FROM public.incidents i
       LEFT JOIN public.users u ON u.id = i.assigned_to
-      LEFT JOIN public.attack_chain_snapshots acs ON acs.root_incident_id = i.id
-      LEFT JOIN public.incident_group_members igm ON igm.incident_id = i.id
-      LEFT JOIN public.incident_groups ig ON ig.id = igm.group_id
+      LEFT JOIN LATERAL (
+        SELECT chain_length
+        FROM public.attack_chain_snapshots
+        WHERE root_incident_id = i.id
+        ORDER BY chain_length DESC, created_at DESC
+        LIMIT 1
+      ) acs ON true
+      LEFT JOIN LATERAL (
+        SELECT ig.title
+        FROM public.incident_group_members igm
+        JOIN public.incident_groups ig ON ig.id = igm.group_id
+        WHERE igm.incident_id = i.id
+        ORDER BY igm.joined_at DESC
+        LIMIT 1
+      ) ig ON true
       WHERE ${conditions.join(' AND ')}
       ORDER BY 
         CASE i.priority

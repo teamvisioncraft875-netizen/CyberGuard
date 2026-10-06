@@ -55,10 +55,22 @@ const IncidentGroup = {
   /**
    * Finds an incident group by ID.
    */
-  async findById(id, client = null) {
-    const dbClient = client || db;
-    const text = `SELECT * FROM public.incident_groups WHERE id = $1;`;
-    const res = await dbClient.query(text, [id]);
+  async findById(id, organizationId = null, client = null) {
+    const dbClient = (organizationId && typeof organizationId === 'object' && organizationId.query)
+      ? organizationId
+      : (client || db);
+    const orgId = (organizationId && typeof organizationId === 'string') ? organizationId : null;
+
+    let text;
+    let params;
+    if (orgId) {
+      text = `SELECT * FROM public.incident_groups WHERE id = $1 AND organization_id = $2;`;
+      params = [id, orgId];
+    } else {
+      text = `SELECT * FROM public.incident_groups WHERE id = $1;`;
+      params = [id];
+    }
+    const res = await dbClient.query(text, params);
     return res.rows[0] || null;
   },
 

@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS public.attack_chain_snapshots (
 
   attack_chain_group_id UUID NULL
     REFERENCES public.incident_groups(id)
-    ON DELETE CASCADE,
+    ON DELETE SET NULL,
 
   confidence_score NUMERIC(4,3)
     NOT NULL DEFAULT 0.800,

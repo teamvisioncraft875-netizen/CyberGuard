@@ -138,6 +138,14 @@ async function assignGroup({
       // Move all memberships from orphan to survivor
       await IncidentGroupMember.moveMembers(orphan.id, survivor.id, dbClient);
 
+      // Migrate attack chain snapshots from orphan to survivor group to preserve attack chains
+      await dbClient.query(
+        `UPDATE public.attack_chain_snapshots
+         SET attack_chain_group_id = $1, updated_at = NOW()
+         WHERE attack_chain_group_id = $2;`,
+        [survivor.id, orphan.id]
+      );
+
       // Delete orphan group
       await IncidentGroup.delete(orphan.id, dbClient);
 
