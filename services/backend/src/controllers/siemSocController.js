@@ -2,6 +2,7 @@ const SiemAlert = require('../models/SiemAlert');
 const socMetricsService = require('../services/siem/socMetricsService');
 const timelineService = require('../services/siem/timelineService');
 const streamingService = require('../services/siem/streamingService');
+const performanceMetricsService = require('../services/siem/performanceMetricsService');
 const { log: auditLog, AUDIT_ACTIONS } = require('../services/auditService');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -422,6 +423,69 @@ const siemSocController = {
       return res.status(500).json({
         error: 'INTERNAL_SERVER_ERROR',
         message: 'Failed to retrieve unified security timeline'
+      });
+    }
+  },
+
+  /**
+   * 6. Performance Dashboard APIs (Phase 4)
+   * GET /api/v1/siem/performance
+   */
+  async getPerformance(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Access denied: Valid organization_id is required'
+        });
+      }
+
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Admin privileges required to access performance telemetry'
+        });
+      }
+
+      const summary = performanceMetricsService.getSummary(orgId);
+      return res.status(200).json(summary);
+    } catch (err) {
+      console.error('[siemSocController getPerformance Error]', err);
+      return res.status(500).json({
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to retrieve performance telemetry'
+      });
+    }
+  },
+
+  /**
+   * GET /api/v1/siem/performance/history
+   */
+  async getPerformanceHistory(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Access denied: Valid organization_id is required'
+        });
+      }
+
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Admin privileges required to access performance telemetry'
+        });
+      }
+
+      const history = performanceMetricsService.getHistory(orgId);
+      return res.status(200).json({ data: history });
+    } catch (err) {
+      console.error('[siemSocController getPerformanceHistory Error]', err);
+      return res.status(500).json({
+        error: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to retrieve performance history'
       });
     }
   }

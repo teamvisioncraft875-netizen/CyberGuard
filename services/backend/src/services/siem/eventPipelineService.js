@@ -4,6 +4,7 @@ const EventBurstDetectionService = require('./eventBurstDetectionService');
 const LateralMovementService = require('./lateralMovementService');
 const correlationRuleEngine = require('./correlationRuleEngine');
 const streamingService = require('./streamingService');
+const performanceMetricsService = require('./performanceMetricsService');
 
 /**
  * Event Pipeline Service — Master orchestrator for real-time SIEM event intake:
@@ -27,6 +28,8 @@ const EventPipelineService = {
       throw new Error('Pipeline Error: organizationId is required');
     }
 
+    const tIngestStart = Date.now();
+
     // 1. Ingest, Normalize, and Store in Bulk
     const ingestionResult = await IngestionService.ingestEvents({
       organizationId,
@@ -37,6 +40,11 @@ const EventPipelineService = {
       deviceId,
       client
     });
+
+    performanceMetricsService.recordIngestion(
+      Array.isArray(events) ? events.length : 1,
+      Date.now() - tIngestStart
+    );
 
     const {
       job_id,
@@ -123,11 +131,14 @@ const EventPipelineService = {
             ? normalizedEvents.filter(e => !handledSingleEventTypes.has(e.event_type) && String(e.event_id) !== '1102')
             : normalizedEvents;
 
+          const tCorrStart = Date.now();
           const correlationHits = await correlationRuleEngine.evaluateBatch(
             eventsForCorrelation,
             organizationId,
             client
           );
+          performanceMetricsService.recordDetection(Date.now() - tCorrStart);
+
           if (Array.isArray(correlationHits) && correlationHits.length > 0) {
             for (const hit of correlationHits) {
               if (hit.incident) {

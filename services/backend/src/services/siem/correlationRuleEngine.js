@@ -208,7 +208,9 @@ class CorrelationRuleEngine {
     }
 
     const cutoff = now - this.WINDOWS.FIVE_MIN;
-    entry.items = entry.items.filter(i => i.timestamp >= cutoff);
+    while (entry.items.length > 0 && entry.items[0].timestamp < cutoff) {
+      entry.items.shift();
+    }
     entry.items.push({ timestamp: now, eventId: event.id || event.event_id || null, data: event });
 
     if (entry.items.length >= 10 && (now - entry.lastTriggered >= this.WINDOWS.FIVE_MIN)) {
@@ -252,19 +254,31 @@ class CorrelationRuleEngine {
     const now = Date.now();
     let entry = this.passwordSprayStore.get(key);
     if (!entry) {
-      entry = { items: [], lastTriggered: 0 };
+      entry = { queue: [], userCounts: new Map(), lastTriggered: 0 };
       this.passwordSprayStore.set(key, entry);
     }
 
     const cutoff = now - this.WINDOWS.FIFTEEN_MIN;
-    entry.items = entry.items.filter(i => i.timestamp >= cutoff);
-    entry.items.push({ timestamp: now, user: user.toLowerCase(), eventId: event.id || null });
+    while (entry.queue.length > 0 && entry.queue[0].timestamp < cutoff) {
+      const expired = entry.queue.shift();
+      const current = entry.userCounts.get(expired.user) || 1;
+      if (current <= 1) {
+        entry.userCounts.delete(expired.user);
+      } else {
+        entry.userCounts.set(expired.user, current - 1);
+      }
+    }
 
-    const distinctUsers = Array.from(new Set(entry.items.map(i => i.user)));
+    const normalizedUser = user.toLowerCase();
+    entry.queue.push({ timestamp: now, user: normalizedUser, eventId: event.id || null });
+    entry.userCounts.set(normalizedUser, (entry.userCounts.get(normalizedUser) || 0) + 1);
 
-    if (distinctUsers.length >= 10 && (now - entry.lastTriggered >= this.WINDOWS.FIFTEEN_MIN)) {
+    const distinctUsersCount = entry.userCounts.size;
+
+    if (distinctUsersCount >= 10 && (now - entry.lastTriggered >= this.WINDOWS.FIFTEEN_MIN)) {
       entry.lastTriggered = now;
-      const eventIds = entry.items.map(i => i.eventId).filter(Boolean);
+      const eventIds = entry.queue.map(i => i.eventId).filter(Boolean);
+      const distinctUsers = Array.from(entry.userCounts.keys());
 
       return this._recordHitAndIncident({
         organizationId: orgId,
@@ -494,7 +508,9 @@ class CorrelationRuleEngine {
     }
 
     const cutoff = now - this.WINDOWS.ONE_HOUR;
-    entry.items = entry.items.filter(i => i.timestamp >= cutoff);
+    while (entry.items.length > 0 && entry.items[0].timestamp < cutoff) {
+      entry.items.shift();
+    }
     entry.items.push({ timestamp: now, eventId: event.id || null });
 
     if (entry.items.length >= 20 && (now - entry.lastTriggered >= this.WINDOWS.ONE_HOUR)) {
@@ -678,24 +694,45 @@ class CorrelationRuleEngine {
   evictStaleWindows() {
     const now = Date.now();
 
-    const prune = (store, windowMs) => {
+    const pruneItems = (store, windowMs) => {
       const cutoff = now - windowMs;
       for (const [k, v] of store.entries()) {
         if (v.items) {
-          v.items = v.items.filter(i => i.timestamp >= cutoff);
+          while (v.items.length > 0 && v.items[0].timestamp < cutoff) {
+            v.items.shift();
+          }
           if (v.items.length === 0 && now - v.lastTriggered > windowMs) {
             store.delete(k);
           }
-        } else if (v.loginTimestamp && now - v.loginTimestamp > windowMs) {
-          store.delete(k);
         }
       }
     };
 
-    prune(this.bruteForceStore, this.WINDOWS.FIVE_MIN);
-    prune(this.passwordSprayStore, this.WINDOWS.FIFTEEN_MIN);
-    prune(this.privEscStore, this.WINDOWS.THIRTY_MIN);
-    prune(this.beaconStore, this.WINDOWS.ONE_HOUR);
+    pruneItems(this.bruteForceStore, this.WINDOWS.FIVE_MIN);
+    pruneItems(this.beaconStore, this.WINDOWS.ONE_HOUR);
+
+    // Prune password spray with userCounts map
+    const sprayCutoff = now - this.WINDOWS.FIFTEEN_MIN;
+    for (const [k, v] of this.passwordSprayStore.entries()) {
+      if (v.queue) {
+        while (v.queue.length > 0 && v.queue[0].timestamp < sprayCutoff) {
+          const expired = v.queue.shift();
+          const c = (v.userCounts.get(expired.user) || 1) - 1;
+          if (c <= 0) v.userCounts.delete(expired.user);
+          else v.userCounts.set(expired.user, c);
+        }
+        if (v.queue.length === 0 && now - v.lastTriggered > this.WINDOWS.FIFTEEN_MIN) {
+          this.passwordSprayStore.delete(k);
+        }
+      }
+    }
+
+    // Prune priv esc
+    for (const [k, v] of this.privEscStore.entries()) {
+      if (v.loginTimestamp && now - v.loginTimestamp > this.WINDOWS.THIRTY_MIN) {
+        this.privEscStore.delete(k);
+      }
+    }
   }
 
   /**

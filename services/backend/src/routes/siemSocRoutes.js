@@ -26,4 +26,8 @@ router.get('/queue', siemSocController.getQueue);
 // 5. Timeline API
 router.get('/timeline', siemSocController.getTimeline);
 
+// 6. Performance Dashboard APIs (Admin Only)
+router.get('/performance', roleCheck(['admin']), siemSocController.getPerformance);
+router.get('/performance/history', roleCheck(['admin']), siemSocController.getPerformanceHistory);
+
 module.exports = router;
