@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { authService } from '../services/authService';
 
 const AuthContext = createContext(null);
@@ -15,15 +16,25 @@ export function AuthProvider({ children }) {
       setUser(null);
     };
 
+    const handleTokenRefreshed = (e) => {
+      if (e.detail?.token) {
+        setToken(e.detail.token);
+      }
+    };
+
     window.addEventListener('cyberguard:unauthorized', handleUnauthorized);
-    return () => window.removeEventListener('cyberguard:unauthorized', handleUnauthorized);
+    window.addEventListener('cyberguard:token-refreshed', handleTokenRefreshed);
+    return () => {
+      window.removeEventListener('cyberguard:unauthorized', handleUnauthorized);
+      window.removeEventListener('cyberguard:token-refreshed', handleTokenRefreshed);
+    };
   }, []);
 
   const login = useCallback(async (email, password) => {
     setLoading(true);
     try {
       const res = await authService.login(email, password);
-      setToken(res?.token || null);
+      setToken(res?.token || res?.accessToken || null);
       setUser(res?.user || null);
       return res;
     } finally {
@@ -31,11 +42,11 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const signup = useCallback(async (email, password, fullName, role) => {
+  const signup = useCallback(async (email, password, fullName, role = 'individual', organizationName = undefined) => {
     setLoading(true);
     try {
-      const res = await authService.signup(email, password, fullName, role);
-      setToken(res?.token || null);
+      const res = await authService.signup(email, password, fullName, role, organizationName);
+      setToken(res?.token || res?.accessToken || null);
       setUser(res?.user || null);
       return res;
     } finally {
@@ -43,8 +54,8 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const logout = useCallback(() => {
-    authService.logout();
+  const logout = useCallback(async () => {
+    await authService.logout();
     setToken(null);
     setUser(null);
   }, []);
@@ -54,6 +65,7 @@ export function AuthProvider({ children }) {
     token,
     loading,
     isAuthenticated: Boolean(token),
+    isAdmin: user?.role === 'admin',
     login,
     signup,
     logout,
@@ -70,17 +82,26 @@ export function useAuth() {
   return context;
 }
 
-import { Navigate, useLocation } from 'react-router-dom';
-
-export function ProtectedRoute({ children, fallback = null, onUnauthorized }) {
-  const { isAuthenticated, loading } = useAuth();
+export function ProtectedRoute({
+  children,
+  fallback = null,
+  onUnauthorized,
+  requiredRole,
+  allowedRoles,
+}) {
+  const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
 
+  const authorizedRoles = allowedRoles || (requiredRole ? [requiredRole] : null);
+  const isRoleAuthorized = !authorizedRoles || Boolean(user?.role && authorizedRoles.includes(user.role));
+
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      onUnauthorized?.();
+    if (!loading) {
+      if (!isAuthenticated || !isRoleAuthorized) {
+        onUnauthorized?.();
+      }
     }
-  }, [isAuthenticated, loading, onUnauthorized]);
+  }, [isAuthenticated, loading, isRoleAuthorized, onUnauthorized]);
 
   if (loading) {
     return fallback;
@@ -90,6 +111,9 @@ export function ProtectedRoute({ children, fallback = null, onUnauthorized }) {
     return fallback || <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  if (!isRoleAuthorized) {
+    return fallback || <Navigate to="/" replace />;
+  }
+
   return children;
 }
-

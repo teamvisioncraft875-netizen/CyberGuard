@@ -8,6 +8,7 @@ import {
   SettingsPage,
   DesignSystemPage,
   AttackSurfacePage,
+  FirewallPage,
 } from './index';
 import { LoginPage } from './LoginPage';
 import { SignupPage } from './SignupPage';
@@ -21,6 +22,7 @@ export const ROUTES = Object.freeze({
   ATTACK_SURFACE: '/attack-surface',
   RESPONSE_ACTIONS: '/response-actions',
   SCANS: '/scans',
+  FIREWALL: '/firewall',
   GUARDIAN: '/guardian',
   SETTINGS: '/settings',
   DESIGN_SYSTEM: '/design-system',
@@ -109,7 +111,7 @@ export function AppRoutes({
       <Route
         path="/attack-surface"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="admin">
             <AppLayout onSearchFocus={onSearchFocus}>
               <AttackSurfacePage initialTab="overview" onTriggerToast={onTriggerAlert} />
             </AppLayout>
@@ -119,7 +121,7 @@ export function AppRoutes({
       <Route
         path="/pages/security/attack-surface"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="admin">
             <AppLayout onSearchFocus={onSearchFocus}>
               <AttackSurfacePage initialTab="overview" onTriggerToast={onTriggerAlert} />
             </AppLayout>
@@ -129,7 +131,7 @@ export function AppRoutes({
       <Route
         path="/response-actions"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="admin">
             <AppLayout onSearchFocus={onSearchFocus}>
               <AttackSurfacePage initialTab="response-actions" onTriggerToast={onTriggerAlert} />
             </AppLayout>
@@ -139,7 +141,7 @@ export function AppRoutes({
       <Route
         path="/pages/security/response-actions"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="admin">
             <AppLayout onSearchFocus={onSearchFocus}>
               <AttackSurfacePage initialTab="response-actions" onTriggerToast={onTriggerAlert} />
             </AppLayout>
@@ -149,7 +151,7 @@ export function AppRoutes({
       <Route
         path="/scans"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="admin">
             <AppLayout onSearchFocus={onSearchFocus}>
               <AttackSurfacePage initialTab="scans" onTriggerToast={onTriggerAlert} />
             </AppLayout>
@@ -159,9 +161,20 @@ export function AppRoutes({
       <Route
         path="/pages/security/scans"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="admin">
             <AppLayout onSearchFocus={onSearchFocus}>
               <AttackSurfacePage initialTab="scans" onTriggerToast={onTriggerAlert} />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/firewall"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AppLayout onSearchFocus={onSearchFocus}>
+              <FirewallPage onTriggerToast={onTriggerAlert} />
             </AppLayout>
           </ProtectedRoute>
         }

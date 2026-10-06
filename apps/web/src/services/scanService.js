@@ -28,14 +28,78 @@ export const scanService = {
   },
 
   /**
+   * Request signed upload URL from gateway for direct-to-Supabase storage upload
+   * POST /api/v1/media/upload-url
+   */
+  async getUploadUrl({ media_type, file_size_bytes, file_name }) {
+    const data = await apiClient.post('/media/upload-url', {
+      media_type,
+      file_size_bytes,
+      file_name,
+    });
+    return data;
+  },
+
+  /**
+   * Upload raw binary directly to Supabase storage signed URL.
+   * Uses native XMLHttpRequest to avoid client-side auth header leakage and provides real byte progress.
+   */
+  async uploadFileToSignedUrl(uploadUrl, file, onProgress) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', uploadUrl);
+      xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+
+      if (xhr.upload && typeof onProgress === 'function') {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable && event.total > 0) {
+            const percent = Math.round((event.loaded / event.total) * 100);
+            onProgress(percent);
+          }
+        };
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(xhr.response);
+        } else {
+          const err = new Error(`Storage upload failed with HTTP status ${xhr.status}`);
+          err.status = xhr.status;
+          err.code = 'UPLOAD_FAILED';
+          reject(err);
+        }
+      };
+
+      xhr.onerror = () => {
+        const err = new Error('Network error occurred during direct storage upload');
+        err.code = 'NETWORK_ERROR';
+        reject(err);
+      };
+
+      xhr.ontimeout = () => {
+        const err = new Error('Storage upload request timed out');
+        err.code = 'TIMEOUT';
+        reject(err);
+      };
+
+      xhr.send(file);
+    });
+  },
+
+  /**
    * Inspect image or audio file for synthetic deepfake artifacts
    * POST /api/v1/check/media
    */
-  async checkMedia({ file_url, media_type = 'image' }) {
-    const data = await apiClient.post('/check/media', {
-      file_url,
-      media_type,
-    });
+  async checkMedia({ file_path, file_url, media_type = 'image' }) {
+    const payload = { media_type };
+    if (file_path) {
+      payload.file_path = file_path;
+    }
+    if (file_url) {
+      payload.file_url = file_url;
+    }
+
+    const data = await apiClient.post('/check/media', payload);
     return data;
   },
 };

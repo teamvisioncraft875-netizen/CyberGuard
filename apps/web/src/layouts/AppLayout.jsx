@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../utils/cn';
@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Radar,
   AlertTriangle,
-  Bot,
   Sliders,
   Menu,
   X,
@@ -15,8 +14,14 @@ import {
   Bell,
   HelpCircle,
   Crosshair,
+  ShieldCheck,
+  Flame,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
+import { useSocket } from '../hooks/useSocket';
+import { normalizeRisk } from '../utils/risk';
+import { formatRelativeTime } from '../utils/format';
+import { analyticsService } from '../services';
 
 export function AppLayout({
   children,
@@ -30,7 +35,53 @@ export function AppLayout({
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, isAdmin } = useAuth();
+  const { unreadAlertsCount, resetUnreadCount, liveAlerts, isConnected, onIncident } = useSocket();
+
+  const [activeThreatCount, setActiveThreatCount] = useState(null);
+
+  // Fetch real-time active threat count for the Incidents badge
+  useEffect(() => {
+    let isMounted = true;
+    if (!user) {
+      setActiveThreatCount(null);
+      return;
+    }
+
+    analyticsService
+      .getOverview()
+      .then((data) => {
+        if (isMounted && typeof data?.active_threats === 'number') {
+          setActiveThreatCount(data.active_threats);
+        }
+      })
+      .catch((_err) => {
+        // Safe fallback: leave as null so no fake or misleading badge displays
+        if (isMounted) {
+          setActiveThreatCount(null);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  // Dynamically update active threats count when live socket incidents arrive
+  useEffect(() => {
+    if (!onIncident) return;
+    const unsubscribe = onIncident((incident) => {
+      if (!incident || incident.status === 'resolved') return;
+      setActiveThreatCount((prev) => (prev != null ? prev + 1 : 1));
+    });
+    return unsubscribe;
+  }, [onIncident]);
+
+  // Compute incident badge text (null if 0 or unavailable)
+  const incidentBadge = useMemo(() => {
+    if (activeThreatCount == null || activeThreatCount <= 0) return null;
+    return activeThreatCount > 99 ? '99+' : String(activeThreatCount);
+  }, [activeThreatCount]);
 
   // Compute dynamic user initials and display name gracefully from authenticated session
   const displayName = user?.full_name?.trim() || user?.email?.split('@')[0] || 'Security Analyst';
@@ -55,20 +106,50 @@ export function AppLayout({
     return 'SA';
   })();
 
-  const navigationItems = [
-    { id: 'dashboard', path: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'attack-surface', path: '/attack-surface', label: 'Attack Surface', icon: Crosshair, badge: 'Live', badgeColor: 'bg-amber-500/15 text-amber-500 border border-amber-500/30' },
-    { id: 'scan-center', path: '/scan-center', label: 'Scan Center', icon: Radar },
-    { id: 'incidents', path: '/incidents', label: 'Incidents', icon: AlertTriangle, badge: '8', badgeColor: 'bg-destructive/15 text-destructive border border-destructive/30' },
-    { id: 'guardian', path: '/guardian', label: 'Guardian', icon: Bot },
-    { id: 'settings', path: '/settings', label: 'Settings', icon: Sliders },
-  ];
+  const navigationItems = useMemo(() => {
+    const items = [
+      { id: 'dashboard', path: '/', label: 'Dashboard', icon: LayoutDashboard },
+      {
+        id: 'attack-surface',
+        path: '/attack-surface',
+        label: 'Attack Surface',
+        icon: Crosshair,
+        adminOnly: true,
+        badge: 'Live',
+        badgeColor: 'bg-amber-500/15 text-amber-500 border border-amber-500/30',
+      },
+      { id: 'scan-center', path: '/scan-center', label: 'Scan Center', icon: Radar },
+      {
+        id: 'incidents',
+        path: '/incidents',
+        label: 'Incidents',
+        icon: AlertTriangle,
+        badge: incidentBadge,
+        badgeColor: 'bg-destructive/15 text-destructive border border-destructive/30',
+      },
+      {
+        id: 'firewall',
+        path: '/firewall',
+        label: 'Firewall',
+        icon: Flame,
+        adminOnly: true,
+      },
+      { id: 'guardian', path: '/guardian', label: 'Guardian Mode', icon: ShieldCheck },
+      { id: 'settings', path: '/settings', label: 'Settings', icon: Sliders },
+    ];
+
+    return items.filter((item) => !item.adminOnly || isAdmin);
+  }, [isAdmin, incidentBadge]);
 
   const handleNavClick = (itemOrId) => {
     let id = typeof itemOrId === 'string' ? itemOrId : itemOrId.id;
     let path = typeof itemOrId === 'string'
       ? (navigationItems.find((i) => i.id === itemOrId)?.path || (itemOrId === 'dashboard' ? '/' : `/${itemOrId}`))
       : itemOrId.path;
+
+    if ((id === 'attack-surface' || id === 'firewall') && !isAdmin) {
+      return;
+    }
 
     onNavChange?.(id);
     if (path) {
@@ -140,36 +221,103 @@ export function AppLayout({
           <div className="relative">
             <button
               type="button"
-              onClick={() => setNotificationsOpen(!notificationsOpen)}
+              onClick={() => {
+                const nextOpen = !notificationsOpen;
+                setNotificationsOpen(nextOpen);
+                if (nextOpen && unreadAlertsCount > 0) {
+                  resetUnreadCount();
+                }
+              }}
               className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               aria-label="Alerts"
             >
               <Bell className="w-5 h-5" />
-              <span className="absolute top-1 right-1 flex items-center justify-center h-4 min-w-[1rem] px-1 bg-destructive text-destructive-foreground border border-destructive/50 rounded-full font-mono text-[9px] font-bold">
-                3
-              </span>
+              {unreadAlertsCount > 0 && (
+                <span className="absolute top-1 right-1 flex items-center justify-center h-4 min-w-[1rem] px-1 bg-destructive text-destructive-foreground border border-destructive/50 rounded-full font-mono text-[9px] font-bold animate-pulse">
+                  {unreadAlertsCount > 99 ? '99+' : unreadAlertsCount}
+                </span>
+              )}
             </button>
 
             {/* Notification Popover */}
             {notificationsOpen && (
-              <div className="absolute right-0 mt-2 w-80 rounded-xl bg-card border border-border p-4 shadow-2xl z-50 space-y-3 font-sans text-xs">
+              <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-sm sm:w-80 rounded-xl bg-card border border-border p-4 shadow-2xl z-50 space-y-3 font-sans text-xs">
                 <div className="flex items-center justify-between pb-2 border-b border-border">
-                  <span className="font-headline font-bold text-foreground">Recent Alerts (3)</span>
-                  <span className="font-mono text-[10px] text-muted-foreground">Real-time</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-headline font-bold text-foreground">
+                      Live Alerts ({liveAlerts.length})
+                    </span>
+                    <span
+                      className={cn(
+                        'w-2 h-2 rounded-full',
+                        isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground/50'
+                      )}
+                      title={isConnected ? 'Real-time WebSocket active' : 'WebSocket standby'}
+                    />
+                  </div>
+                  {liveAlerts.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={resetUnreadCount}
+                      className="font-mono text-[10px] text-primary hover:underline"
+                    >
+                      Clear Badge
+                    </button>
+                  )}
                 </div>
-                <div className="space-y-2">
-                  <div className="p-2 rounded bg-muted/60 border border-destructive/40">
-                    <span className="text-destructive font-semibold block">Critical: SMS Phishing</span>
-                    <span className="text-muted-foreground text-[11px]">Suspicious banking URL flagged</span>
-                  </div>
-                  <div className="p-2 rounded bg-muted/60 border border-amber-500/40">
-                    <span className="text-amber-600 dark:text-amber-400 font-semibold block">High: Account Takeover</span>
-                    <span className="text-muted-foreground text-[11px]">Failed authentication attempts</span>
-                  </div>
-                  <div className="p-2 rounded bg-muted/60 border border-sky-500/40">
-                    <span className="text-primary font-semibold block">Medium: Malicious URL</span>
-                    <span className="text-muted-foreground text-[11px]">Unverified SSL certificate</span>
-                  </div>
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {liveAlerts.length === 0 ? (
+                    <div className="py-6 text-center text-muted-foreground space-y-1">
+                      <p className="font-medium text-xs text-foreground/80">No incoming alerts yet</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {isConnected
+                          ? 'Real-time incident stream connected.'
+                          : 'Connecting to threat telemetry stream...'}
+                      </p>
+                    </div>
+                  ) : (
+                    liveAlerts.map((alert) => {
+                      const norm = normalizeRisk(alert.risk_level);
+                      return (
+                        <div
+                          key={alert.id}
+                          onClick={() => {
+                            setNotificationsOpen(false);
+                            navigate('/incidents');
+                          }}
+                          className={cn(
+                            'p-2.5 rounded-lg bg-muted/60 border cursor-pointer hover:bg-muted transition-colors space-y-1',
+                            norm === 'critical'
+                              ? 'border-destructive/50'
+                              : norm === 'high'
+                              ? 'border-amber-500/50'
+                              : 'border-border'
+                          )}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span
+                              className={cn(
+                                'font-semibold capitalize text-xs',
+                                norm === 'critical'
+                                  ? 'text-destructive'
+                                  : norm === 'high'
+                                  ? 'text-amber-500'
+                                  : 'text-primary'
+                              )}
+                            >
+                              {norm}: {alert.threat_type?.replace(/_/g, ' ') || 'Threat Event'}
+                            </span>
+                            <span className="text-[10px] font-mono text-muted-foreground">
+                              {formatRelativeTime(alert.created_at)}
+                            </span>
+                          </div>
+                          <p className="text-muted-foreground text-[11px] line-clamp-2 leading-relaxed">
+                            {alert.explanation || 'Anomaly reported'}
+                          </p>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             )}
@@ -262,12 +410,31 @@ export function AppLayout({
             <span>UI Design System</span>
           </button>
 
-          <div className="flex items-center justify-between px-2 text-xs font-mono text-muted-foreground">
-            <span>API Status</span>
-            <span className="flex items-center gap-1.5 text-emerald-500 font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              Connected
-            </span>
+          <div className="space-y-1.5 px-2 text-[11px] font-mono text-muted-foreground">
+            <div className="flex items-center justify-between">
+              <span>API Gateway</span>
+              <span className="flex items-center gap-1.5 text-emerald-500 font-medium">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Connected
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Live Feed</span>
+              <span
+                className={cn(
+                  'flex items-center gap-1.5 font-medium',
+                  isConnected ? 'text-emerald-500' : 'text-muted-foreground'
+                )}
+              >
+                <span
+                  className={cn(
+                    'w-1.5 h-1.5 rounded-full',
+                    isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-muted-foreground/40'
+                  )}
+                />
+                {isConnected ? 'Active' : 'Offline'}
+              </span>
+            </div>
           </div>
 
           <a

@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { Input, Button } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
+import { User, Mail, Lock, Building2, ArrowRight, AlertCircle } from 'lucide-react';
 
 /**
- * Enterprise Account Registration Page
+ * Enterprise & Individual Account Registration Page
  * Connected to POST /api/v1/auth/signup via authService / useAuth
  */
 export function SignupPage({ onSignupSuccess, onNavigateLogin }) {
@@ -13,6 +13,8 @@ export function SignupPage({ onSignupSuccess, onNavigateLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [role, setRole] = useState('individual'); // 'individual' | 'employee'
+  const [organizationName, setOrganizationName] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -24,6 +26,11 @@ export function SignupPage({ onSignupSuccess, onNavigateLogin }) {
 
     if (!fullName.trim() || !email.trim() || !password) {
       setErrorMessage('Please complete all required fields.');
+      return;
+    }
+
+    if (role === 'employee' && !organizationName.trim()) {
+      setErrorMessage('Organization name is required for employee registration.');
       return;
     }
 
@@ -39,7 +46,13 @@ export function SignupPage({ onSignupSuccess, onNavigateLogin }) {
 
     setIsSubmitting(true);
     try {
-      await signup(email.trim(), password, fullName.trim(), 'individual');
+      await signup(
+        email.trim(),
+        password,
+        fullName.trim(),
+        role,
+        role === 'employee' ? organizationName.trim() : undefined
+      );
       onSignupSuccess?.();
     } catch (err) {
       if (err.status === 429 || err.code === 'RATE_LIMITED') {
@@ -69,6 +82,35 @@ export function SignupPage({ onSignupSuccess, onNavigateLogin }) {
           </div>
         )}
 
+        {/* Account Role Toggle */}
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-foreground">Account Type</label>
+          <div className="grid grid-cols-2 gap-2 p-1 bg-muted/40 border border-border/40 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setRole('individual')}
+              className={`py-1.5 px-3 rounded-md text-xs font-medium transition-all ${
+                role === 'individual'
+                  ? 'bg-background text-foreground shadow-sm border border-border/60'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Individual
+            </button>
+            <button
+              type="button"
+              onClick={() => setRole('employee')}
+              className={`py-1.5 px-3 rounded-md text-xs font-medium transition-all ${
+                role === 'employee'
+                  ? 'bg-background text-foreground shadow-sm border border-border/60'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Enterprise / Employee
+            </button>
+          </div>
+        </div>
+
         <Input
           label="Full Name"
           type="text"
@@ -90,6 +132,19 @@ export function SignupPage({ onSignupSuccess, onNavigateLogin }) {
           autoComplete="email"
           required
         />
+
+        {role === 'employee' && (
+          <Input
+            label="Organization Name"
+            type="text"
+            placeholder="e.g. Acme Cyber Security Inc."
+            value={organizationName}
+            onChange={(e) => setOrganizationName(e.target.value)}
+            iconLeft={Building2}
+            autoComplete="organization"
+            required
+          />
+        )}
 
         <Input
           label="Password"
