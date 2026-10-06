@@ -9,6 +9,7 @@ import {
   DesignSystemPage,
   AttackSurfacePage,
   FirewallPage,
+  AgentsPage,
 } from './index';
 import { LoginPage } from './LoginPage';
 import { SignupPage } from './SignupPage';
@@ -23,6 +24,7 @@ export const ROUTES = Object.freeze({
   RESPONSE_ACTIONS: '/response-actions',
   SCANS: '/scans',
   FIREWALL: '/firewall',
+  AGENTS: '/agents',
   GUARDIAN: '/guardian',
   SETTINGS: '/settings',
   DESIGN_SYSTEM: '/design-system',
@@ -175,6 +177,27 @@ export function AppRoutes({
           <ProtectedRoute requiredRole="admin">
             <AppLayout onSearchFocus={onSearchFocus}>
               <FirewallPage onTriggerToast={onTriggerAlert} />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/agents"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AppLayout onSearchFocus={onSearchFocus}>
+              <AgentsPage onTriggerToast={onTriggerAlert} />
+            </AppLayout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/pages/security/agents"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AppLayout onSearchFocus={onSearchFocus}>
+              <AgentsPage onTriggerToast={onTriggerAlert} />
             </AppLayout>
           </ProtectedRoute>
         }

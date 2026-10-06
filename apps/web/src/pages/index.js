@@ -9,4 +9,5 @@ export * from './LoginPage';
 export * from './SignupPage';
 export * from './AttackSurfacePage';
 export * from './FirewallPage';
+export * from './AgentsPage';
 export * from './AppRoutes';
