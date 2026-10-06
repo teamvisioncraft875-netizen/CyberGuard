@@ -1,14 +1,19 @@
 const cron = require('node-cron');
 const db = require('../config/db');
 const executionService = require('./executionService');
+const threatFeedService = require('./threatFeedService');
 
 let cronTask = null;
+let feedCronTask = null;
 let isRunning = false;
 let lastRunTimestamp = null;
+let lastFeedSyncTimestamp = null;
 let actionsExecutedThisHour = {};
 let isProcessing = false;
+let isFeedProcessing = false;
 
 const MAX_EXECUTIONS_PER_HOUR = 10;
+const THREAT_FEED_LOCK_KEY = 'cyberguard_threat_feed_sync_lock';
 
 /**
  * Counts how many actions were executed in the past hour for a given organization.
@@ -206,16 +211,72 @@ async function processDueActions() {
 }
 
 /**
+ * Synchronizes all active due threat intelligence feeds.
+ * Employs PostgreSQL advisory lock 'cyberguard_threat_feed_sync_lock' to prevent concurrent worker overlaps.
+ *
+ * @returns {Promise<Array<Object>>}
+ */
+async function processDueThreatFeeds() {
+  if (isFeedProcessing) {
+    console.log('[schedulerService] Previous threat feed sync cycle is still running. Skipping overlapping run.');
+    return [];
+  }
+
+  isFeedProcessing = true;
+  lastFeedSyncTimestamp = new Date();
+  let lockClient = null;
+  let lockAcquired = false;
+
+  try {
+    try {
+      lockClient = await db.pool.connect();
+      const lockRes = await lockClient.query(
+        'SELECT pg_try_advisory_lock(hashtext($1)) AS acquired;',
+        [THREAT_FEED_LOCK_KEY]
+      );
+      lockAcquired = Boolean(lockRes.rows[0]?.acquired);
+      if (!lockAcquired) {
+        console.log('[schedulerService] Threat feed advisory lock held by another worker. Skipping cycle.');
+        if (lockClient) lockClient.release();
+        isFeedProcessing = false;
+        return [];
+      }
+    } catch (lErr) {
+      if (lockClient) lockClient.release();
+      isFeedProcessing = false;
+      return [];
+    }
+
+    console.log('[schedulerService] Synchronizing due threat intelligence feeds...');
+    const results = await threatFeedService.syncDueFeeds();
+    console.log(`[schedulerService] Threat feed sync completed. Synced ${results.length} feed(s).`);
+    return results;
+  } catch (err) {
+    console.error('[schedulerService] Uncaught error in threat feed sync cycle:', err.message);
+    return [];
+  } finally {
+    if (lockClient && lockAcquired) {
+      try {
+        await lockClient.query('SELECT pg_advisory_unlock(hashtext($1));', [THREAT_FEED_LOCK_KEY]);
+      } catch (uErr) {}
+      lockClient.release();
+    }
+    isFeedProcessing = false;
+  }
+}
+
+/**
  * Starts the background node-cron scheduler.
- * Runs every 60 seconds (every minute).
+ * Runs action processor every 60s and threat feed sync hourly.
  *
  * @param {string} [cronPattern='* * * * *']
+ * @param {string} [feedCronPattern='0 * * * *']
  * @returns {Object}
  */
-function startScheduler(cronPattern = '* * * * *') {
-  if (isRunning && cronTask) {
+function startScheduler(cronPattern = '* * * * *', feedCronPattern = '0 * * * *') {
+  if (isRunning && (cronTask || feedCronTask)) {
     console.log('[schedulerService] Background scheduler is already running');
-    return cronTask;
+    return { cronTask, feedCronTask };
   }
 
   isRunning = true;
@@ -228,8 +289,13 @@ function startScheduler(cronPattern = '* * * * *') {
     await processDueActions();
   });
 
-  console.log(`[schedulerService] Background scheduler started (runs every 60 seconds with pattern "${cronPattern}")`);
-  return cronTask;
+  feedCronTask = cron.schedule(feedCronPattern, async () => {
+    if (!isRunning) return;
+    await processDueThreatFeeds();
+  });
+
+  console.log(`[schedulerService] Background scheduler started (actions: "${cronPattern}", feeds: "${feedCronPattern}")`);
+  return { cronTask, feedCronTask };
 }
 
 /**
@@ -243,11 +309,15 @@ async function stopScheduler(waitForDrain = true) {
     cronTask.stop();
     cronTask = null;
   }
+  if (feedCronTask) {
+    feedCronTask.stop();
+    feedCronTask = null;
+  }
   console.log('[schedulerService] Background scheduler stopped');
 
-  if (waitForDrain && isProcessing) {
+  if (waitForDrain && (isProcessing || isFeedProcessing)) {
     const start = Date.now();
-    while (isProcessing && Date.now() - start < 4000) {
+    while ((isProcessing || isFeedProcessing) && Date.now() - start < 4000) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
@@ -256,12 +326,13 @@ async function stopScheduler(waitForDrain = true) {
 /**
  * Returns the current runtime status and hourly execution counts.
  *
- * @returns {{ running: boolean, last_run: Date|null, actions_executed_this_hour: Object }}
+ * @returns {{ running: boolean, last_run: Date|null, last_feed_sync: Date|null, actions_executed_this_hour: Object }}
  */
 function getSchedulerStatus() {
   return {
     running: isRunning,
     last_run: lastRunTimestamp,
+    last_feed_sync: lastFeedSyncTimestamp,
     actions_executed_this_hour: { ...actionsExecutedThisHour }
   };
 }
@@ -271,5 +342,7 @@ module.exports = {
   stopScheduler,
   getSchedulerStatus,
   processDueActions,
-  refreshHourlyCounts
+  processDueThreatFeeds,
+  refreshHourlyCounts,
+  THREAT_FEED_LOCK_KEY
 };

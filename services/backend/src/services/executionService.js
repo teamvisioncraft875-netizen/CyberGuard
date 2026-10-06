@@ -143,6 +143,56 @@ async function blockDomain(action) {
 }
 
 /**
+ * Stores blocked URL in Redis without expiration.
+ *
+ * @param {Object} action
+ * @returns {Promise<{ blocked_url: string, action_id: string } | { success: false, error: string }>}
+ */
+async function blockUrl(action) {
+  const target = typeof action.target === 'string' ? JSON.parse(action.target) : (action.target || {});
+  const url = target.url || target.indicator_value;
+  if (!url) {
+    return { success: false, error: 'target.url is required for block_url' };
+  }
+  const key = `blocked_urls:${action.id || url}`;
+  await redis.set(key, url);
+  return { blocked_url: url, action_id: action.id };
+}
+
+/**
+ * Updates device status to 'isolated' in PostgreSQL.
+ *
+ * @param {Object} action
+ * @returns {Promise<{ isolated_device_id: string } | { success: false, error: string }>}
+ */
+async function isolateDevice(action) {
+  const target = typeof action.target === 'string' ? JSON.parse(action.target) : (action.target || {});
+  const deviceId = target.device_id || action.target_device_id;
+  if (!deviceId || !UUID_REGEX.test(deviceId)) {
+    return { success: false, error: 'target.device_id must be a valid UUID for isolate_device' };
+  }
+  const devCheck = await db.query(
+    'SELECT id FROM public.devices WHERE id = $1 AND ($2::UUID IS NULL OR organization_id = $2::UUID);',
+    [deviceId, action.organization_id]
+  );
+  if (!devCheck.rows || devCheck.rows.length === 0) {
+    return { success: false, error: 'Target device not found or does not belong to organization' };
+  }
+  await Device.updateStatus(deviceId, 'isolated');
+  return { isolated_device_id: deviceId };
+}
+
+/**
+ * Simulates notifying admin for automated action.
+ *
+ * @param {Object} action
+ * @returns {Promise<{ notified: boolean, action_id: string }>}
+ */
+async function notifyAdmin(action) {
+  return { notified: true, action_id: action.id };
+}
+
+/**
  * Updates device status to 'suspended' in PostgreSQL.
  *
  * @param {Object} action
@@ -271,8 +321,17 @@ async function execute(action, actor_type = 'system_policy') {
       case 'block_domain':
         executionResult = await blockDomain(action);
         break;
+      case 'block_url':
+        executionResult = await blockUrl(action);
+        break;
       case 'suspend_device':
         executionResult = await suspendDevice(action);
+        break;
+      case 'isolate_device':
+        executionResult = await isolateDevice(action);
+        break;
+      case 'notify_admin':
+        executionResult = await notifyAdmin(action);
         break;
       case 'force_password_reset':
         executionResult = await forcePasswordReset(action);
@@ -417,7 +476,10 @@ module.exports = {
   revokeSession,
   blockIp,
   blockDomain,
+  blockUrl,
   suspendDevice,
+  isolateDevice,
+  notifyAdmin,
   forcePasswordReset,
   isProtectedIp,
   isProtectedDomain

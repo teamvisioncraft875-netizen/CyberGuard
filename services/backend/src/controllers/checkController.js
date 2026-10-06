@@ -52,7 +52,7 @@ const checkController = {
         user: req.user,
         threatType: 'phishing',
         sourceType: source_type,
-        mlResult,
+        mlResult: { ...mlResult, text },
         recommendedActions
       });
     } catch (dbErr) {
@@ -108,7 +108,7 @@ const checkController = {
         user: req.user,
         threatType: 'malicious_url',
         sourceType: 'url',
-        mlResult,
+        mlResult: { ...mlResult, url },
         recommendedActions
       });
     } catch (dbErr) {

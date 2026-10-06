@@ -39,6 +39,7 @@ const ResponseAction = {
     approved_at = null,
     target = {},
     result = null,
+    metadata = {},
     scheduled_at = null,
     executed_at = null,
     expires_at = null,
@@ -46,19 +47,30 @@ const ResponseAction = {
   }, client = null) {
     const dbClient = client || db;
     const targetJsonStr = typeof target === 'string' ? target : JSON.stringify(target || {});
+    const metadataJsonStr = typeof metadata === 'string' ? metadata : JSON.stringify(metadata || {});
+    const indicatorValue = (typeof metadata === 'object' && metadata !== null) ? metadata.indicator_value : null;
 
     // 1. Dedup check: Query existing active response action
     const existingCheckSql = `
       SELECT * FROM public.response_actions
       WHERE incident_id = $1
         AND action_type = $2
-        AND target::text = $3
+        AND (
+          target::text = $3
+          ${indicatorValue ? "OR (metadata->>'indicator_value' = $4)" : ""}
+        )
         AND status NOT IN ('rejected', 'failed', 'expired', 'rolled_back')
       LIMIT 1;
     `;
-    const existingRes = await dbClient.query(existingCheckSql, [incident_id, action_type, targetJsonStr]);
+    const checkParams = indicatorValue
+      ? [incident_id, action_type, targetJsonStr, indicatorValue]
+      : [incident_id, action_type, targetJsonStr];
+
+    const existingRes = await dbClient.query(existingCheckSql, checkParams);
     if (existingRes.rows && existingRes.rows.length > 0) {
-      return existingRes.rows[0];
+      const existing = existingRes.rows[0];
+      existing._is_duplicate = true;
+      return existing;
     }
 
     // 2. Insert with ON CONFLICT DO NOTHING using the partial unique index
@@ -75,13 +87,14 @@ const ResponseAction = {
         approved_at,
         target,
         result,
+        metadata,
         created_at,
         scheduled_at,
         executed_at,
         expires_at,
         target_device_id
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), $12, $13, $14, $15)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), $13, $14, $15, $16)
       ON CONFLICT (incident_id, action_type, (target::text))
       WHERE status NOT IN ('rejected', 'failed', 'expired', 'rolled_back')
       DO NOTHING
@@ -99,6 +112,7 @@ const ResponseAction = {
       approved_at,
       targetJsonStr,
       result ? (typeof result === 'string' ? result : JSON.stringify(result)) : null,
+      metadataJsonStr,
       scheduled_at,
       executed_at,
       expires_at,
@@ -110,8 +124,10 @@ const ResponseAction = {
     }
 
     // 3. Fallback: If ON CONFLICT prevented insert, return the newly created row
-    const fallbackRes = await dbClient.query(existingCheckSql, [incident_id, action_type, targetJsonStr]);
-    return fallbackRes.rows[0] || null;
+    const fallbackRes = await dbClient.query(existingCheckSql, checkParams);
+    const fallback = fallbackRes.rows[0] || null;
+    if (fallback) fallback._is_duplicate = true;
+    return fallback;
   },
 
   /**

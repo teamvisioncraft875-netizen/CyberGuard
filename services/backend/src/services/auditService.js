@@ -28,7 +28,18 @@ const AUDIT_ACTIONS = Object.freeze({
   FIREWALL_RULE_REVOCATION_FAILED: 'firewall_rule_deletion_failed',
   FIREWALL_COMMAND_CREATED: 'firewall_command_created',
   ATTACK_SURFACE_SNAPSHOT_TRUNCATED: 'attack_surface_snapshot_truncated',
-  ATTACK_SURFACE_EXPOSURE_RESOLVED: 'attack_surface_exposure_resolved'
+  ATTACK_SURFACE_EXPOSURE_RESOLVED: 'attack_surface_exposure_resolved',
+  FEED_SYNC_STARTED: 'feed_sync_started',
+  FEED_SYNC_COMPLETED: 'feed_sync_completed',
+  FEED_SYNC_FAILED: 'feed_sync_failed',
+  THREAT_DASHBOARD_VIEWED: 'threat_dashboard_viewed',
+  THREAT_INDICATOR_VIEWED: 'threat_indicator_viewed',
+  THREAT_FEED_HEALTH_VIEWED: 'threat_feed_health_viewed',
+  THREAT_POLICY_TRIGGERED: 'threat_policy_triggered',
+  THREAT_ACTION_PROPOSED: 'threat_action_proposed',
+  THREAT_ACTION_SUPPRESSED_DUPLICATE: 'threat_action_suppressed_duplicate',
+  THREAT_ANALYTICS_VIEWED: 'threat_analytics_viewed',
+  THREAT_EXECUTIVE_REPORT_VIEWED: 'threat_executive_report_viewed'
 });
 
 /**
