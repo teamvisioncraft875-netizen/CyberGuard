@@ -5,6 +5,9 @@ const LateralMovementService = require('./lateralMovementService');
 const correlationRuleEngine = require('./correlationRuleEngine');
 const streamingService = require('./streamingService');
 const performanceMetricsService = require('./performanceMetricsService');
+const threatIntelService = require('./threatIntelService');
+const ThreatIOC = require('../../models/ThreatIOC');
+const SiemAlert = require('../../models/SiemAlert');
 
 /**
  * Event Pipeline Service — Master orchestrator for real-time SIEM event intake:
@@ -55,11 +58,16 @@ const EventPipelineService = {
       normalized_events: normalizedEvents
     } = ingestionResult;
 
-    // Attach inserted DB ids to normalized objects if available
+    // Attach inserted DB ids and raw events to normalized objects if available
     if (Array.isArray(insertedEvents) && Array.isArray(normalizedEvents)) {
       normalizedEvents.forEach((norm, idx) => {
         if (insertedEvents[idx]?.id) {
           norm.id = insertedEvents[idx].id;
+        }
+        if (insertedEvents[idx]?.raw_event) {
+          norm.raw_event = insertedEvents[idx].raw_event;
+        } else if (events && events[idx]) {
+          norm.raw_event = events[idx];
         }
       });
     }
@@ -67,12 +75,81 @@ const EventPipelineService = {
     let detectedIncidents = [];
 
     if (Array.isArray(normalizedEvents) && normalizedEvents.length > 0) {
-      // 2. Real-Time Streaming Publish (Fan-out to active tenant subscribers & live metrics)
+      // 2. Real-Time Streaming Publish & Threat Intelligence IOC Matching
       for (const normEv of normalizedEvents) {
         try {
           streamingService.publishEvent(normEv);
         } catch (streamErr) {
           console.warn('[Pipeline Warning] Streaming publish error:', streamErr.message);
+        }
+
+        // Threat Intelligence: IOC Match, Sighting Creation, and Alerting
+        try {
+          const normData = normEv.normalized_data || {};
+          const details = normData.details || normEv.details || {};
+          const raw = normEv.raw_event || {};
+
+          const srcIp = normEv.source_ip || normData.source_ip || details.source_ip || details.src_ip || details.IpAddress || raw.source_ip || raw.src_ip || raw.ip || null;
+          const dstIp = normEv.destination_ip || normData.dest_ip || normEv.dest_ip || details.destination_ip || details.dest_ip || details.dst_ip || raw.destination_ip || raw.dest_ip || null;
+          const userName = normEv.user || normEv.user_name || normData.target_user || details.user || details.user_name || details.TargetUserName || raw.user || raw.user_name || raw.username || null;
+          const assetName = normEv.device_name || normEv.target_host || normData.target_host || details.Computer || details.WorkstationName || raw.host || raw.hostname || null;
+
+          if (!normEv.source_ip && srcIp) normEv.source_ip = srcIp;
+          if (!normEv.destination_ip && dstIp) normEv.destination_ip = dstIp;
+          if (!normEv.user && userName) normEv.user = userName;
+          if (!normEv.device_name && assetName) normEv.device_name = assetName;
+
+          const iocHits = await threatIntelService.matchEvent(normEv, organizationId, client);
+          if (Array.isArray(iocHits) && iocHits.length > 0) {
+            for (const hit of iocHits) {
+              // A. Record Sighting
+              const sighting = await ThreatIOC.recordSighting({
+                organization_id: organizationId,
+                ioc_id: hit.ioc_id,
+                event_id: normEv.id || null,
+                source_ip: srcIp,
+                destination_ip: dstIp,
+                user_name: userName,
+                asset_name: assetName,
+                metadata: {
+                  ioc_type: hit.ioc_type,
+                  ioc_value: hit.ioc_value,
+                  threat_actor: hit.threat_actor,
+                  malware_family: hit.malware_family,
+                  campaign_name: hit.campaign_name,
+                  risk_score: hit.risk_score
+                }
+              }, client);
+
+              // B. Determine Severity based on IOC Risk Score
+              let alertSeverity = 'medium';
+              if (hit.risk_score > 80) {
+                alertSeverity = 'critical';
+              } else if (hit.risk_score > 60) {
+                alertSeverity = 'high';
+              } else if (hit.risk_score <= 30) {
+                alertSeverity = 'low';
+              }
+
+              // C. Create SIEM Alert
+              const alert = await SiemAlert.create({
+                organization_id: organizationId,
+                title: `Threat Intel Match: ${hit.ioc_type.toUpperCase()} ${hit.ioc_value} (${hit.malware_family || hit.threat_actor || 'Known Threat'})`,
+                severity: alertSeverity,
+                status: 'new',
+                rule_code: 'THREAT-INTEL-IOC',
+                source_type: normEv.source_type || 'threat_intel',
+                mitre_technique: 'T1071',
+                assigned_analyst: null
+              }, client);
+
+              // D. Broadcast Real-Time Threat Intel Streaming Events
+              streamingService.publishIOCMatch({ ...hit, event_id: normEv.id, alert_id: alert.id }, organizationId);
+              streamingService.publishSighting(sighting, organizationId);
+            }
+          }
+        } catch (iocErr) {
+          console.warn('[Pipeline Warning] Threat Intel match error:', iocErr.message);
         }
       }
 

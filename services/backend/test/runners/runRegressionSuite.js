@@ -13,7 +13,8 @@ const REGRESSION_TESTS = [
   'test_audit_remediation.js',
   'test_siem_foundation.js',
   'test_siem_correlation_engine.js',
-  'test_siem_live_soc.js'
+  'test_siem_live_soc.js',
+  'test_threat_intelligence.js'
 ];
 
 async function runTest(testFile) {

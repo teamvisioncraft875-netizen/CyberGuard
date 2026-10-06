@@ -320,6 +320,53 @@ class StreamingService {
   }
 
   /**
+   * Publishes an IOC match and threat enrichment event to tenant subscribers
+   */
+  publishIOCMatch(enrichment, organizationId) {
+    if (!organizationId) return { delivered: 0 };
+    const orgMap = this.subscribers.get(organizationId);
+    if (!orgMap || orgMap.size === 0) return { delivered: 0 };
+
+    const payload = {
+      type: 'ioc_match',
+      ioc_match: enrichment,
+      threat_enrichment: enrichment
+    };
+
+    let delivered = 0;
+    for (const [subId, sub] of orgMap.entries()) {
+      try {
+        sub.callback(payload);
+        delivered++;
+      } catch (err) {}
+    }
+    return { delivered };
+  }
+
+  /**
+   * Publishes a new sighting event to tenant subscribers
+   */
+  publishSighting(sighting, organizationId) {
+    if (!organizationId) return { delivered: 0 };
+    const orgMap = this.subscribers.get(organizationId);
+    if (!orgMap || orgMap.size === 0) return { delivered: 0 };
+
+    const payload = {
+      type: 'new_sighting',
+      sighting
+    };
+
+    let delivered = 0;
+    for (const [subId, sub] of orgMap.entries()) {
+      try {
+        sub.callback(payload);
+        delivered++;
+      } catch (err) {}
+    }
+    return { delivered };
+  }
+
+  /**
    * Resets all subscriber state (primarily for test cleanup)
    */
   reset() {

@@ -1,22 +1,27 @@
 const express = require('express');
+const router = express.Router();
+const threatIntelController = require('../controllers/threatIntelController');
 const auth = require('../middlewares/auth');
 const roleCheck = require('../middlewares/roleCheck');
-const { generalLimiter } = require('../middlewares/rateLimiter');
-const threatIntelController = require('../controllers/threatIntelController');
-const threatIntelAnalyticsRoutes = require('./threatIntelAnalyticsRoutes');
 
-const router = express.Router();
-
-// Enforce authentication, RBAC (analyst and admin roles only), and general rate-limiting
+// All Threat Intelligence endpoints require authentication and SOC Analyst / Admin privileges
 router.use(auth);
 router.use(roleCheck(['admin', 'analyst']));
-router.use(generalLimiter);
 
-// Analytics & Executive Reporting sub-routes (/api/v1/threat-intel/analytics/*)
-router.use('/analytics', threatIntelAnalyticsRoutes);
+// 1. IOC Management
+router.post('/iocs', threatIntelController.createIOC);
+router.get('/iocs', threatIntelController.listIOCs);
+router.get('/iocs/:id', threatIntelController.getIOCById);
+router.patch('/iocs/:id', threatIntelController.updateIOC);
+router.delete('/iocs/:id', threatIntelController.deleteIOC);
 
-// Threat Intelligence API endpoints
+// 2. Sightings
+router.get('/sightings', threatIntelController.listSightings);
+
+// 3. Threat Statistics Dashboard
 router.get('/dashboard', threatIntelController.getDashboard);
+
+// 4. Legacy Indicator & Feed APIs
 router.get('/indicators', threatIntelController.listIndicators);
 router.get('/indicators/:id', threatIntelController.getIndicator);
 router.get('/feed-health', threatIntelController.getFeedHealth);
