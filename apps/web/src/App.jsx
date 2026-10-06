@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider, useToast } from './hooks/useToast';
 import { AuthProvider } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
 import { AppRoutes } from './pages/AppRoutes';
 import { Drawer, RiskBadge, Button } from './components/ui';
 import { normalizeRisk } from './utils/risk';
@@ -19,7 +20,7 @@ function MainApp() {
         addToast({
           type: 'info',
           title: 'Quick Command Launcher',
-          message: 'Type to navigate: "Scan Center", "Incident Triage", or "Guardian Mode".',
+          message: 'Type to navigate: "Scan Center", "Incident Triage", or "System Settings".',
         });
       }
     };
@@ -102,9 +103,11 @@ export default function App() {
     <ThemeProvider defaultTheme="dark" storageKey="cyberguard-theme">
       <ToastProvider>
         <AuthProvider>
-          <BrowserRouter>
-            <MainApp />
-          </BrowserRouter>
+          <SocketProvider>
+            <BrowserRouter>
+              <MainApp />
+            </BrowserRouter>
+          </SocketProvider>
         </AuthProvider>
       </ToastProvider>
     </ThemeProvider>

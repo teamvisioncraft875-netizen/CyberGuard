@@ -130,6 +130,12 @@ apiClient.interceptors.response.use(
           apiClient.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
           originalRequest.headers.Authorization = `Bearer ${newToken}`;
 
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('cyberguard:token-refreshed', { detail: { token: newToken } })
+            );
+          }
+
           processQueue(null, newToken);
           return apiClient(originalRequest);
         } catch (refreshErr) {

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { authService } from '../services/authService';
 
 const AuthContext = createContext(null);
@@ -15,8 +16,18 @@ export function AuthProvider({ children }) {
       setUser(null);
     };
 
+    const handleTokenRefreshed = (e) => {
+      if (e.detail?.token) {
+        setToken(e.detail.token);
+      }
+    };
+
     window.addEventListener('cyberguard:unauthorized', handleUnauthorized);
-    return () => window.removeEventListener('cyberguard:unauthorized', handleUnauthorized);
+    window.addEventListener('cyberguard:token-refreshed', handleTokenRefreshed);
+    return () => {
+      window.removeEventListener('cyberguard:unauthorized', handleUnauthorized);
+      window.removeEventListener('cyberguard:token-refreshed', handleTokenRefreshed);
+    };
   }, []);
 
   const login = useCallback(async (email, password) => {
@@ -54,6 +65,7 @@ export function AuthProvider({ children }) {
     token,
     loading,
     isAuthenticated: Boolean(token),
+    isAdmin: user?.role === 'admin',
     login,
     signup,
     logout,
@@ -70,17 +82,26 @@ export function useAuth() {
   return context;
 }
 
-import { Navigate, useLocation } from 'react-router-dom';
-
-export function ProtectedRoute({ children, fallback = null, onUnauthorized }) {
-  const { isAuthenticated, loading } = useAuth();
+export function ProtectedRoute({
+  children,
+  fallback = null,
+  onUnauthorized,
+  requiredRole,
+  allowedRoles,
+}) {
+  const { isAuthenticated, loading, user } = useAuth();
   const location = useLocation();
 
+  const authorizedRoles = allowedRoles || (requiredRole ? [requiredRole] : null);
+  const isRoleAuthorized = !authorizedRoles || Boolean(user?.role && authorizedRoles.includes(user.role));
+
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
-      onUnauthorized?.();
+    if (!loading) {
+      if (!isAuthenticated || !isRoleAuthorized) {
+        onUnauthorized?.();
+      }
     }
-  }, [isAuthenticated, loading, onUnauthorized]);
+  }, [isAuthenticated, loading, isRoleAuthorized, onUnauthorized]);
 
   if (loading) {
     return fallback;
@@ -88,6 +109,10 @@ export function ProtectedRoute({ children, fallback = null, onUnauthorized }) {
 
   if (!isAuthenticated) {
     return fallback || <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (!isRoleAuthorized) {
+    return fallback || <Navigate to="/" replace />;
   }
 
   return children;

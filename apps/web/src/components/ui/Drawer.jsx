@@ -10,11 +10,11 @@ import {
 import { cn } from '../../utils/cn';
 
 const DRAWER_WIDTHS = {
-  md: 'sm:max-w-md',
-  lg: 'sm:max-w-lg',
-  xl: 'sm:max-w-xl',
-  '2xl': 'sm:max-w-2xl',
-  full: 'sm:max-w-full',
+  md: 'w-full sm:max-w-md',
+  lg: 'w-full sm:max-w-lg',
+  xl: 'w-full sm:max-w-xl',
+  '2xl': 'w-full sm:max-w-2xl',
+  full: 'w-full',
 };
 
 /**

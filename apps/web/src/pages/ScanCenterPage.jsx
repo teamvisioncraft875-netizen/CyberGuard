@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import { cn } from '../utils/cn';
 import { normalizeRisk } from '../utils/risk';
 import { normalizeAction } from '../utils/actions';
-import { RiskBadge, Badge, Button, Input, Select, Card, CardContent } from '../components/ui';
+import { RiskBadge, Badge, Button, Input, Select, Card, CardContent, EmptyState } from '../components/ui';
 import { scanService } from '../services';
+import { MediaDropzone, validateMediaFile } from '../components/MediaDropzone';
 import {
   Radar,
   Mail,
   Globe,
   FileImage,
+  FileAudio,
   AlertCircle,
   CheckCircle2,
   RotateCcw,
@@ -16,6 +18,8 @@ import {
   ArrowRight,
   Shield,
   Layers,
+  UploadCloud,
+  Link2,
 } from 'lucide-react';
 
 export function ScanCenterPage() {
@@ -27,8 +31,17 @@ export function ScanCenterPage() {
 
   const [targetUrl, setTargetUrl] = useState('');
 
+  // Media tab states
+  const [mediaInputMode, setMediaInputMode] = useState('upload'); // 'upload' | 'url'
+  const [selectedMediaFile, setSelectedMediaFile] = useState(null);
   const [mediaUrl, setMediaUrl] = useState('');
   const [mediaType, setMediaType] = useState('image'); // 'image' | 'audio'
+  const [mediaValidationError, setMediaValidationError] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [analyzedFileName, setAnalyzedFileName] = useState(null);
+
+  // Lifecycle stage: 'IDLE' | 'FILE_SELECTED' | 'VALIDATING' | 'REQUESTING_UPLOAD_URL' | 'UPLOADING' | 'ANALYZING' | 'RESULT' | 'ERROR'
+  const [uploadStage, setUploadStage] = useState('IDLE');
 
   // Inspection lifecycle states
   const [isScanning, setIsScanning] = useState(false);
@@ -38,11 +51,16 @@ export function ScanCenterPage() {
   const handleReset = () => {
     setScanResult(null);
     setErrorMessage(null);
+    setMediaValidationError(null);
+    setUploadProgress(0);
+    setAnalyzedFileName(null);
+    setUploadStage(selectedMediaFile ? 'FILE_SELECTED' : 'IDLE');
   };
 
   const handleScan = async (e) => {
     e?.preventDefault();
     setErrorMessage(null);
+    setMediaValidationError(null);
     setScanResult(null);
     setIsScanning(true);
 
@@ -68,20 +86,102 @@ export function ScanCenterPage() {
           url: targetUrl.trim(),
         });
       } else if (activeTab === 'media') {
-        if (!mediaUrl.trim()) {
-          setErrorMessage('Please enter a valid media file URL.');
-          setIsScanning(false);
-          return;
+        if (mediaInputMode === 'upload') {
+          if (!selectedMediaFile) {
+            setErrorMessage('Please select or drag & drop an image or audio file to inspect.');
+            setUploadStage('INVALID_FILE');
+            setIsScanning(false);
+            return;
+          }
+
+          // 1. Client-side Validation
+          setUploadStage('VALIDATING');
+          const validation = validateMediaFile(selectedMediaFile);
+          if (!validation.valid) {
+            setMediaValidationError(validation.error);
+            setErrorMessage(validation.error);
+            setUploadStage('INVALID_FILE');
+            setIsScanning(false);
+            return;
+          }
+
+          // 2. Request Signed Upload URL from Gateway
+          setUploadStage('REQUESTING_UPLOAD_URL');
+          setUploadProgress(0);
+          let uploadUrlData;
+          try {
+            uploadUrlData = await scanService.getUploadUrl({
+              media_type: mediaType,
+              file_size_bytes: selectedMediaFile.size,
+              file_name: selectedMediaFile.name,
+            });
+          } catch (uploadUrlErr) {
+            if (uploadUrlErr.status === 401) {
+              setUploadStage('SESSION_EXPIRED');
+              throw uploadUrlErr;
+            }
+            setUploadStage('UPLOAD_URL_FAILED');
+            throw new Error(
+              uploadUrlErr.message || 'Failed to generate secure upload credentials from gateway.'
+            );
+          }
+
+          if (!uploadUrlData?.upload_url || !uploadUrlData?.file_path) {
+            setUploadStage('UPLOAD_URL_FAILED');
+            throw new Error('Invalid upload credentials received from gateway.');
+          }
+
+          // 3. Upload Raw Binary Directly to Storage Signed URL
+          setUploadStage('UPLOADING');
+          try {
+            await scanService.uploadFileToSignedUrl(
+              uploadUrlData.upload_url,
+              selectedMediaFile,
+              (percent) => {
+                setUploadProgress(percent);
+              }
+            );
+          } catch (uploadErr) {
+            setUploadStage('UPLOAD_FAILED');
+            throw new Error(
+              uploadErr.message || 'Direct upload to media storage failed. Please check network connectivity and retry.'
+            );
+          }
+
+          // 4. Submit Stored File Reference for AI Deepfake Inspection
+          setUploadStage('ANALYZING');
+          setAnalyzedFileName(selectedMediaFile.name);
+          try {
+            result = await scanService.checkMedia({
+              file_path: uploadUrlData.file_path,
+              media_type: mediaType,
+            });
+            setUploadStage('RESULT');
+          } catch (analysisErr) {
+            setUploadStage('ANALYSIS_FAILED');
+            throw analysisErr;
+          }
+        } else {
+          // Fallback: Manual Media Public URL Mode
+          if (!mediaUrl.trim()) {
+            setErrorMessage('Please enter a valid media file URL.');
+            setIsScanning(false);
+            return;
+          }
+          setAnalyzedFileName(mediaUrl.trim().split('/').pop() || 'Remote Media');
+          result = await scanService.checkMedia({
+            file_url: mediaUrl.trim(),
+            media_type: mediaType,
+          });
+          setUploadStage('RESULT');
         }
-        result = await scanService.checkMedia({
-          file_url: mediaUrl.trim(),
-          media_type: mediaType,
-        });
       }
 
       setScanResult(result);
     } catch (err) {
-      if (err.status === 429 || err.code === 'RATE_LIMITED') {
+      if (err.status === 401 || err.code === 'UNAUTHORIZED') {
+        setErrorMessage('Authentication session expired. Please sign in again.');
+      } else if (err.status === 429 || err.code === 'RATE_LIMITED') {
         setErrorMessage(
           'Too many scan requests. Rate limit is 100 requests per 15 minutes. Please wait before retrying.'
         );
@@ -89,11 +189,14 @@ export function ScanCenterPage() {
         setErrorMessage(
           'Detection engine service is currently unavailable. Please verify the AI/ML inspection service is active.'
         );
+      } else if (err.code === 'UPLOAD_FAILED' || err.code === 'NETWORK_ERROR') {
+        setErrorMessage(err.message || 'Media upload failed due to a network or storage error.');
       } else {
         setErrorMessage(
           err.message || 'Threat scan failed. Please verify the input payload and gateway connection.'
         );
       }
+      setUploadStage('ERROR');
     } finally {
       setIsScanning(false);
     }
@@ -263,26 +366,126 @@ export function ScanCenterPage() {
 
             {/* TAB 3: MEDIA SCAN */}
             {activeTab === 'media' && (
-              <>
+              <div className="space-y-4">
+                {/* Input Mode Selector: Direct Upload vs Remote URL */}
+                <div className="flex items-center gap-1 p-1 bg-muted/60 rounded-lg border border-border text-xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMediaInputMode('upload');
+                      setErrorMessage(null);
+                    }}
+                    className={cn(
+                      'flex-1 py-1.5 px-3 rounded-md font-medium transition-all text-center flex items-center justify-center gap-2',
+                      mediaInputMode === 'upload'
+                        ? 'bg-card text-foreground shadow-sm font-semibold'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <UploadCloud className="w-3.5 h-3.5" />
+                    <span>Upload Media File</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMediaInputMode('url');
+                      setErrorMessage(null);
+                    }}
+                    className={cn(
+                      'flex-1 py-1.5 px-3 rounded-md font-medium transition-all text-center flex items-center justify-center gap-2',
+                      mediaInputMode === 'url'
+                        ? 'bg-card text-foreground shadow-sm font-semibold'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <Link2 className="w-3.5 h-3.5" />
+                    <span>Remote Media URL</span>
+                  </button>
+                </div>
+
+                {/* Media Classification Select */}
                 <Select
                   label="Media Classification"
                   value={mediaType}
                   onChange={(e) => setMediaType(e.target.value)}
+                  helperText={
+                    mediaType === 'image'
+                      ? 'Evaluates portrait facial artifacts, boundary blending, and generative synthesis (ViT/CNN).'
+                      : 'Evaluates acoustic spectral anomalies, vocal tract discontinuities, and voice cloning (ASVspoof).'
+                  }
+                  disabled={isScanning}
                 >
-                  <option value="image">Image File (Deepfake / Stego)</option>
-                  <option value="audio">Audio Clip (Voice Clone / ASVspoof)</option>
+                  <option value="image">Image File (Deepfake / Facial Synthesis)</option>
+                  <option value="audio">Audio Clip (Voice Clone / Speech Synthesis)</option>
                 </Select>
 
-                <Input
-                  label="Media Public URL"
-                  type="url"
-                  placeholder="https://storage.cdn.com/samples/voice_sample.wav"
-                  value={mediaUrl}
-                  onChange={(e) => setMediaUrl(e.target.value)}
-                  helperText="Publicly accessible URL to audio (.wav/.mp3) or image (.png/.jpg)"
-                  required
-                />
-              </>
+                {mediaInputMode === 'upload' ? (
+                  <MediaDropzone
+                    file={selectedMediaFile}
+                    onFileSelect={(file, detectedType, error) => {
+                      if (error) {
+                        setMediaValidationError(error);
+                        setUploadStage('INVALID_FILE');
+                        return;
+                      }
+                      setSelectedMediaFile(file);
+                      if (detectedType) {
+                        setMediaType(detectedType);
+                      }
+                      setMediaValidationError(null);
+                      setErrorMessage(null);
+                      setUploadStage('FILE_SELECTED');
+                    }}
+                    onFileRemove={() => {
+                      setSelectedMediaFile(null);
+                      setUploadProgress(0);
+                      setUploadStage('IDLE');
+                      setMediaValidationError(null);
+                      setErrorMessage(null);
+                    }}
+                    uploadStage={uploadStage}
+                    uploadProgress={uploadProgress}
+                    disabled={isScanning}
+                    error={mediaValidationError}
+                  />
+                ) : (
+                  <>
+                    <Input
+                      label="Media Public URL"
+                      type="url"
+                      placeholder="https://storage.cdn.com/samples/voice_sample.wav"
+                      value={mediaUrl}
+                      onChange={(e) => setMediaUrl(e.target.value)}
+                      helperText="Publicly accessible URL to audio (.wav/.mp3) or image (.png/.jpg)"
+                      required
+                      disabled={isScanning}
+                    />
+                    <div className="flex items-center gap-3 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMediaUrl('https://raw.githubusercontent.com/CyberGuard/samples/main/synthetic_voice.wav');
+                          setMediaType('audio');
+                        }}
+                        className="text-primary text-[11px] hover:underline"
+                      >
+                        Sample Audio URL
+                      </button>
+                      <span className="text-muted-foreground text-xs">•</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMediaUrl('https://raw.githubusercontent.com/CyberGuard/samples/main/deepfake_face.png');
+                          setMediaType('image');
+                        }}
+                        className="text-primary text-[11px] hover:underline"
+                      >
+                        Sample Image URL
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             )}
 
             {/* Action Buttons */}
@@ -294,10 +497,18 @@ export function ScanCenterPage() {
                 className="w-full sm:w-auto font-mono text-xs uppercase tracking-wider font-semibold"
                 iconRight={ArrowRight}
               >
-                Inspect Threat
+                {isScanning
+                  ? uploadStage === 'REQUESTING_UPLOAD_URL'
+                    ? 'Requesting Credentials...'
+                    : uploadStage === 'UPLOADING'
+                    ? `Uploading (${uploadProgress}%)...`
+                    : uploadStage === 'ANALYZING'
+                    ? 'Analyzing Media...'
+                    : 'Inspecting...'
+                  : 'Inspect Threat'}
               </Button>
 
-              {(scanResult || errorMessage) && (
+              {(scanResult || errorMessage || selectedMediaFile) && (
                 <Button
                   type="button"
                   variant="outline"
@@ -345,12 +556,19 @@ export function ScanCenterPage() {
           {/* Populated Result Card */}
           {!isScanning && scanResult && (
             <div className="p-6 rounded-xl bg-card border border-border space-y-6">
-              {/* Header with RiskBadge, Score & Threat Type */}
+              {/* Header with RiskBadge, Score, Source & Threat Type */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
                 <div className="space-y-1">
-                  <span className="font-mono text-[10px] text-muted-foreground uppercase font-semibold">
-                    Calibrated Assessment
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] text-muted-foreground uppercase font-semibold">
+                      Calibrated Assessment
+                    </span>
+                    {analyzedFileName && (
+                      <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded truncate max-w-[180px]">
+                        {analyzedFileName}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2.5">
                     <RiskBadge level={normalizeRisk(scanResult.risk_level)} size="lg" />
                     {scanResult.threat_type && (
@@ -361,17 +579,24 @@ export function ScanCenterPage() {
                   </div>
                 </div>
 
-                {scanResult.risk_score != null && (
-                  <div className="text-right">
-                    <span className="font-mono text-[10px] uppercase text-muted-foreground block font-semibold">
-                      Risk Score
+                <div className="text-right space-y-0.5">
+                  {scanResult.risk_score != null && (
+                    <div>
+                      <span className="font-mono text-[10px] uppercase text-muted-foreground block font-semibold">
+                        Risk Score
+                      </span>
+                      <span className="font-mono text-2xl font-bold text-foreground">
+                        {scanResult.risk_score}
+                        <span className="text-xs text-muted-foreground font-normal">/100</span>
+                      </span>
+                    </div>
+                  )}
+                  {scanResult.confidence_score != null && (
+                    <span className="font-mono text-[10px] text-muted-foreground block">
+                      Confidence: {Math.round(scanResult.confidence_score * 100)}%
                     </span>
-                    <span className="font-mono text-2xl font-bold text-foreground">
-                      {scanResult.risk_score}
-                      <span className="text-xs text-muted-foreground font-normal">/100</span>
-                    </span>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Explanation Section */}
@@ -429,16 +654,12 @@ export function ScanCenterPage() {
 
           {/* Idle / Blank state when no scan performed yet */}
           {!isScanning && !scanResult && !errorMessage && (
-            <div className="p-12 rounded-xl bg-card border border-dashed border-border text-center flex flex-col items-center justify-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-                <Radar className="w-6 h-6" />
-              </div>
-              <h3 className="font-headline font-semibold text-sm text-foreground">
-                Ready to Inspect
-              </h3>
-              <p className="font-body text-xs text-muted-foreground max-w-xs">
-                Submit message text, a domain, or media file to evaluate threat level and retrieve mitigation actions.
-              </p>
+            <div className="p-8 rounded-xl bg-card border border-dashed border-border">
+              <EmptyState
+                icon={Radar}
+                title="Ready to Inspect"
+                description="Submit message text, a domain, or media file to evaluate threat level and retrieve mitigation actions."
+              />
             </div>
           )}
         </div>

@@ -4,6 +4,7 @@ import { normalizeRisk } from '../utils/risk';
 import { formatRelativeTime } from '../utils/format';
 import { RiskBadge, Badge, Button, EmptyState } from '../components/ui';
 import { analyticsService, incidentService } from '../services';
+import { useSocket } from '../hooks/useSocket';
 import {
   ShieldAlert,
   Activity,
@@ -77,6 +78,46 @@ export function DashboardPage({ onSelectIncident }) {
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
+
+  const { onIncident } = useSocket();
+
+  // Real-time live update for KPI counts and recent incidents list
+  useEffect(() => {
+    const unsubscribe = onIncident((newIncident) => {
+      if (!newIncident || !newIncident.id) return;
+
+      // 1. Live prepend to recent incidents (keep top 5)
+      setRecentIncidents((prev) => {
+        if (prev.some((item) => item.id === newIncident.id)) return prev;
+        return [newIncident, ...prev.slice(0, 4)];
+      });
+
+      // 2. Increment overview metrics and risk breakdown live
+      setOverview((prev) => {
+        const normRisk = normalizeRisk(newIncident.risk_level);
+        const riskKey = normRisk.charAt(0).toUpperCase() + normRisk.slice(1);
+        const currentBreakdown = prev?.risk_breakdown || {
+          Safe: 0,
+          Low: 0,
+          Medium: 0,
+          High: 0,
+          Critical: 0,
+        };
+
+        return {
+          ...prev,
+          total_incidents: (prev?.total_incidents || 0) + 1,
+          active_threats: (prev?.active_threats || 0) + 1,
+          risk_breakdown: {
+            ...currentBreakdown,
+            [riskKey]: (currentBreakdown[riskKey] || 0) + 1,
+          },
+        };
+      });
+    });
+
+    return unsubscribe;
+  }, [onIncident]);
 
   // High + Critical aggregated count
   const highCriticalCount = useMemo(() => {
@@ -638,10 +679,26 @@ export function DashboardPage({ onSelectIncident }) {
                 <tbody className="divide-y divide-border text-xs">
                   {filteredIncidents.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-12 text-center text-muted-foreground">
-                        {recentIncidents.length === 0
-                          ? 'No incidents recorded in the gateway database.'
-                          : 'No incidents match your active filters.'}
+                      <td colSpan={6} className="py-8">
+                        <EmptyState
+                          icon={ShieldAlert}
+                          title={recentIncidents.length === 0 ? "No Incidents Recorded" : "No Incidents Match Filters"}
+                          description={
+                            recentIncidents.length === 0
+                              ? "Gateway database has no recorded threat events. Live telemetry will stream here automatically."
+                              : "Adjust your search keywords or filter dropdowns to inspect matching security records."
+                          }
+                          actionLabel={recentIncidents.length > 0 ? "Clear Filters" : undefined}
+                          onAction={
+                            recentIncidents.length > 0
+                              ? () => {
+                                  setSearchQuery('');
+                                  setSelectedRisk('all');
+                                  setSelectedStatus('all');
+                                }
+                              : undefined
+                          }
+                        />
                       </td>
                     </tr>
                   ) : (

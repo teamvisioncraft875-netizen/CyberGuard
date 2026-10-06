@@ -1,4 +1,7 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
+import { useSocket } from '../hooks/useSocket';
 import { cn } from '../utils/cn';
 import { normalizeRisk } from '../utils/risk';
 import { normalizeAction } from '../utils/actions';
@@ -104,6 +107,53 @@ export function IncidentsPage() {
   useEffect(() => {
     fetchIncidents();
   }, [fetchIncidents]);
+
+  const { onIncident } = useSocket();
+  const [highlightedIncidentId, setHighlightedIncidentId] = useState(null);
+  const tableContainerRef = useRef(null);
+
+  // Live real-time socket listener: prepend incoming incident live (no refresh needed)
+  useEffect(() => {
+    const unsubscribe = onIncident((newIncident) => {
+      if (!newIncident || !newIncident.id) return;
+      setIncidents((prev) => {
+        if (prev.some((item) => item.id === newIncident.id)) {
+          return prev;
+        }
+        return [newIncident, ...prev];
+      });
+      setTotalCount((prev) => prev + 1);
+      setHighlightedIncidentId(newIncident.id);
+    });
+
+    return unsubscribe;
+  }, [onIncident]);
+
+  // Subtle GSAP highlight on newly prepended row: under 500ms, settles to normal styling
+  useGSAP(
+    () => {
+      if (!highlightedIncidentId) return;
+      const rowEl = tableContainerRef.current?.querySelector(
+        `[data-incident-id="${highlightedIncidentId}"]`
+      );
+      if (rowEl) {
+        gsap.fromTo(
+          rowEl,
+          { backgroundColor: 'rgba(56, 189, 248, 0.35)' },
+          {
+            backgroundColor: 'transparent',
+            duration: 0.45,
+            ease: 'power2.out',
+            clearProps: 'backgroundColor',
+            onComplete: () => {
+              setHighlightedIncidentId(null);
+            },
+          }
+        );
+      }
+    },
+    { dependencies: [highlightedIncidentId], scope: tableContainerRef }
+  );
 
   // Fetch single incident details for detail drawer
   const handleOpenIncident = async (incident) => {
@@ -332,7 +382,7 @@ export function IncidentsPage() {
       </div>
 
       {/* 3. Incidents Table / Cards View */}
-      <div className="rounded-xl bg-card border border-border overflow-hidden">
+      <div ref={tableContainerRef} className="rounded-xl bg-card border border-border overflow-hidden">
         {isLoading ? (
           <div className="p-4 space-y-4">
             <div className="hidden md:block space-y-3">
@@ -389,6 +439,7 @@ export function IncidentsPage() {
                   {displayIncidents.map((incident) => (
                     <TableRow
                       key={incident.id}
+                      data-incident-id={incident.id}
                       onClick={() => handleOpenIncident(incident)}
                       className="cursor-pointer hover:bg-muted/50 transition-colors group"
                     >
@@ -435,6 +486,7 @@ export function IncidentsPage() {
               {displayIncidents.map((incident) => (
                 <div
                   key={incident.id}
+                  data-incident-id={incident.id}
                   onClick={() => handleOpenIncident(incident)}
                   className="p-4 space-y-2.5 active:bg-muted/60 transition-colors cursor-pointer"
                 >
