@@ -1,4 +1,5 @@
 const { persistDetectionIncident } = require('../incidentService');
+const streamingService = require('./streamingService');
 
 /**
  * Detection Bridge Service — Bridges normalized SIEM events into the core CYBERGUARD
@@ -249,6 +250,9 @@ const DetectionBridgeService = {
 
     // Feeds directly into existing incident pipeline (Task 1 dedup -> Task 2 correlation -> Task 3 groups -> Task 4 attack chain -> SOC triage)
     const incident = await persistDetectionIncident(incidentPayload, client);
+    if (incident) {
+      streamingService.publishIncident(incident, organizationId);
+    }
     return {
       incident,
       rule_id: ruleId,

@@ -511,6 +511,11 @@ const attackChainService = {
         console.warn('[RiskScoring Warning] Non-critical error updating risk score on attack chain change:', rErr.message);
       }
 
+      try {
+        const streamingService = require('./siem/streamingService');
+        streamingService.publishAttackChainUpdate({ snapshot, root_incident_id: incidentId }, organizationId);
+      } catch (sErr) {}
+
       return snapshot;
     };
 

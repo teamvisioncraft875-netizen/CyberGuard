@@ -86,6 +86,30 @@ const MitreMapping = {
   },
 
   getTechniqueForThreat(threatType, ruleId = null) {
+    if (ruleId) {
+      const cleanRule = String(ruleId).toUpperCase().trim();
+      if (cleanRule === 'SIEM-BURST-BRUTE' || cleanRule === 'SIEM-AUTH-BRUTE') {
+        return { technique_id: 'T1110', technique_name: 'Brute Force' };
+      }
+      if (cleanRule === 'SIEM-BURST-PRV' || cleanRule === 'SIEM-PRV-ESCALATION') {
+        return { technique_id: 'T1068', technique_name: 'Exploitation for Privilege Escalation' };
+      }
+      if (cleanRule === 'SIEM-LM-DEVICE' || cleanRule === 'SIEM-LATERAL-MOVEMENT') {
+        return { technique_id: 'T1021', technique_name: 'Remote Services' };
+      }
+      if (cleanRule === 'SIEM-LM-IP' || cleanRule === 'SIEM-CREDENTIAL-REUSE') {
+        return { technique_id: 'T1078', technique_name: 'Valid Accounts' };
+      }
+      if (cleanRule === 'SIEM-DEF-1102') {
+        return { technique_id: 'T1070', technique_name: 'Indicator Removal on Host' };
+      }
+      if (cleanRule === 'SIEM-PROC-SUSP') {
+        return { technique_id: 'TA0002', technique_name: 'Execution' };
+      }
+      if (cleanRule === 'SIEM-NET-C2') {
+        return { technique_id: 'TA0011', technique_name: 'Command and Control' };
+      }
+    }
     if (!threatType) return THREAT_TO_MITRE.phishing;
     const key = String(threatType).toLowerCase().trim();
     if (key === 'attack_surface_exposure' && ruleId) {

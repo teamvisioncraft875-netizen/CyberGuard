@@ -1,12 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const siemController = require('../controllers/siemController');
+const siemStreamingRoutes = require('./siemStreamingRoutes');
 const auth = require('../middlewares/auth');
 const roleCheck = require('../middlewares/roleCheck');
 
 // All SIEM endpoints require authentication and SOC Analyst / Admin privileges
 router.use(auth);
 router.use(roleCheck(['admin', 'analyst']));
+
+// 0. Real-Time Streaming & Live Operational Metrics (Phase 2)
+router.use('/', siemStreamingRoutes);
 
 // 1. Ingestion Endpoint
 router.post('/events', siemController.ingestEvents);

@@ -364,6 +364,13 @@ async function persistDetectionIncident({
     throw dbError;
   }
 
+  if (incident && incident.organization_id) {
+    try {
+      const streamingService = require('./siem/streamingService');
+      streamingService.publishIncident(incident, incident.organization_id);
+    } catch (streamErr) {}
+  }
+
   return incident;
 }
 
