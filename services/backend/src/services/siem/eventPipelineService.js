@@ -146,6 +146,14 @@ const EventPipelineService = {
               // D. Broadcast Real-Time Threat Intel Streaming Events
               streamingService.publishIOCMatch({ ...hit, event_id: normEv.id, alert_id: alert.id }, organizationId);
               streamingService.publishSighting(sighting, organizationId);
+
+              // E. Trigger Matching SOAR Playbooks (Sprint B Phase 1)
+              try {
+                const playbookEngine = require('../soar/playbookEngine');
+                await playbookEngine.triggerMatchingPlaybooks(alert, client);
+              } catch (soarErr) {
+                console.warn('[Pipeline Warning] SOAR trigger error:', soarErr.message);
+              }
             }
           }
         } catch (iocErr) {

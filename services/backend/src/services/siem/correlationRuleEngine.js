@@ -680,6 +680,16 @@ class CorrelationRuleEngine {
       // Non-critical streaming error
     }
 
+    // 6. SOAR Playbook Automation Trigger (Sprint B Phase 1)
+    if (alert) {
+      try {
+        const playbookEngine = require('../soar/playbookEngine');
+        await playbookEngine.triggerMatchingPlaybooks(alert, client);
+      } catch (soarErr) {
+        console.warn('[CorrelationRuleEngine Warning] SOAR trigger error:', soarErr.message);
+      }
+    }
+
     return {
       rule_id: ruleId,
       rule_code: ruleCode,

@@ -415,4 +415,8 @@ const ThreatIOC = {
   }
 };
 
+ThreatIOC.findById = ThreatIOC.getIOC;
+ThreatIOC.create = ThreatIOC.createIOC;
+ThreatIOC.upsertIOC = ThreatIOC.createIOC;
+
 module.exports = ThreatIOC;
