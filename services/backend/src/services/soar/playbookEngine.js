@@ -2,12 +2,13 @@ const db = require('../../config/db');
 const SoarPlaybook = require('../../models/SoarPlaybook');
 const SoarExecution = require('../../models/SoarExecution');
 const SoarApproval = require('../../models/SoarApproval');
+const SoarCaseEvidence = require('../../models/SoarCaseEvidence');
 const actionExecutor = require('./actionExecutor');
 const auditService = require('../auditService');
 
 /**
  * Playbook Engine — Orchestrates security automation workflows, sequential step execution,
- * approval gating, and lifecycle state transitions.
+ * approval gating, execution retries with backoff, recovery, and evidence collection.
  */
 class PlaybookEngine {
   /**
@@ -74,7 +75,8 @@ class PlaybookEngine {
           organization_id: orgId,
           playbook_id: playbook.id,
           trigger_alert_id: alert.id || null,
-          status: 'pending'
+          status: 'pending',
+          retry_count: 0
         }, dbClient);
 
         // 2. Pre-create execution step records
@@ -84,13 +86,15 @@ class PlaybookEngine {
             execution_id: execution.id,
             playbook_step_id: step.id,
             status: 'pending',
-            result_payload: {}
+            result_payload: {},
+            retry_count: 0
           }, dbClient);
         }
 
         // 3. Initiate playbook execution
         const runResult = await this.executePlaybook(execution.id, {
           alertContext: alert,
+          caseId: options.caseId || null,
           ...options
         }, dbClient);
 
@@ -104,7 +108,8 @@ class PlaybookEngine {
   }
 
   /**
-   * Sequentially executes the steps of a playbook execution.
+   * Sequentially executes the steps of a playbook execution with retries, approval gating,
+   * and evidence collection.
    */
   async executePlaybook(executionId, options = {}, client = null) {
     const dbClient = client || db;
@@ -125,7 +130,7 @@ class PlaybookEngine {
     }
 
     // 3. Transition execution to running if pending or resumed
-    if (['pending', 'waiting_approval'].includes(execution.status)) {
+    if (['pending', 'waiting_approval', 'retrying'].includes(execution.status)) {
       await SoarExecution.updateStatus(executionId, orgId, 'running', {
         started_at: execution.started_at || new Date()
       }, dbClient);
@@ -143,6 +148,8 @@ class PlaybookEngine {
     // 4. Fetch execution steps
     const execSteps = await SoarExecution.getExecutionSteps(executionId, dbClient);
 
+    const targetCaseId = options.caseId || execution.case_id || options.context?.case_id || null;
+
     // Build context
     const runtimeContext = {
       organization_id: orgId,
@@ -150,6 +157,7 @@ class PlaybookEngine {
       playbook_id: playbook.id,
       playbook_name: playbook.name,
       alert_id: execution.trigger_alert_id,
+      case_id: targetCaseId,
       ...(options.alertContext || {}),
       ...(options.context || {})
     };
@@ -173,7 +181,9 @@ class PlaybookEngine {
               execution_id: executionId,
               requested_by: options.actor_id || null,
               reason: `Approval required for step "${step.action_type}" in playbook "${playbook.name}"`,
-              organization_id: orgId
+              organization_id: orgId,
+              level: step.action_config?.approval_level || 'L1',
+              ttl_minutes: step.action_config?.approval_ttl_minutes || null
             }, dbClient);
           } else {
             // Already has pending approval, ensure execution status is waiting_approval
@@ -191,7 +201,7 @@ class PlaybookEngine {
           }, dbClient);
           await SoarExecution.updateStepRecord(step.id, {
             status: 'skipped',
-            result_payload: { reason: 'Approval rejected' }
+            result_payload: { reason: 'Approval rejected', rejection_comment: latestApproval.rejection_comment }
           }, dbClient);
 
           return await SoarExecution.findById(executionId, orgId, dbClient);
@@ -200,30 +210,95 @@ class PlaybookEngine {
         // If latestApproval.status === 'approved', proceed to execute this step!
       }
 
-      // Execute step action
-      await SoarExecution.updateStepRecord(step.id, {
-        status: 'running',
-        result_payload: {}
-      }, dbClient);
+      // Execute step action with Retry & Exponential Backoff Policy
+      const retryPolicy = step.retry_policy || { max_retries: 0, backoff_ms: 50, backoff_multiplier: 2 };
+      const maxRetries = typeof retryPolicy.max_retries === 'number' ? retryPolicy.max_retries : 0;
+      let attempt = 0;
+      let actionResult = null;
+      let stepSucceeded = false;
 
-      const actionResult = await actionExecutor.executeAction(
-        step.action_type,
-        step.action_config || {},
-        runtimeContext,
-        dbClient
-      );
+      while (attempt <= maxRetries) {
+        if (attempt > 0) {
+          // Transition to retrying status
+          const baseBackoff = retryPolicy.backoff_ms || 50;
+          const multiplier = retryPolicy.backoff_multiplier || 2;
+          const backoffDelay = Math.min(baseBackoff * Math.pow(multiplier, attempt - 1), 300);
 
-      if (actionResult.success) {
+          await SoarExecution.recordRetry(executionId, orgId, attempt, {
+            step_id: step.id,
+            attempt,
+            backoff_ms: backoffDelay,
+            last_error: actionResult?.error
+          }, dbClient);
+
+          await auditService.log({
+            organization_id: orgId,
+            actor_id: options.actor_id || null,
+            action: 'SOAR_EXECUTION_RETRIED',
+            resource_type: 'soar_execution',
+            resource_id: executionId,
+            details: { step_id: step.id, action_type: step.action_type, attempt, max_retries: maxRetries }
+          }).catch(err => console.error('[playbookEngine] Audit log error:', err.message));
+
+          if (backoffDelay > 0 && !options.skipBackoffDelay) {
+            await new Promise(r => setTimeout(r, backoffDelay));
+          }
+        }
+
+        await SoarExecution.updateStepRecord(step.id, {
+          status: 'running',
+          result_payload: {},
+          retry_count: attempt
+        }, dbClient);
+
+        actionResult = await actionExecutor.executeAction(
+          step.action_type,
+          step.action_config || {},
+          runtimeContext,
+          dbClient
+        );
+
+        if (actionResult.success) {
+          stepSucceeded = true;
+          break;
+        }
+
+        attempt++;
+      }
+
+      if (stepSucceeded) {
         await SoarExecution.updateStepRecord(step.id, {
           status: 'completed',
           result_payload: actionResult,
+          retry_count: attempt,
           executed_at: new Date()
         }, dbClient);
+
+        // Response Evidence Collection: If linked to a case, attach step action evidence
+        if (targetCaseId) {
+          try {
+            await SoarCaseEvidence.create({
+              case_id: targetCaseId,
+              organization_id: orgId,
+              evidence_type: 'remediation_output',
+              data: {
+                step_order: step.step_order,
+                action_type: step.action_type,
+                result: actionResult
+              },
+              execution_id: executionId,
+              created_by: options.actor_id || null
+            }, dbClient);
+          } catch (evErr) {
+            console.warn('[PlaybookEngine] Failed to attach step evidence:', evErr.message);
+          }
+        }
       } else {
-        // Step failed
+        // Step failed after retries exhausted
         await SoarExecution.updateStepRecord(step.id, {
           status: 'failed',
           result_payload: actionResult,
+          retry_count: maxRetries,
           executed_at: new Date()
         }, dbClient);
 
@@ -231,13 +306,33 @@ class PlaybookEngine {
           completed_at: new Date()
         }, dbClient);
 
+        // Record execution failure log as evidence if case linked
+        if (targetCaseId) {
+          try {
+            await SoarCaseEvidence.create({
+              case_id: targetCaseId,
+              organization_id: orgId,
+              evidence_type: 'execution_log',
+              data: {
+                status: 'failed',
+                failed_step: step.action_type,
+                error: actionResult?.error
+              },
+              execution_id: executionId,
+              created_by: options.actor_id || null
+            }, dbClient);
+          } catch (evErr) {
+            console.warn('[PlaybookEngine] Failed to attach failure evidence:', evErr.message);
+          }
+        }
+
         await auditService.log({
           organization_id: orgId,
           actor_id: options.actor_id || null,
           action: 'SOAR_EXECUTION_FAILED',
           resource_type: 'soar_execution',
           resource_id: executionId,
-          details: { failed_step: step.action_type, error: actionResult.error }
+          details: { failed_step: step.action_type, error: actionResult?.error, attempts: attempt }
         }).catch(err => console.error('[playbookEngine] Audit log error:', err.message));
 
         return await SoarExecution.findById(executionId, orgId, dbClient);
@@ -248,6 +343,26 @@ class PlaybookEngine {
     const completedExec = await SoarExecution.updateStatus(executionId, orgId, 'completed', {
       completed_at: new Date()
     }, dbClient);
+
+    // Record final execution log as evidence if case linked
+    if (targetCaseId) {
+      try {
+        await SoarCaseEvidence.create({
+          case_id: targetCaseId,
+          organization_id: orgId,
+          evidence_type: 'execution_log',
+          data: {
+            status: 'completed',
+            playbook_name: playbook.name,
+            total_steps: execSteps.length
+          },
+          execution_id: executionId,
+          created_by: options.actor_id || null
+        }, dbClient);
+      } catch (evErr) {
+        console.warn('[PlaybookEngine] Failed to attach completion evidence:', evErr.message);
+      }
+    }
 
     await auditService.log({
       organization_id: orgId,
@@ -279,6 +394,48 @@ class PlaybookEngine {
       console.error('[PlaybookEngine] triggerMatchingPlaybooks error:', err.message);
       return [];
     }
+  }
+
+  /**
+   * Recovers stale executions left in 'running' or 'retrying' states (e.g. after crash or restart).
+   */
+  async recoverStaleExecutions({ organization_id = null } = {}, client = null) {
+    const dbClient = client || db;
+    const staleExecutions = await SoarExecution.findStaleRunningExecutions(organization_id, dbClient);
+    const recovered = [];
+
+    for (const exec of staleExecutions) {
+      try {
+        // Inspect steps
+        const steps = await SoarExecution.getExecutionSteps(exec.id, dbClient);
+        const hasPendingSteps = steps.some(s => ['pending', 'running'].includes(s.status));
+
+        if (hasPendingSteps) {
+          // Resume execution
+          const resumed = await this.executePlaybook(exec.id, { isRecovered: true }, dbClient);
+          recovered.push(resumed);
+
+          await auditService.log({
+            organization_id: exec.organization_id,
+            actor_id: null,
+            action: 'SOAR_EXECUTION_RECOVERED',
+            resource_type: 'soar_execution',
+            resource_id: exec.id,
+            details: { previous_status: exec.status, new_status: resumed.status }
+          }).catch(err => console.error('[playbookEngine] Audit log error:', err.message));
+        } else {
+          // All steps finished, mark completed
+          const updated = await SoarExecution.updateStatus(exec.id, exec.organization_id, 'completed', {
+            completed_at: new Date()
+          }, dbClient);
+          recovered.push(updated);
+        }
+      } catch (err) {
+        console.error(`[PlaybookEngine] Failed to recover execution ${exec.id}:`, err.message);
+      }
+    }
+
+    return recovered;
   }
 }
 

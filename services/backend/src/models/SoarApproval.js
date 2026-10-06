@@ -2,9 +2,11 @@ const db = require('../config/db');
 
 /**
  * SoarApproval Model — Tenant-scoped approval workflows for gated playbook actions
+ * Supports multi-level escalation (L1 Analyst, L2 Senior Analyst, L3 SOC Admin), expiration, and rejection tracking.
  */
 const SoarApproval = {
   VALID_STATUSES: ['pending', 'approved', 'rejected'],
+  VALID_LEVELS: ['L1', 'L2', 'L3'],
 
   /**
    * Creates an approval request record for an execution.
@@ -12,9 +14,16 @@ const SoarApproval = {
   async create({
     execution_id,
     requested_by = null,
-    reason = null
+    reason = null,
+    level = 'L1',
+    expires_at = null
   }, client = null) {
     if (!execution_id) throw new Error('SoarApproval Error: execution_id is required');
+
+    const cleanLevel = (level || 'L1').toUpperCase();
+    if (!this.VALID_LEVELS.includes(cleanLevel)) {
+      throw new Error(`SoarApproval Error: Invalid approval level "${level}". Allowed: ${this.VALID_LEVELS.join(', ')}`);
+    }
 
     const dbClient = client || db;
     const query = `
@@ -23,13 +32,21 @@ const SoarApproval = {
         requested_by,
         status,
         reason,
+        level,
+        expires_at,
         created_at
       )
-      VALUES ($1, $2, 'pending', $3, NOW())
+      VALUES ($1, $2, 'pending', $3, $4, $5, NOW())
       RETURNING *;
     `;
 
-    const res = await dbClient.query(query, [execution_id, requested_by, reason]);
+    const res = await dbClient.query(query, [
+      execution_id,
+      requested_by,
+      reason,
+      cleanLevel,
+      expires_at
+    ]);
     return res.rows[0];
   },
 
@@ -88,7 +105,8 @@ const SoarApproval = {
   async decide(id, {
     status,
     decided_by = null,
-    reason = null
+    reason = null,
+    rejection_comment = null
   }, client = null) {
     if (!id) throw new Error('SoarApproval Error: id is required');
     if (!status || !['approved', 'rejected'].includes(status.toLowerCase())) {
@@ -103,6 +121,7 @@ const SoarApproval = {
       SET status = $2,
           approved_by = $3,
           reason = COALESCE($4, reason),
+          rejection_comment = COALESCE($5, rejection_comment),
           decided_at = NOW()
       WHERE id = $1
       RETURNING *;
@@ -112,18 +131,83 @@ const SoarApproval = {
       id,
       cleanStatus,
       decided_by,
-      reason
+      reason,
+      rejection_comment
     ]);
 
     return res.rows[0] || null;
   },
 
   /**
-   * Lists approvals for an organization with optional status filtering.
+   * Escalates an approval request to a higher authority level (e.g., L1 -> L2 or L2 -> L3).
+   */
+  async escalate(id, {
+    escalated_to_level,
+    reason = null,
+    expires_at = null
+  }, client = null) {
+    if (!id) throw new Error('SoarApproval Error: id is required');
+    const targetLevel = (escalated_to_level || 'L2').toUpperCase();
+    if (!this.VALID_LEVELS.includes(targetLevel)) {
+      throw new Error(`SoarApproval Error: Invalid target level "${escalated_to_level}"`);
+    }
+
+    const dbClient = client || db;
+    const query = `
+      UPDATE public.soar_approvals
+      SET escalated_to_level = $2,
+          level = $2,
+          reason = COALESCE($3, reason),
+          expires_at = COALESCE($4, expires_at)
+      WHERE id = $1
+      RETURNING *;
+    `;
+
+    const res = await dbClient.query(query, [id, targetLevel, reason, expires_at]);
+    return res.rows[0] || null;
+  },
+
+  /**
+   * Marks a pending approval as expired.
+   */
+  async markExpired(id, client = null) {
+    if (!id) return null;
+    const dbClient = client || db;
+    const query = `
+      UPDATE public.soar_approvals
+      SET is_expired = true,
+          status = 'rejected',
+          rejection_comment = 'Approval expired automatically due to timeout SLA',
+          decided_at = NOW()
+      WHERE id = $1 AND status = 'pending'
+      RETURNING *;
+    `;
+    const res = await dbClient.query(query, [id]);
+    return res.rows[0] || null;
+  },
+
+  /**
+   * Finds all pending approvals that have exceeded their expires_at timestamp.
+   */
+  async findPendingExpired(client = null) {
+    const dbClient = client || db;
+    const query = `
+      SELECT a.*, e.organization_id
+      FROM public.soar_approvals a
+      JOIN public.soar_executions e ON a.execution_id = e.id
+      WHERE a.status = 'pending' AND a.expires_at IS NOT NULL AND a.expires_at <= NOW();
+    `;
+    const res = await dbClient.query(query);
+    return res.rows;
+  },
+
+  /**
+   * Lists approvals for an organization with optional status and level filtering.
    */
   async findMany({
     organization_id,
     status,
+    level,
     limit = 50,
     offset = 0
   }, client = null) {
@@ -137,6 +221,11 @@ const SoarApproval = {
     if (status) {
       whereClauses.push(`a.status = $${idx++}`);
       params.push(status.toLowerCase());
+    }
+
+    if (level) {
+      whereClauses.push(`a.level = $${idx++}`);
+      params.push(level.toUpperCase());
     }
 
     const whereStr = whereClauses.join(' AND ');

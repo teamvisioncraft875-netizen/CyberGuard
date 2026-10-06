@@ -65,7 +65,8 @@ const SoarPlaybook = {
           step_order: stepOrder,
           action_type: s.action_type,
           action_config: s.action_config || {},
-          requires_approval: Boolean(s.requires_approval)
+          requires_approval: Boolean(s.requires_approval),
+          retry_policy: s.retry_policy
         }, dbClient);
         playbook.steps.push(insertedStep);
       }
@@ -211,7 +212,8 @@ const SoarPlaybook = {
           step_order: stepOrder,
           action_type: s.action_type,
           action_config: s.action_config || {},
-          requires_approval: Boolean(s.requires_approval)
+          requires_approval: Boolean(s.requires_approval),
+          retry_policy: s.retry_policy
         }, dbClient);
         playbook.steps.push(insertedStep);
       }
@@ -262,7 +264,8 @@ const SoarPlaybook = {
     step_order,
     action_type,
     action_config = {},
-    requires_approval = false
+    requires_approval = false,
+    retry_policy = { max_retries: 3, backoff_ms: 1000, backoff_multiplier: 2 }
   }, client = null) {
     if (!playbook_id) throw new Error('SoarPlaybook Error: playbook_id is required');
     if (!action_type || typeof action_type !== 'string') {
@@ -277,9 +280,10 @@ const SoarPlaybook = {
         action_type,
         action_config,
         requires_approval,
+        retry_policy,
         created_at
       )
-      VALUES ($1, $2, $3, $4, $5, NOW())
+      VALUES ($1, $2, $3, $4, $5, $6, NOW())
       RETURNING *;
     `;
 
@@ -288,7 +292,8 @@ const SoarPlaybook = {
       typeof step_order === 'number' ? step_order : 1,
       action_type.trim(),
       JSON.stringify(action_config || {}),
-      Boolean(requires_approval)
+      Boolean(requires_approval),
+      JSON.stringify(retry_policy || {})
     ]);
     return res.rows[0];
   },
