@@ -9,10 +9,74 @@ import math
 import numpy as np
 import scipy.io.wavfile as wavfile
 import scipy.signal as signal
+import scipy.fft as fft
 from typing import Dict, Any, Tuple
 
 
 TARGET_SAMPLE_RATE = 16000
+
+FEATURE_NAMES = [
+    # Base 13 features
+    "zero_crossing_rate",
+    "spectral_centroid_hz",
+    "spectral_rolloff_85_hz",
+    "spectral_rolloff_95_hz",
+    "spectral_flux",
+    "subband_ratio_4k_to_8k",
+    "subband_ratio_2k_to_4k",
+    "high_freq_ratio_4k",
+    "spectral_flatness",
+    "high_freq_cutoff_detected",
+    "mean_f0_hz",
+    "pitch_jitter_pct",
+    "anomaly_score",
+    # Additional 15 features
+    "mfcc_1_mean",
+    "mfcc_2_mean",
+    "mfcc_3_mean",
+    "mfcc_4_mean",
+    "mfcc_5_mean",
+    "mfcc_6_mean",
+    "mfcc_7_mean",
+    "mfcc_8_mean",
+    "mfcc_9_mean",
+    "mfcc_10_mean",
+    "spectral_contrast_b1",
+    "spectral_contrast_b2",
+    "spectral_contrast_b3",
+    "spectral_contrast_b4",
+    "spectral_bandwidth_hz",
+]
+
+
+def hz_to_mel(hz: float) -> float:
+    return 2595.0 * np.log10(1.0 + hz / 700.0)
+
+
+def mel_to_hz(mel: float) -> float:
+    return 700.0 * (10.0 ** (mel / 2595.0) - 1.0)
+
+
+def get_mel_filterbank(sr: int, n_fft: int, n_mels: int = 26, fmin: float = 20.0, fmax: float = 8000.0) -> np.ndarray:
+    mel_min = hz_to_mel(fmin)
+    mel_max = hz_to_mel(fmax)
+    mel_points = np.linspace(mel_min, mel_max, n_mels + 2)
+    hz_points = mel_to_hz(mel_points)
+    bin_points = np.floor((n_fft + 1) * hz_points / sr).astype(int)
+
+    filters = np.zeros((n_mels, n_fft // 2 + 1))
+    for m in range(1, n_mels + 1):
+        f_m_minus = bin_points[m - 1]
+        f_m = bin_points[m]
+        f_m_plus = bin_points[m + 1]
+
+        for k in range(f_m_minus, f_m):
+            if f_m != f_m_minus:
+                filters[m - 1, k] = (k - f_m_minus) / (f_m - f_m_minus)
+        for k in range(f_m, f_m_plus):
+            if f_m_plus != f_m:
+                filters[m - 1, k] = (f_m_plus - k) / (f_m_plus - f_m)
+    return filters
 
 
 def _load_audio_data(audio_input: str | bytes) -> Tuple[int, np.ndarray]:
@@ -131,6 +195,7 @@ def extract_audio_forensic_features(audio_input: str | bytes) -> Dict[str, Any]:
     Extracts deepfake forensic acoustic & spectral indicators from audio input.
     All inputs are pre-normalized to 16 kHz mono to prevent sampling rate / encoding leakage.
     Features are strictly computed on normalized acoustic properties.
+    Generates the complete 28-feature representation required for Audio V2 inference.
     """
     sr, audio = _load_audio_data(audio_input)
     duration_sec = round(len(audio) / float(sr), 3)
@@ -237,9 +302,40 @@ def extract_audio_forensic_features(audio_input: str | bytes) -> Dict[str, Any]:
     )
     anomaly_score = float(np.clip(raw_anomaly, 0.05, 0.95))
 
+    # 6. Additional 15 Features for Audio V2 (Bandwidth, Spectral Contrast, 10 MFCC Means)
+    diff_freqs = (freqs[:, None] - mean_centroid) ** 2
+    bandwidth_per_frame = np.sqrt(np.sum(diff_freqs * power, axis=0) / total_power_per_frame)
+    spectral_bandwidth_hz = float(np.mean(bandwidth_per_frame))
+    spectral_bandwidth_hz = 0.0 if math.isnan(spectral_bandwidth_hz) or math.isinf(spectral_bandwidth_hz) else spectral_bandwidth_hz
+
+    bands = [(200, 800), (800, 2000), (2000, 4000), (4000, 8000)]
+    contrast_vals = []
+    for b_low, b_high in bands:
+        b_mask = (freqs >= b_low) & (freqs < b_high)
+        if np.any(b_mask):
+            band_power = power[b_mask, :]
+            peak = np.percentile(band_power, 85)
+            valley = np.percentile(band_power, 15) + 1e-12
+            c = float(np.log10(peak + 1e-12) - np.log10(valley))
+        else:
+            c = 0.0
+        c = 0.0 if math.isnan(c) or math.isinf(c) else c
+        contrast_vals.append(c)
+
+    fbank = get_mel_filterbank(sr=sr, n_fft=nperseg, n_mels=26, fmin=20.0, fmax=8000.0)
+    mel_energy = np.dot(fbank, power)
+    log_mel = np.log(mel_energy + 1e-10)
+    dct_coeffs = fft.dct(log_mel, type=2, axis=0, norm="ortho")
+    mfcc_means = []
+    for i in range(1, 11):
+        m = float(np.mean(dct_coeffs[i, :]))
+        m = 0.0 if math.isnan(m) or math.isinf(m) else m
+        mfcc_means.append(m)
+
     return {
         "sample_rate": sr,
         "duration_sec": duration_sec,
+        # Base 13 features
         "zero_crossing_rate": round(zcr, 4),
         "spectral_centroid_hz": round(mean_centroid, 1),
         "spectral_rolloff_85_hz": round(rolloff_85, 1),
@@ -252,6 +348,22 @@ def extract_audio_forensic_features(audio_input: str | bytes) -> Dict[str, Any]:
         "high_freq_cutoff_detected": has_steep_cutoff,
         "mean_f0_hz": mean_f0,
         "pitch_jitter_pct": jitter_pct,
-        "anomaly_score": round(anomaly_score, 4)
+        "anomaly_score": round(anomaly_score, 4),
+        # Additional 15 features
+        "mfcc_1_mean": round(mfcc_means[0], 4),
+        "mfcc_2_mean": round(mfcc_means[1], 4),
+        "mfcc_3_mean": round(mfcc_means[2], 4),
+        "mfcc_4_mean": round(mfcc_means[3], 4),
+        "mfcc_5_mean": round(mfcc_means[4], 4),
+        "mfcc_6_mean": round(mfcc_means[5], 4),
+        "mfcc_7_mean": round(mfcc_means[6], 4),
+        "mfcc_8_mean": round(mfcc_means[7], 4),
+        "mfcc_9_mean": round(mfcc_means[8], 4),
+        "mfcc_10_mean": round(mfcc_means[9], 4),
+        "spectral_contrast_b1": round(contrast_vals[0], 4),
+        "spectral_contrast_b2": round(contrast_vals[1], 4),
+        "spectral_contrast_b3": round(contrast_vals[2], 4),
+        "spectral_contrast_b4": round(contrast_vals[3], 4),
+        "spectral_bandwidth_hz": round(spectral_bandwidth_hz, 1),
     }
 

@@ -1,6 +1,7 @@
 {
-  "model_type": "LogisticRegression",
-  "feature_version": "2.0.0_leakage_fixed",
+  "model_type": "Pipeline",
+  "classifier_name": "MLPClassifier",
+  "feature_version": "3.0.0_28_features",
   "features": [
     "zero_crossing_rate",
     "spectral_centroid_hz",
@@ -14,14 +15,29 @@
     "high_freq_cutoff_detected",
     "mean_f0_hz",
     "pitch_jitter_pct",
-    "anomaly_score"
+    "anomaly_score",
+    "mfcc_1_mean",
+    "mfcc_2_mean",
+    "mfcc_3_mean",
+    "mfcc_4_mean",
+    "mfcc_5_mean",
+    "mfcc_6_mean",
+    "mfcc_7_mean",
+    "mfcc_8_mean",
+    "mfcc_9_mean",
+    "mfcc_10_mean",
+    "spectral_contrast_b1",
+    "spectral_contrast_b2",
+    "spectral_contrast_b3",
+    "spectral_contrast_b4",
+    "spectral_bandwidth_hz"
   ],
-  "feature_count": 13,
+  "feature_count": 28,
   "target_mapping": {
     "genuine": 0,
     "manipulated": 1
   },
-  "frozen_threshold": 0.5,
+  "frozen_threshold": 0.49,
   "target_sample_rate": 16000,
   "audio_channels": 1
 }

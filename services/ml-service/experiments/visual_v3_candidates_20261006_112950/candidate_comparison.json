@@ -1,0 +1,86 @@
+[
+  {
+    "name": "Candidate A",
+    "train_time_sec": 13.51,
+    "param_count": 2378498,
+    "size_bytes": 9520109,
+    "latency_ms": 2.6281,
+    "selected_threshold": 0.79,
+    "val_metrics": {
+      "threshold": 0.79,
+      "accuracy": 0.6627,
+      "balanced_accuracy": 0.7409,
+      "precision": 0.9713,
+      "recall": 0.6415,
+      "specificity": 0.8403,
+      "fpr": 0.1597,
+      "f1": 0.7727,
+      "roc_auc": 0.8091,
+      "pr_auc": 0.9742,
+      "confusion_matrix": {
+        "tn": 200,
+        "fp": 38,
+        "fn": 718,
+        "tp": 1285
+      }
+    },
+    "artifact_path": "d:\\cyberguard project  work su\\CyberGuard\\services\\ml-service\\experiments\\visual_v3_candidates_20261006_112950\\candidate_a.pt",
+    "sha256": "9cfa257a5b89df7b36d4e25ab0153193f74e1421908eb7e5169b018a05a84884"
+  },
+  {
+    "name": "Candidate B",
+    "train_time_sec": 11.4,
+    "param_count": 677122,
+    "size_bytes": 2714035,
+    "latency_ms": 0.442,
+    "selected_threshold": 0.8,
+    "val_metrics": {
+      "threshold": 0.8,
+      "accuracy": 0.6863,
+      "balanced_accuracy": 0.7375,
+      "precision": 0.9663,
+      "recall": 0.6725,
+      "specificity": 0.8025,
+      "fpr": 0.1975,
+      "f1": 0.7931,
+      "roc_auc": 0.7961,
+      "pr_auc": 0.9726,
+      "confusion_matrix": {
+        "tn": 191,
+        "fp": 47,
+        "fn": 656,
+        "tp": 1347
+      }
+    },
+    "artifact_path": "d:\\cyberguard project  work su\\CyberGuard\\services\\ml-service\\experiments\\visual_v3_candidates_20261006_112950\\candidate_b.pt",
+    "sha256": "36b1cc7bef213786fd0ceba8b713c49c79942d047c34ae4bd3fd2052331c7521"
+  },
+  {
+    "name": "Candidate C",
+    "train_time_sec": 12.11,
+    "param_count": 935810,
+    "size_bytes": 3751152,
+    "latency_ms": 1.1283,
+    "selected_threshold": 0.79,
+    "val_metrics": {
+      "threshold": 0.79,
+      "accuracy": 0.6662,
+      "balanced_accuracy": 0.7337,
+      "precision": 0.9679,
+      "recall": 0.648,
+      "specificity": 0.8193,
+      "fpr": 0.1807,
+      "f1": 0.7763,
+      "roc_auc": 0.7943,
+      "pr_auc": 0.9721,
+      "confusion_matrix": {
+        "tn": 195,
+        "fp": 43,
+        "fn": 705,
+        "tp": 1298
+      }
+    },
+    "artifact_path": "d:\\cyberguard project  work su\\CyberGuard\\services\\ml-service\\experiments\\visual_v3_candidates_20261006_112950\\candidate_c.pt",
+    "sha256": "f081b8d3cfd6d349a219be15993e3dba51ef9927576352d25c460ef87202c7fc"
+  }
+]
