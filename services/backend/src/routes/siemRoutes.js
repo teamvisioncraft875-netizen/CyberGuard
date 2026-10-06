@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const siemController = require('../controllers/siemController');
 const siemStreamingRoutes = require('./siemStreamingRoutes');
+const siemDetectionRoutes = require('./siemDetectionRoutes');
 const auth = require('../middlewares/auth');
 const roleCheck = require('../middlewares/roleCheck');
 
@@ -11,6 +12,9 @@ router.use(roleCheck(['admin', 'analyst']));
 
 // 0. Real-Time Streaming & Live Operational Metrics (Phase 2)
 router.use('/', siemStreamingRoutes);
+
+// 0.1 Detection Hits & Correlation Rules (Phase 2)
+router.use('/', siemDetectionRoutes);
 
 // 1. Ingestion Endpoint
 router.post('/events', siemController.ingestEvents);

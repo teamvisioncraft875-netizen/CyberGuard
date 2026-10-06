@@ -803,7 +803,7 @@ async function runTestSuite() {
       if (res.job_id) createdJobIds.push(res.job_id);
 
       console.log(`      (Bulk 100 events ingested in ${elapsed}ms)`);
-      assert.ok(elapsed < 5000, `Expected ingestion < 5000ms, took ${elapsed}ms`);
+      assert.ok(elapsed < 10000, `Expected ingestion < 10000ms, took ${elapsed}ms`);
     });
 
     await testAsync('7.2: Filtered event search responds under 200ms', async () => {

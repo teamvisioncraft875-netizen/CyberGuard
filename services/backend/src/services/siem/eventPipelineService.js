@@ -2,11 +2,12 @@ const IngestionService = require('./ingestionService');
 const DetectionBridgeService = require('./detectionBridgeService');
 const EventBurstDetectionService = require('./eventBurstDetectionService');
 const LateralMovementService = require('./lateralMovementService');
+const correlationRuleEngine = require('./correlationRuleEngine');
 const streamingService = require('./streamingService');
 
 /**
  * Event Pipeline Service — Master orchestrator for real-time SIEM event intake:
- * Raw Events -> Normalization -> Storage Layer -> Streaming Publish -> Burst Detection -> Lateral Movement -> Detection Bridge -> Incident Generation
+ * Raw Events -> Normalization -> Storage Layer -> Streaming Publish -> Burst Detection -> Lateral Movement -> Detection Bridge -> Correlation Engine -> Incident Generation
  */
 const EventPipelineService = {
   /**
@@ -45,6 +46,15 @@ const EventPipelineService = {
       events: insertedEvents,
       normalized_events: normalizedEvents
     } = ingestionResult;
+
+    // Attach inserted DB ids to normalized objects if available
+    if (Array.isArray(insertedEvents) && Array.isArray(normalizedEvents)) {
+      normalizedEvents.forEach((norm, idx) => {
+        if (insertedEvents[idx]?.id) {
+          norm.id = insertedEvents[idx].id;
+        }
+      });
+    }
 
     let detectedIncidents = [];
 
@@ -88,6 +98,7 @@ const EventPipelineService = {
         }
 
         // 5. Individual Threat Event Detection Bridge (Rules 1-6)
+        const handledSingleEventTypes = new Set();
         try {
           const bridgeResults = await DetectionBridgeService.processBatch(
             normalizedEvents,
@@ -96,10 +107,58 @@ const EventPipelineService = {
           );
           if (Array.isArray(bridgeResults) && bridgeResults.length > 0) {
             detectedIncidents.push(...bridgeResults);
+            for (const b of bridgeResults) {
+              if (b.rule_id === 'SIEM-DEF-1102') {
+                handledSingleEventTypes.add('windows_audit_log_cleared');
+              }
+            }
           }
         } catch (bridgeErr) {
           console.warn('[Pipeline Warning] Detection bridge error:', bridgeErr.message);
         }
+
+        // 6. Real-Time Multi-Event Correlation Rule Engine (Rules 1-7)
+        try {
+          const eventsForCorrelation = handledSingleEventTypes.size > 0
+            ? normalizedEvents.filter(e => !handledSingleEventTypes.has(e.event_type) && String(e.event_id) !== '1102')
+            : normalizedEvents;
+
+          const correlationHits = await correlationRuleEngine.evaluateBatch(
+            eventsForCorrelation,
+            organizationId,
+            client
+          );
+          if (Array.isArray(correlationHits) && correlationHits.length > 0) {
+            for (const hit of correlationHits) {
+              if (hit.incident) {
+                detectedIncidents.push({
+                  rule_id: hit.rule_code,
+                  incident: hit.incident,
+                  threat_type: hit.incident.threat_type,
+                  risk_score: hit.incident.risk_score,
+                  hit_id: hit.hit?.id
+                });
+              }
+            }
+          }
+        } catch (corrErr) {
+          console.warn('[Pipeline Warning] Correlation rule engine error:', corrErr.message);
+        }
+      }
+    }
+
+    // Deduplicate detected incidents by incident.id to ensure idempotency across correlation layers
+    const deduplicatedIncidents = [];
+    const seenIncidentIds = new Set();
+    for (const item of detectedIncidents) {
+      const incId = item.incident?.id;
+      if (incId) {
+        if (!seenIncidentIds.has(incId)) {
+          seenIncidentIds.add(incId);
+          deduplicatedIncidents.push(item);
+        }
+      } else {
+        deduplicatedIncidents.push(item);
       }
     }
 
@@ -109,7 +168,7 @@ const EventPipelineService = {
       successful_events: successful,
       failed_events: failed,
       stored_events: insertedEvents,
-      detected_incidents: detectedIncidents
+      detected_incidents: deduplicatedIncidents
     };
   }
 };

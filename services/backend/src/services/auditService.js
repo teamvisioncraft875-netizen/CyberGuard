@@ -61,7 +61,10 @@ const AUDIT_ACTIONS = Object.freeze({
   THREAT_ACTION_PROPOSED: 'threat_action_proposed',
   THREAT_ACTION_SUPPRESSED_DUPLICATE: 'threat_action_suppressed_duplicate',
   THREAT_ANALYTICS_VIEWED: 'threat_analytics_viewed',
-  THREAT_EXECUTIVE_REPORT_VIEWED: 'threat_executive_report_viewed'
+  THREAT_EXECUTIVE_REPORT_VIEWED: 'threat_executive_report_viewed',
+  SIEM_RULE_CREATED: 'SIEM_RULE_CREATED',
+  SIEM_RULE_UPDATED: 'SIEM_RULE_UPDATED',
+  SIEM_DETECTION_TRIGGERED: 'SIEM_DETECTION_TRIGGERED'
 });
 
 /**
