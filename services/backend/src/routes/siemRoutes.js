@@ -3,6 +3,7 @@ const router = express.Router();
 const siemController = require('../controllers/siemController');
 const siemStreamingRoutes = require('./siemStreamingRoutes');
 const siemDetectionRoutes = require('./siemDetectionRoutes');
+const siemSocRoutes = require('./siemSocRoutes');
 const auth = require('../middlewares/auth');
 const roleCheck = require('../middlewares/roleCheck');
 
@@ -15,6 +16,9 @@ router.use('/', siemStreamingRoutes);
 
 // 0.1 Detection Hits & Correlation Rules (Phase 2)
 router.use('/', siemDetectionRoutes);
+
+// 0.2 Real-Time SOC Monitoring, Alerts Lifecycle, Queue & Timeline (Phase 3)
+router.use('/', siemSocRoutes);
 
 // 1. Ingestion Endpoint
 router.post('/events', siemController.ingestEvents);

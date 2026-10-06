@@ -1,6 +1,7 @@
 const { persistDetectionIncident } = require('../incidentService');
 const SiemDetectionRule = require('../../models/SiemDetectionRule');
 const SiemDetectionHit = require('../../models/SiemDetectionHit');
+const SiemAlert = require('../../models/SiemAlert');
 const streamingService = require('./streamingService');
 const { log: auditLog, AUDIT_ACTIONS } = require('../auditService');
 
@@ -603,7 +604,30 @@ class CorrelationRuleEngine {
       console.warn(`[CorrelationRuleEngine Warning] Failed to create detection hit record:`, hitErr.message);
     }
 
-    // 3. Record Audit Log
+    // 3. Create SIEM Alert for SOC lifecycle management (Phase 3)
+    let alert = null;
+    try {
+      alert = await SiemAlert.create({
+        organization_id: organizationId,
+        hit_id: hit ? hit.id : null,
+        incident_id: incident ? incident.id : null,
+        rule_id: ruleId,
+        title: ruleName,
+        severity: riskLevel,
+        status: 'new',
+        mitre_technique: mitreTechnique,
+        source_type: 'siem',
+        rule_code: ruleCode,
+        metadata: {
+          explanation,
+          event_count: eventIds.length
+        }
+      }, client);
+    } catch (alertErr) {
+      console.warn(`[CorrelationRuleEngine Warning] Failed to create alert record:`, alertErr.message);
+    }
+
+    // 4. Record Audit Log
     try {
       await auditLog({
         organization_id: organizationId,
@@ -615,6 +639,7 @@ class CorrelationRuleEngine {
           rule_id: ruleId,
           rule_code: ruleCode,
           incident_id: incident?.id || null,
+          alert_id: alert?.id || null,
           event_count: eventIds.length
         }
       }, client);
@@ -622,13 +647,19 @@ class CorrelationRuleEngine {
       // Non-critical audit error
     }
 
-    // 4. Publish real-time notification
-    if (incident) {
-      try {
+    // 5. Publish real-time notifications
+    try {
+      if (incident) {
         streamingService.publishIncident(incident, organizationId);
-      } catch (streamErr) {
-        // Non-critical streaming error
       }
+      if (hit) {
+        streamingService.publishDetection(hit, organizationId);
+      }
+      if (alert) {
+        streamingService.publishAlertUpdate(alert, organizationId);
+      }
+    } catch (streamErr) {
+      // Non-critical streaming error
     }
 
     return {
@@ -636,7 +667,8 @@ class CorrelationRuleEngine {
       rule_code: ruleCode,
       rule_name: ruleName,
       hit,
-      incident
+      incident,
+      alert
     };
   }
 

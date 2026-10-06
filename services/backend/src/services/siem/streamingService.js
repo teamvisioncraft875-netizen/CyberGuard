@@ -233,6 +233,93 @@ class StreamingService {
   }
 
   /**
+   * Publishes a newly created SIEM detection hit to tenant subscribers
+   */
+  publishDetection(detection, organizationId) {
+    if (!detection || !organizationId) return { delivered: 0 };
+
+    const orgMap = this.subscribers.get(organizationId);
+    if (!orgMap || orgMap.size === 0) {
+      return { delivered: 0 };
+    }
+
+    const payload = {
+      type: 'new_detection',
+      detection
+    };
+
+    let delivered = 0;
+    for (const [subId, sub] of orgMap.entries()) {
+      try {
+        sub.callback(payload);
+        delivered++;
+      } catch (err) {
+        console.warn(`[StreamingService Warning] Error delivering detection to subscriber ${subId}:`, err.message);
+      }
+    }
+
+    return { delivered };
+  }
+
+  /**
+   * Publishes a correlation event to tenant subscribers
+   */
+  publishCorrelationEvent(correlation, organizationId) {
+    if (!correlation || !organizationId) return { delivered: 0 };
+
+    const orgMap = this.subscribers.get(organizationId);
+    if (!orgMap || orgMap.size === 0) {
+      return { delivered: 0 };
+    }
+
+    const payload = {
+      type: 'correlation_event',
+      ...correlation
+    };
+
+    let delivered = 0;
+    for (const [subId, sub] of orgMap.entries()) {
+      try {
+        sub.callback(payload);
+        delivered++;
+      } catch (err) {
+        console.warn(`[StreamingService Warning] Error delivering correlation event to subscriber ${subId}:`, err.message);
+      }
+    }
+
+    return { delivered };
+  }
+
+  /**
+   * Publishes an alert update to tenant subscribers
+   */
+  publishAlertUpdate(alert, organizationId) {
+    if (!alert || !organizationId) return { delivered: 0 };
+
+    const orgMap = this.subscribers.get(organizationId);
+    if (!orgMap || orgMap.size === 0) {
+      return { delivered: 0 };
+    }
+
+    const payload = {
+      type: 'alert_update',
+      alert
+    };
+
+    let delivered = 0;
+    for (const [subId, sub] of orgMap.entries()) {
+      try {
+        sub.callback(payload);
+        delivered++;
+      } catch (err) {
+        console.warn(`[StreamingService Warning] Error delivering alert update to subscriber ${subId}:`, err.message);
+      }
+    }
+
+    return { delivered };
+  }
+
+  /**
    * Resets all subscriber state (primarily for test cleanup)
    */
   reset() {
