@@ -501,6 +501,16 @@ const attackChainService = {
         }, dbClient);
       }
 
+      // Recalculate risk score and priority upon attack chain progression
+      try {
+        const riskScoringService = require('./riskScoringService');
+        const incidentPrioritizationService = require('./incidentPrioritizationService');
+        await riskScoringService.calculateRiskScore(incidentId, organizationId, { client: dbClient });
+        await incidentPrioritizationService.evaluateAndPersist(incidentId, organizationId, { client: dbClient });
+      } catch (rErr) {
+        console.warn('[RiskScoring Warning] Non-critical error updating risk score on attack chain change:', rErr.message);
+      }
+
       return snapshot;
     };
 

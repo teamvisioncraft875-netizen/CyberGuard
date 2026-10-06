@@ -13,6 +13,10 @@ router.use('/', incidentCorrelationRoutes);
 // Attack Chain & MITRE Progression Routes
 router.use('/', attackChainRoutes);
 
+// SOC Investigation Workspace, Command Center, Prioritization & Workflow Routes
+const investigationRoutes = require('./investigationRoutes');
+router.use('/', investigationRoutes);
+
 // Incident triage and management (Requires JWT)
 router.get('/', auth, incidentController.listIncidents);
 router.get('/:id', auth, incidentController.getIncidentById);

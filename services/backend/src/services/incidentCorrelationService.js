@@ -171,6 +171,18 @@ async function linkIncidents(sourceIdOrObj, targetIdParam, typeParam, confidence
       }
     }
 
+    // 8. Automatic Risk Score & Prioritization Recalculation (Master Phase)
+    try {
+      const riskScoringService = require('./riskScoringService');
+      const incidentPrioritizationService = require('./incidentPrioritizationService');
+      await riskScoringService.calculateRiskScore(sourceId, resolvedOrgId, { client: dbClient });
+      await riskScoringService.calculateRiskScore(targetId, resolvedOrgId, { client: dbClient });
+      await incidentPrioritizationService.evaluateAndPersist(sourceId, resolvedOrgId, { client: dbClient });
+      await incidentPrioritizationService.evaluateAndPersist(targetId, resolvedOrgId, { client: dbClient });
+    } catch (riskErr) {
+      console.warn('[RiskScoring Warning] Non-critical risk scoring error on correlation link:', riskErr.message);
+    }
+
     return created;
   };
 
