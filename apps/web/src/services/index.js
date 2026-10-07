@@ -6,5 +6,6 @@ export { default as scanService } from './scanService';
 export { default as attackSurfaceService } from './attackSurfaceService';
 export { default as guardianService } from './guardianService';
 export { default as firewallService } from './firewallService';
+export { default as agentService } from './agentService';
 export { default as socketService, getSocketBaseUrl, connectSocket, disconnectSocket, onSocketEvent, getSocket } from './socketService';
 

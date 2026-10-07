@@ -16,6 +16,7 @@ import {
   Crosshair,
   ShieldCheck,
   Flame,
+  Bot,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { useSocket } from '../hooks/useSocket';
@@ -134,6 +135,13 @@ export function AppLayout({
         icon: Flame,
         adminOnly: true,
       },
+      {
+        id: 'agents',
+        path: '/agents',
+        label: 'Agent Fleet',
+        icon: Bot,
+        adminOnly: true,
+      },
       { id: 'guardian', path: '/guardian', label: 'Guardian Mode', icon: ShieldCheck },
       { id: 'settings', path: '/settings', label: 'Settings', icon: Sliders },
     ];
@@ -147,7 +155,7 @@ export function AppLayout({
       ? (navigationItems.find((i) => i.id === itemOrId)?.path || (itemOrId === 'dashboard' ? '/' : `/${itemOrId}`))
       : itemOrId.path;
 
-    if ((id === 'attack-surface' || id === 'firewall') && !isAdmin) {
+    if ((id === 'attack-surface' || id === 'firewall' || id === 'agents') && !isAdmin) {
       return;
     }
 
