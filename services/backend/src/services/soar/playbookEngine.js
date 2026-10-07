@@ -7,6 +7,29 @@ const actionExecutor = require('./actionExecutor');
 const auditService = require('../auditService');
 
 /**
+ * Recursively resolves {{variable}} placeholders from context in config objects.
+ */
+function resolveTemplateVariables(obj, context) {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) {
+    return obj.map(item => resolveTemplateVariables(item, context));
+  }
+  const resolved = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (typeof v === 'string') {
+      resolved[k] = v.replace(/\{\{([a-zA-Z0-9_]+)\}\}/g, (match, prop) => {
+        return context[prop] !== undefined ? context[prop] : match;
+      });
+    } else if (typeof v === 'object' && v !== null) {
+      resolved[k] = resolveTemplateVariables(v, context);
+    } else {
+      resolved[k] = v;
+    }
+  }
+  return resolved;
+}
+
+/**
  * Playbook Engine — Orchestrates security automation workflows, sequential step execution,
  * approval gating, execution retries with backoff, recovery, and evidence collection.
  */
@@ -251,9 +274,11 @@ class PlaybookEngine {
           retry_count: attempt
         }, dbClient);
 
+        const resolvedConfig = resolveTemplateVariables(step.action_config || {}, runtimeContext);
+
         actionResult = await actionExecutor.executeAction(
           step.action_type,
-          step.action_config || {},
+          resolvedConfig,
           runtimeContext,
           dbClient
         );
@@ -273,6 +298,28 @@ class PlaybookEngine {
           retry_count: attempt,
           executed_at: new Date()
         }, dbClient);
+
+        // Track external IDs, connector responses, and execution history in runtimeContext
+        runtimeContext.last_step_result = actionResult;
+        if (actionResult.external_ticket_id) {
+          runtimeContext.external_ticket_id = actionResult.external_ticket_id;
+        }
+        if (actionResult.external_url) {
+          runtimeContext.external_url = actionResult.external_url;
+        }
+        if (actionResult.external_id) {
+          runtimeContext.external_id = actionResult.external_id;
+        }
+        if (actionResult.message_id) {
+          runtimeContext.message_id = actionResult.message_id;
+        }
+        runtimeContext.execution_history = runtimeContext.execution_history || [];
+        runtimeContext.execution_history.push({
+          step_order: step.step_order,
+          action_type: step.action_type,
+          result: actionResult,
+          executed_at: new Date().toISOString()
+        });
 
         // Response Evidence Collection: If linked to a case, attach step action evidence
         if (targetCaseId) {

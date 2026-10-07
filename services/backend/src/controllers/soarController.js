@@ -3,9 +3,17 @@ const SoarExecution = require('../models/SoarExecution');
 const SoarApproval = require('../models/SoarApproval');
 const SoarCase = require('../models/SoarCase');
 const SoarCaseEvidence = require('../models/SoarCaseEvidence');
+const SoarConnector = require('../models/SoarConnector');
+const connectorRegistry = require('../services/soar/connectors/ConnectorRegistry');
 const approvalService = require('../services/soar/approvalService');
 const playbookEngine = require('../services/soar/playbookEngine');
 const playbookMetricsService = require('../services/soar/playbookMetricsService');
+const iocResponseAutomationService = require('../services/soar/iocResponseAutomationService');
+const threatEnrichmentService = require('../services/soar/threatEnrichmentService');
+const recommendationEngine = require('../services/soar/recommendationEngine');
+const soarAnalyticsService = require('../services/soar/soarAnalyticsService');
+const knowledgeBaseService = require('../services/soar/knowledgeBaseService');
+const soarDashboardService = require('../services/soar/soarDashboardService');
 const { log: auditLog, AUDIT_ACTIONS } = require('../services/auditService');
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -1044,6 +1052,819 @@ const soarController = {
       if (err.message && err.message.includes('not found')) {
         return res.status(404).json({ error: 'NOT_FOUND', message: err.message });
       }
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  // =========================================================================
+  // ENTERPRISE CONNECTORS (SPRINT B PHASE 3)
+  // =========================================================================
+
+  /**
+   * POST /api/v1/soar/connectors
+   */
+  async createConnector(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Access denied: Valid organization_id is required'
+        });
+      }
+
+      const { name, type, description, status, config, is_default } = req.body;
+      if (!name || typeof name !== 'string' || !name.trim()) {
+        return res.status(400).json({
+          error: 'INVALID_REQUEST',
+          message: 'Field "name" is required and must be a non-empty string'
+        });
+      }
+
+      if (!type || typeof type !== 'string' || !['webhook', 'jira', 'slack', 'teams', 'custom'].includes(type.toLowerCase())) {
+        return res.status(400).json({
+          error: 'INVALID_REQUEST',
+          message: 'Field "type" must be one of: webhook, jira, slack, teams, custom'
+        });
+      }
+
+      const connector = await connectorRegistry.registerConnector({
+        organization_id: orgId,
+        name: name.trim(),
+        type: type.toLowerCase(),
+        description,
+        status: status || 'active',
+        config: config || {},
+        is_default: Boolean(is_default),
+        created_by: req.user.id
+      });
+
+      return res.status(201).json({
+        success: true,
+        data: {
+          id: connector.id,
+          name: connector.name,
+          type: connector.type,
+          description: connector.description,
+          status: connector.status,
+          config: SoarConnector.maskConfig(connector.config),
+          is_default: connector.is_default,
+          health_status: connector.health_status,
+          created_at: connector.created_at
+        }
+      });
+    } catch (err) {
+      console.error('[soarController.createConnector] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * GET /api/v1/soar/connectors
+   */
+  async listConnectors(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Access denied: Valid organization_id is required'
+        });
+      }
+
+      const { type, status, limit, offset, search } = req.query;
+      const connectors = await connectorRegistry.listConnectors(orgId, {
+        type,
+        status,
+        search,
+        limit: parseInt(limit, 10) || 50,
+        offset: parseInt(offset, 10) || 0
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: connectors.map(c => ({
+          id: c.id,
+          name: c.name,
+          type: c.type,
+          description: c.description,
+          status: c.status,
+          config: SoarConnector.maskConfig(c.config),
+          is_default: c.is_default,
+          health_status: c.health_status,
+          last_health_check: c.last_health_check
+        })),
+        total: connectors.length
+      });
+    } catch (err) {
+      console.error('[soarController.listConnectors] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * GET /api/v1/soar/connectors/:id
+   */
+  async getConnectorById(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Access denied: Valid organization_id is required'
+        });
+      }
+
+      const { id } = req.params;
+      if (!UUID_REGEX.test(id)) {
+        return res.status(400).json({
+          error: 'INVALID_REQUEST',
+          message: 'Invalid connector ID format (must be UUID)'
+        });
+      }
+
+      const connector = await connectorRegistry.getConnector(id, orgId);
+      if (!connector) {
+        return res.status(404).json({
+          error: 'NOT_FOUND',
+          message: `Connector "${id}" not found or unauthorized`
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          id: connector.id,
+          name: connector.name,
+          type: connector.type,
+          description: connector.description,
+          status: connector.status,
+          config: SoarConnector.maskConfig(connector.config),
+          is_default: connector.is_default,
+          health_status: connector.health_status,
+          last_health_check: connector.last_health_check
+        }
+      });
+    } catch (err) {
+      console.error('[soarController.getConnectorById] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * PATCH /api/v1/soar/connectors/:id
+   */
+  async updateConnector(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Access denied: Valid organization_id is required'
+        });
+      }
+
+      const { id } = req.params;
+      if (!UUID_REGEX.test(id)) {
+        return res.status(400).json({
+          error: 'INVALID_REQUEST',
+          message: 'Invalid connector ID format (must be UUID)'
+        });
+      }
+
+      const existing = await connectorRegistry.getConnector(id, orgId);
+      if (!existing) {
+        return res.status(404).json({
+          error: 'NOT_FOUND',
+          message: `Connector "${id}" not found or unauthorized`
+        });
+      }
+
+      const updated = await connectorRegistry.updateConnector(id, orgId, req.body, req.user.id);
+      return res.status(200).json({
+        success: true,
+        data: {
+          id: updated.id,
+          name: updated.name,
+          type: updated.type,
+          description: updated.description,
+          status: updated.status,
+          config: SoarConnector.maskConfig(updated.config),
+          is_default: updated.is_default,
+          health_status: updated.health_status
+        }
+      });
+    } catch (err) {
+      console.error('[soarController.updateConnector] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * PATCH /api/v1/soar/connectors/:id/status
+   */
+  async updateConnectorStatus(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Access denied: Valid organization_id is required'
+        });
+      }
+
+      const { id } = req.params;
+      const { status } = req.body;
+      if (!UUID_REGEX.test(id)) {
+        return res.status(400).json({
+          error: 'INVALID_REQUEST',
+          message: 'Invalid connector ID format (must be UUID)'
+        });
+      }
+
+      if (!status || !['active', 'disabled', 'error'].includes(status.toLowerCase())) {
+        return res.status(400).json({
+          error: 'INVALID_REQUEST',
+          message: 'Field "status" must be one of: active, disabled, error'
+        });
+      }
+
+      const existing = await connectorRegistry.getConnector(id, orgId);
+      if (!existing) {
+        return res.status(404).json({
+          error: 'NOT_FOUND',
+          message: `Connector "${id}" not found or unauthorized`
+        });
+      }
+
+      let updated;
+      if (status.toLowerCase() === 'active') {
+        updated = await connectorRegistry.enableConnector(id, orgId, req.user.id);
+      } else if (status.toLowerCase() === 'disabled') {
+        updated = await connectorRegistry.disableConnector(id, orgId, req.user.id);
+      } else {
+        updated = await connectorRegistry.updateConnector(id, orgId, { status: status.toLowerCase() }, req.user.id);
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          id: updated.id,
+          name: updated.name,
+          status: updated.status
+        }
+      });
+    } catch (err) {
+      console.error('[soarController.updateConnectorStatus] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/soar/connectors/:id/test
+   */
+  async testConnector(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Access denied: Valid organization_id is required'
+        });
+      }
+
+      const { id } = req.params;
+      if (!UUID_REGEX.test(id)) {
+        return res.status(400).json({
+          error: 'INVALID_REQUEST',
+          message: 'Invalid connector ID format (must be UUID)'
+        });
+      }
+
+      const existing = await connectorRegistry.getConnector(id, orgId);
+      if (!existing) {
+        return res.status(404).json({
+          error: 'NOT_FOUND',
+          message: `Connector "${id}" not found or unauthorized`
+        });
+      }
+
+      const testResult = await connectorRegistry.testConnector(id, orgId, req.user.id);
+      return res.status(200).json({
+        success: true,
+        data: testResult
+      });
+    } catch (err) {
+      console.error('[soarController.testConnector] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * DELETE /api/v1/soar/connectors/:id
+   */
+  async deleteConnector(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Access denied: Valid organization_id is required'
+        });
+      }
+
+      const { id } = req.params;
+      if (!UUID_REGEX.test(id)) {
+        return res.status(400).json({
+          error: 'INVALID_REQUEST',
+          message: 'Invalid connector ID format (must be UUID)'
+        });
+      }
+
+      const existing = await connectorRegistry.getConnector(id, orgId);
+      if (!existing) {
+        return res.status(404).json({
+          error: 'NOT_FOUND',
+          message: `Connector "${id}" not found or unauthorized`
+        });
+      }
+
+      await connectorRegistry.deleteConnector(id, orgId, req.user.id);
+      return res.status(200).json({
+        success: true,
+        message: 'Connector deleted successfully'
+      });
+    } catch (err) {
+      console.error('[soarController.deleteConnector] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * GET /api/v1/soar/connectors/:id/logs
+   */
+  async getConnectorLogs(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({
+          error: 'FORBIDDEN',
+          message: 'Access denied: Valid organization_id is required'
+        });
+      }
+
+      const { id } = req.params;
+      if (!UUID_REGEX.test(id)) {
+        return res.status(400).json({
+          error: 'INVALID_REQUEST',
+          message: 'Invalid connector ID format (must be UUID)'
+        });
+      }
+
+      const existing = await connectorRegistry.getConnector(id, orgId);
+      if (!existing) {
+        return res.status(404).json({
+          error: 'NOT_FOUND',
+          message: `Connector "${id}" not found or unauthorized`
+        });
+      }
+
+      const logs = await SoarConnector.getLogs(id, orgId, req.query);
+      return res.status(200).json({
+        success: true,
+        data: logs,
+        total: logs.length
+      });
+    } catch (err) {
+      console.error('[soarController.getConnectorLogs] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  // =========================================================================
+  // PHASE 4: IOC AUTOMATION & THREAT INTEL OPTIMIZATION
+  // =========================================================================
+
+  /**
+   * POST /api/v1/soar/ioc/automate
+   */
+  async automateIocResponse(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { ioc_type, ioc_value, case_id, alert_id, threat_actor, malware_family, confidence } = req.body;
+      if (!ioc_type || !ioc_value) {
+        return res.status(400).json({ error: 'INVALID_REQUEST', message: 'ioc_type and ioc_value are required' });
+      }
+
+      const result = await iocResponseAutomationService.automateResponse({
+        organization_id: orgId,
+        ioc_type,
+        ioc_value,
+        case_id,
+        alert_id,
+        threat_actor,
+        malware_family,
+        confidence
+      });
+
+      return res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      console.error('[soarController.automateIocResponse] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/soar/enrich/alert/:id
+   */
+  async enrichAlert(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { id } = req.params;
+      const result = await threatEnrichmentService.enrichAlert(id, orgId);
+      return res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      console.error('[soarController.enrichAlert] Error:', err);
+      if (err.message && err.message.includes('not found')) {
+        return res.status(404).json({ error: 'NOT_FOUND', message: err.message });
+      }
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/soar/enrich/case/:id
+   */
+  async enrichCase(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { id } = req.params;
+      const result = await threatEnrichmentService.enrichCase(id, orgId);
+      return res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      console.error('[soarController.enrichCase] Error:', err);
+      if (err.message && err.message.includes('not found')) {
+        return res.status(404).json({ error: 'NOT_FOUND', message: err.message });
+      }
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/soar/recommendations/generate
+   */
+  async generateRecommendations(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { alert_id, case_id, ioc_id, alert_severity, mitre_techniques, ioc_risk_score, context } = req.body;
+      const recommendations = await recommendationEngine.generateRecommendations({
+        organization_id: orgId,
+        alert_id,
+        case_id,
+        ioc_id,
+        alert_severity,
+        mitre_techniques,
+        ioc_risk_score,
+        context
+      });
+
+      return res.status(201).json({ success: true, data: recommendations });
+    } catch (err) {
+      console.error('[soarController.generateRecommendations] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * GET /api/v1/soar/recommendations
+   */
+  async listRecommendations(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const recommendations = await recommendationEngine.listRecommendations(orgId, req.query);
+      return res.status(200).json({ success: true, data: recommendations });
+    } catch (err) {
+      console.error('[soarController.listRecommendations] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/soar/recommendations/:id/apply
+   */
+  async applyRecommendation(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { id } = req.params;
+      const result = await recommendationEngine.applyRecommendation(id, orgId, req.user?.id);
+      return res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      console.error('[soarController.applyRecommendation] Error:', err);
+      if (err.message && err.message.includes('not found')) {
+        return res.status(404).json({ error: 'NOT_FOUND', message: err.message });
+      }
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/soar/recommendations/:id/dismiss
+   */
+  async dismissRecommendation(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { id } = req.params;
+      const { reason } = req.body;
+      const result = await recommendationEngine.dismissRecommendation(id, orgId, req.user?.id, reason);
+      return res.status(200).json({ success: true, data: result });
+    } catch (err) {
+      console.error('[soarController.dismissRecommendation] Error:', err);
+      if (err.message && err.message.includes('not found')) {
+        return res.status(404).json({ error: 'NOT_FOUND', message: err.message });
+      }
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/soar/knowledge-base
+   */
+  async createKnowledgeBaseArticle(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const article = await knowledgeBaseService.createArticle({
+        ...req.body,
+        organization_id: orgId,
+        created_by: req.user?.id
+      });
+      return res.status(201).json({ success: true, data: article });
+    } catch (err) {
+      console.error('[soarController.createKnowledgeBaseArticle] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * GET /api/v1/soar/knowledge-base
+   */
+  async listKnowledgeBaseArticles(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const articles = await knowledgeBaseService.listArticles(orgId, req.query);
+      return res.status(200).json({ success: true, data: articles });
+    } catch (err) {
+      console.error('[soarController.listKnowledgeBaseArticles] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * GET /api/v1/soar/knowledge-base/:id
+   */
+  async getKnowledgeBaseArticleById(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { id } = req.params;
+      const article = await knowledgeBaseService.getArticleById(id, orgId);
+      if (!article) {
+        return res.status(404).json({ error: 'NOT_FOUND', message: `Article "${id}" not found` });
+      }
+      return res.status(200).json({ success: true, data: article });
+    } catch (err) {
+      console.error('[soarController.getKnowledgeBaseArticleById] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * PATCH /api/v1/soar/knowledge-base/:id
+   */
+  async updateKnowledgeBaseArticle(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { id } = req.params;
+      const updated = await knowledgeBaseService.updateArticle(id, orgId, req.body, req.user?.id);
+      return res.status(200).json({ success: true, data: updated });
+    } catch (err) {
+      console.error('[soarController.updateKnowledgeBaseArticle] Error:', err);
+      if (err.message && err.message.includes('not found')) {
+        return res.status(404).json({ error: 'NOT_FOUND', message: err.message });
+      }
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * DELETE /api/v1/soar/knowledge-base/:id
+   */
+  async deleteKnowledgeBaseArticle(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { id } = req.params;
+      await knowledgeBaseService.deleteArticle(id, orgId, req.user?.id);
+      return res.status(200).json({ success: true, message: 'Article deleted successfully' });
+    } catch (err) {
+      console.error('[soarController.deleteKnowledgeBaseArticle] Error:', err);
+      if (err.message && err.message.includes('not found')) {
+        return res.status(404).json({ error: 'NOT_FOUND', message: err.message });
+      }
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/soar/knowledge-base/:id/link-case
+   */
+  async linkKnowledgeBaseCase(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { id } = req.params;
+      const { case_id } = req.body;
+      const updated = await knowledgeBaseService.linkCase(id, orgId, case_id);
+      return res.status(200).json({ success: true, data: updated });
+    } catch (err) {
+      console.error('[soarController.linkKnowledgeBaseCase] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/soar/knowledge-base/:id/link-playbook
+   */
+  async linkKnowledgeBasePlaybook(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { id } = req.params;
+      const { playbook_id } = req.body;
+      const updated = await knowledgeBaseService.linkPlaybook(id, orgId, playbook_id);
+      return res.status(200).json({ success: true, data: updated });
+    } catch (err) {
+      console.error('[soarController.linkKnowledgeBasePlaybook] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * GET /api/v1/soar/analytics/effectiveness
+   */
+  async getEffectivenessAnalytics(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const metrics = await soarAnalyticsService.getOrganizationMetrics(orgId);
+      return res.status(200).json({ success: true, data: metrics });
+    } catch (err) {
+      console.error('[soarController.getEffectivenessAnalytics] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * GET /api/v1/soar/analytics/playbooks/:id
+   */
+  async getPlaybookEffectiveness(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { id } = req.params;
+      const metrics = await soarAnalyticsService.getPlaybookEffectiveness(id, orgId);
+      return res.status(200).json({ success: true, data: metrics });
+    } catch (err) {
+      console.error('[soarController.getPlaybookEffectiveness] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * GET /api/v1/soar/analytics/actions
+   */
+  async getActionEffectiveness(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const metrics = await soarAnalyticsService.getActionEffectiveness(orgId);
+      return res.status(200).json({ success: true, data: metrics });
+    } catch (err) {
+      console.error('[soarController.getActionEffectiveness] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * GET /api/v1/soar/dashboard/executive
+   */
+  async getExecutiveDashboard(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const data = await soarDashboardService.getExecutiveView(orgId);
+      return res.status(200).json({ success: true, data });
+    } catch (err) {
+      console.error('[soarController.getExecutiveDashboard] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * GET /api/v1/soar/dashboard/analyst
+   */
+  async getAnalystDashboard(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const data = await soarDashboardService.getAnalystView(orgId);
+      return res.status(200).json({ success: true, data });
+    } catch (err) {
+      console.error('[soarController.getAnalystDashboard] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * GET /api/v1/soar/dashboard/engineering
+   */
+  async getEngineeringDashboard(req, res) {
+    try {
+      const orgId = req.user?.organization_id;
+      if (!orgId) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const data = await soarDashboardService.getEngineeringView(orgId);
+      return res.status(200).json({ success: true, data });
+    } catch (err) {
+      console.error('[soarController.getEngineeringDashboard] Error:', err);
       return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
     }
   }

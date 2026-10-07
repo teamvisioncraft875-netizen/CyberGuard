@@ -173,6 +173,192 @@ class ActionExecutor {
         timestamp: new Date().toISOString()
       };
     });
+
+    // 7. Send Webhook
+    this.registerAction('send_webhook', async (config, context, client) => {
+      const connectorRegistry = require('./connectors/ConnectorRegistry');
+      const orgId = context.organization_id || config.organization_id || '00000000-0000-0000-0000-000000000000';
+      return await connectorRegistry.executeConnectorAction({
+        connectorId: config.connector_id || null,
+        type: 'webhook',
+        organizationId: orgId,
+        action: 'send_webhook',
+        params: config,
+        context,
+        actorId: context.actor_id || null,
+        client
+      });
+    });
+
+    // 8. Create Jira Ticket
+    this.registerAction('create_jira_ticket', async (config, context, client) => {
+      const connectorRegistry = require('./connectors/ConnectorRegistry');
+      const orgId = context.organization_id || config.organization_id || '00000000-0000-0000-0000-000000000000';
+      return await connectorRegistry.executeConnectorAction({
+        connectorId: config.connector_id || null,
+        type: 'jira',
+        organizationId: orgId,
+        action: 'create_jira_ticket',
+        params: config,
+        context,
+        actorId: context.actor_id || null,
+        client
+      });
+    });
+
+    // 9. Jira Update Issue
+    this.registerAction('jira_update_issue', async (config, context, client) => {
+      const connectorRegistry = require('./connectors/ConnectorRegistry');
+      const orgId = context.organization_id || config.organization_id || '00000000-0000-0000-0000-000000000000';
+      return await connectorRegistry.executeConnectorAction({
+        connectorId: config.connector_id || null,
+        type: 'jira',
+        organizationId: orgId,
+        action: 'update_issue',
+        params: config,
+        context,
+        actorId: context.actor_id || null,
+        client
+      });
+    });
+
+    // 10. Jira Add Comment
+    this.registerAction('jira_add_comment', async (config, context, client) => {
+      const connectorRegistry = require('./connectors/ConnectorRegistry');
+      const orgId = context.organization_id || config.organization_id || '00000000-0000-0000-0000-000000000000';
+      return await connectorRegistry.executeConnectorAction({
+        connectorId: config.connector_id || null,
+        type: 'jira',
+        organizationId: orgId,
+        action: 'add_comment',
+        params: config,
+        context,
+        actorId: context.actor_id || null,
+        client
+      });
+    });
+
+    // 11. Send Slack Message
+    this.registerAction('send_slack_message', async (config, context, client) => {
+      const connectorRegistry = require('./connectors/ConnectorRegistry');
+      const orgId = context.organization_id || config.organization_id || '00000000-0000-0000-0000-000000000000';
+      return await connectorRegistry.executeConnectorAction({
+        connectorId: config.connector_id || null,
+        type: 'slack',
+        organizationId: orgId,
+        action: 'send_slack_message',
+        params: config,
+        context,
+        actorId: context.actor_id || null,
+        client
+      });
+    });
+
+    // 12. Slack Alert Notification
+    this.registerAction('slack_alert', async (config, context, client) => {
+      const connectorRegistry = require('./connectors/ConnectorRegistry');
+      const orgId = context.organization_id || config.organization_id || '00000000-0000-0000-0000-000000000000';
+      return await connectorRegistry.executeConnectorAction({
+        connectorId: config.connector_id || null,
+        type: 'slack',
+        organizationId: orgId,
+        action: 'alert_notification',
+        params: config,
+        context,
+        actorId: context.actor_id || null,
+        client
+      });
+    });
+
+    // 13. Send Teams Message
+    this.registerAction('send_teams_message', async (config, context, client) => {
+      const connectorRegistry = require('./connectors/ConnectorRegistry');
+      const orgId = context.organization_id || config.organization_id || '00000000-0000-0000-0000-000000000000';
+      return await connectorRegistry.executeConnectorAction({
+        connectorId: config.connector_id || null,
+        type: 'teams',
+        organizationId: orgId,
+        action: 'send_teams_message',
+        params: config,
+        context,
+        actorId: context.actor_id || null,
+        client
+      });
+    });
+
+    // 14. Teams Incident Notification
+    // 14. Teams Incident Notification
+    this.registerAction('teams_incident', async (config, context, client) => {
+      const connectorRegistry = require('./connectors/ConnectorRegistry');
+      const orgId = context.organization_id || config.organization_id || '00000000-0000-0000-0000-000000000000';
+      return await connectorRegistry.executeConnectorAction({
+        connectorId: config.connector_id || null,
+        type: 'teams',
+        organizationId: orgId,
+        action: 'incident_notification',
+        params: config,
+        context,
+        actorId: context.actor_id || null,
+        client
+      });
+    });
+
+    // 15. Isolate Endpoint (Phase 4 alias for isolate_host)
+    this.registerAction('isolate_endpoint', async (config, context, client) => {
+      const targetHost = config.host || config.asset_name || context.asset_name || context.host || 'unknown_endpoint';
+      return {
+        action: 'isolate_endpoint',
+        target_host: targetHost,
+        network_status: 'isolated',
+        isolation_id: `EDR-ISO-${Date.now().toString(36).toUpperCase()}`,
+        timestamp: new Date().toISOString()
+      };
+    });
+
+    // 16. Disable Account (Phase 4 alias for disable_user)
+    this.registerAction('disable_account', async (config, context, client) => {
+      const targetUser = config.user || config.target_user || context.user_name || context.user || 'compromised_user';
+      return {
+        action: 'disable_account',
+        target_user: targetUser,
+        status: 'disabled',
+        timestamp: new Date().toISOString()
+      };
+    });
+
+    // 17. DNS Sinkhole (Phase 4)
+    this.registerAction('dns_sinkhole', async (config, context, client) => {
+      const domain = config.domain || context.domain || 'malicious-domain.com';
+      const sinkholeIp = config.sinkhole_ip || '10.254.254.254';
+      return {
+        action: 'dns_sinkhole',
+        domain,
+        sinkhole_ip: sinkholeIp,
+        status: 'sinkholed',
+        timestamp: new Date().toISOString()
+      };
+    });
+
+    // 18. Escalate Approval (Phase 4)
+    this.registerAction('escalate_approval', async (config, context, client) => {
+      const level = config.level || 'L2';
+      return {
+        action: 'escalate_approval',
+        level,
+        status: 'escalated',
+        timestamp: new Date().toISOString()
+      };
+    });
+
+    // 19. Launch Playbook (Phase 4)
+    this.registerAction('launch_playbook', async (config, context, client) => {
+      return {
+        action: 'launch_playbook',
+        playbook_id: config.playbook_id || null,
+        status: 'launched',
+        timestamp: new Date().toISOString()
+      };
+    });
   }
 }
 

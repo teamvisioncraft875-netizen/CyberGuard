@@ -86,6 +86,37 @@ const ThreatIOC = {
   },
 
   /**
+   * Retrieves an IOC by value within tenant (case-insensitive)
+   */
+  async findByValue(arg1, arg2, client = null) {
+    const dbClient = client || db;
+    // Disambiguate (orgId, iocValue) vs (iocValue, orgId)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let organizationId, iocValue;
+    if (uuidRegex.test(arg1) && !uuidRegex.test(arg2)) {
+      organizationId = arg1;
+      iocValue = arg2;
+    } else if (uuidRegex.test(arg2) && !uuidRegex.test(arg1)) {
+      iocValue = arg1;
+      organizationId = arg2;
+    } else {
+      organizationId = arg1;
+      iocValue = arg2;
+    }
+
+    if (!organizationId || !iocValue) return null;
+
+    const query = `
+      SELECT *
+      FROM public.threat_iocs
+      WHERE lower(ioc_value) = lower($1) AND organization_id = $2
+      LIMIT 1;
+    `;
+    const res = await dbClient.query(query, [iocValue.trim(), organizationId]);
+    return res.rows[0] || null;
+  },
+
+  /**
    * Retrieves an IOC by ID within tenant
    */
   async getIOC(id, organizationId, client = null) {

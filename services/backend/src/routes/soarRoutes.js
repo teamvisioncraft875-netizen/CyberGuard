@@ -44,4 +44,47 @@ router.post('/approvals/:id/escalate', soarController.escalateApproval);
 router.get('/metrics', soarController.getMetrics);
 router.get('/metrics/playbooks/:id', soarController.getPlaybookMetrics);
 
+// 6. Connectors & Enterprise Orchestration (Sprint B Phase 3)
+router.post('/connectors', roleCheck(['admin', 'senior_analyst']), soarController.createConnector);
+router.get('/connectors', soarController.listConnectors);
+router.get('/connectors/:id', soarController.getConnectorById);
+router.patch('/connectors/:id', roleCheck(['admin', 'senior_analyst']), soarController.updateConnector);
+router.patch('/connectors/:id/status', roleCheck(['admin', 'senior_analyst']), soarController.updateConnectorStatus);
+router.post('/connectors/:id/test', soarController.testConnector);
+router.get('/connectors/:id/logs', soarController.getConnectorLogs);
+router.delete('/connectors/:id', roleCheck(['admin']), soarController.deleteConnector);
+
+// 7. IOC Response Automation (Sprint B Phase 4)
+router.post('/ioc/automate', soarController.automateIocResponse);
+
+// 8. Threat Intel Enrichment Pipeline
+router.post('/enrich/alert/:id', soarController.enrichAlert);
+router.post('/enrich/case/:id', soarController.enrichCase);
+
+// 9. Automated Response Recommendations
+router.post('/recommendations/generate', soarController.generateRecommendations);
+router.get('/recommendations', soarController.listRecommendations);
+router.post('/recommendations/:id/apply', soarController.applyRecommendation);
+router.post('/recommendations/:id/dismiss', soarController.dismissRecommendation);
+
+// 10. Playbook Effectiveness Analytics
+router.get('/analytics/effectiveness', soarController.getEffectivenessAnalytics);
+router.get('/analytics/playbooks/:id', soarController.getPlaybookEffectiveness);
+router.get('/analytics/actions', soarController.getActionEffectiveness);
+
+// 11. Response Knowledge Base
+router.post('/knowledge-base', roleCheck(['admin', 'senior_analyst']), soarController.createKnowledgeBaseArticle);
+router.get('/knowledge-base', soarController.listKnowledgeBaseArticles);
+router.get('/knowledge-base/:id', soarController.getKnowledgeBaseArticleById);
+router.patch('/knowledge-base/:id', roleCheck(['admin', 'senior_analyst']), soarController.updateKnowledgeBaseArticle);
+router.delete('/knowledge-base/:id', roleCheck(['admin']), soarController.deleteKnowledgeBaseArticle);
+router.post('/knowledge-base/:id/link-case', soarController.linkKnowledgeBaseCase);
+router.post('/knowledge-base/:id/link-playbook', soarController.linkKnowledgeBasePlaybook);
+
+// 12. SOAR Dashboards
+router.get('/dashboard/executive', soarController.getExecutiveDashboard);
+router.get('/dashboard/analyst', soarController.getAnalystDashboard);
+router.get('/dashboard/engineering', soarController.getEngineeringDashboard);
+
 module.exports = router;
+

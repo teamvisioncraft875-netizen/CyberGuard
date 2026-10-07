@@ -74,6 +74,29 @@ const approvalService = {
   },
 
   /**
+   * Helper to decide approval (approved / rejected)
+   */
+  async decideApproval(approvalId, userId, decision, reason = '', organizationId = null, role = 'admin') {
+    if (decision === 'approved') {
+      return await this.approveExecution({
+        approval_id: approvalId,
+        organization_id: organizationId,
+        approved_by: userId,
+        user_role: role,
+        reason
+      });
+    } else {
+      return await this.rejectExecution({
+        approval_id: approvalId,
+        organization_id: organizationId,
+        rejected_by: userId,
+        reason,
+        rejection_comment: reason
+      });
+    }
+  },
+
+  /**
    * Approves an execution and resumes playbook execution.
    */
   async approveExecution({
