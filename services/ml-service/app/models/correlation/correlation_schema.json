@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "input_features": [
+    "dt_log",
+    "time_decay",
+    "same_src",
+    "same_dst",
+    "shared_ip",
+    "same_proto",
+    "same_dport",
+    "same_attack",
+    "both_attack",
+    "same_tactic",
+    "same_technique",
+    "tactic_affinity"
+  ],
+  "algorithm": "Pairwise Relationship Classification + Graph Connected-Component Clustering",
+  "operating_threshold": 0.5,
+  "compatibility": {
+    "recommendation_engine": true,
+    "false_positive_score_reserved": true
+  }
+}

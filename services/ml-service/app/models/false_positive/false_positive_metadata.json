@@ -1,0 +1,169 @@
+{
+  "model_name": "CYBERGUARD False Positive Detection V1",
+  "model_version": "1.0.0",
+  "model_type": "HistGradientBoosting",
+  "artifact_path": "services/ml-service/app/models/false_positive/false_positive_classifier_v1.0.0.joblib",
+  "sha256": "1748df07643b69628c677277f560e550bc0ff8f1ba94e75dbd3651a46e7943f9",
+  "threshold": 0.75,
+  "training_dataset": "datasets/BETH/labelled_2021may-ip-10-100-1-4.csv",
+  "validation_dataset": "datasets/BETH/labelled_2021may-ip-10-100-1-105.csv",
+  "frozen_test_dataset": "datasets/BETH/labelled_testing_data.csv",
+  "train_cohort_count": 120642,
+  "validation_cohort_count": 37284,
+  "frozen_test_cohort_count": 171459,
+  "train_class_distribution": {
+    "false_positives_y1": 116248,
+    "true_threats_y0": 4394
+  },
+  "validation_class_distribution": {
+    "false_positives_y1": 31673,
+    "true_threats_y0": 5611
+  },
+  "frozen_test_class_distribution": {
+    "false_positives_y1": 13027,
+    "true_threats_y0": 158432
+  },
+  "baseline_validation_metrics": {
+    "accuracy": 0.8498819869112756,
+    "balanced_accuracy": 0.5012475494564249,
+    "roc_auc": 0.6292665038173034,
+    "pr_auc": 0.8948363789618099,
+    "brier_score": 0.13606563147663622,
+    "threat_preservation_recall": 0.0024950989128497596,
+    "threat_precision": 1.0,
+    "threat_f1": 0.004977777777777778,
+    "fp_recall": 1.0,
+    "fp_precision": 0.849825596994902,
+    "fp_f1": 0.9188169937484588,
+    "confusion_matrix": {
+      "threats_as_threats_TN": 14,
+      "threats_as_FP_FP": 5597,
+      "FPs_as_threats_FN": 0,
+      "FPs_as_FP_TP": 31673
+    }
+  },
+  "baseline_frozen_test_metrics": {
+    "accuracy": 0.07590735977697292,
+    "balanced_accuracy": 0.4995041922372993,
+    "roc_auc": 0.0377044083507589,
+    "pr_auc": 0.050183402855948814,
+    "brier_score": 0.9177264934811399,
+    "threat_preservation_recall": 6.3118561906685514e-06,
+    "threat_precision": 0.07142857142857142,
+    "threat_f1": 1.2622596973101244e-05,
+    "fp_recall": 0.9990020726184079,
+    "fp_precision": 0.07590772550963866,
+    "fp_f1": 0.14109458345982046,
+    "confusion_matrix": {
+      "threats_as_threats_TN": 1,
+      "threats_as_FP_FP": 158431,
+      "FPs_as_threats_FN": 13,
+      "FPs_as_FP_TP": 13014
+    }
+  },
+  "candidate_validation_comparison": {
+    "LogisticRegression": {
+      "accuracy": 0.9816006866216072,
+      "balanced_accuracy": 0.9621138984502249,
+      "roc_auc": 0.9958603894975773,
+      "pr_auc": 0.9993265343085791,
+      "brier_score": 0.015057645412158515,
+      "threat_preservation_recall": 0.9342363215113171,
+      "threat_precision": 0.9429753552797265,
+      "threat_f1": 0.938585496866607,
+      "fp_recall": 0.9899914753891327,
+      "fp_precision": 0.9883687943262411,
+      "fp_f1": 0.9891794693838922,
+      "confusion_matrix": {
+        "threats_as_threats_TN": 5242,
+        "threats_as_FP_FP": 369,
+        "FPs_as_threats_FN": 317,
+        "FPs_as_FP_TP": 31356
+      },
+      "fit_time_sec": 1.06,
+      "latency_ms_per_sample": 0.0003
+    },
+    "RandomForest": {
+      "accuracy": 0.9884400815363158,
+      "balanced_accuracy": 0.9615932988772056,
+      "roc_auc": 0.9998990756117178,
+      "pr_auc": 0.9999821491712761,
+      "brier_score": 0.005993550857770013,
+      "threat_preservation_recall": 0.923186597754411,
+      "threat_precision": 1.0,
+      "threat_f1": 0.9600593086831619,
+      "fp_recall": 1.0,
+      "fp_precision": 0.9865748816346873,
+      "fp_f1": 0.9932420778650611,
+      "confusion_matrix": {
+        "threats_as_threats_TN": 5180,
+        "threats_as_FP_FP": 431,
+        "FPs_as_threats_FN": 0,
+        "FPs_as_FP_TP": 31673
+      },
+      "fit_time_sec": 1.64,
+      "latency_ms_per_sample": 0.0022
+    },
+    "HistGradientBoosting": {
+      "accuracy": 0.9960572899903444,
+      "balanced_accuracy": 0.9869007307075388,
+      "roc_auc": 1.0,
+      "pr_auc": 1.0,
+      "brier_score": 0.0036778160646240877,
+      "threat_preservation_recall": 0.9738014614150775,
+      "threat_precision": 1.0,
+      "threat_f1": 0.986726862302483,
+      "fp_recall": 1.0,
+      "fp_precision": 0.9953802639849152,
+      "fp_f1": 0.9976847841494338,
+      "confusion_matrix": {
+        "threats_as_threats_TN": 5464,
+        "threats_as_FP_FP": 147,
+        "FPs_as_threats_FN": 0,
+        "FPs_as_FP_TP": 31673
+      },
+      "fit_time_sec": 9.76,
+      "latency_ms_per_sample": 0.0028
+    }
+  },
+  "selected_model": "HistGradientBoosting",
+  "validation_metrics": {
+    "accuracy": 0.9964596073382684,
+    "balanced_accuracy": 0.9882373908394226,
+    "roc_auc": 1.0,
+    "pr_auc": 1.0,
+    "brier_score": 0.0036778160646240877,
+    "threat_preservation_recall": 0.9764747816788452,
+    "threat_precision": 1.0,
+    "threat_f1": 0.98809738503156,
+    "fp_recall": 1.0,
+    "fp_precision": 0.9958497091652256,
+    "fp_f1": 0.997920539399477,
+    "confusion_matrix": {
+      "threats_as_threats_TN": 5479,
+      "threats_as_FP_FP": 132,
+      "FPs_as_threats_FN": 0,
+      "FPs_as_FP_TP": 31673
+    }
+  },
+  "frozen_test_metrics": {
+    "accuracy": 0.9688496958456541,
+    "balanced_accuracy": 0.8525265720763413,
+    "roc_auc": 0.7242699161656033,
+    "pr_auc": 0.6359590824544433,
+    "brier_score": 0.03130465201204219,
+    "threat_preservation_recall": 0.9896927388406382,
+    "threat_precision": 0.9768982038166559,
+    "threat_f1": 0.9832538510498873,
+    "fp_recall": 0.7153604053120443,
+    "fp_precision": 0.8508948137326515,
+    "fp_f1": 0.7772634388423204,
+    "confusion_matrix": {
+      "threats_as_threats_TN": 156799,
+      "threats_as_FP_FP": 1633,
+      "FPs_as_threats_FN": 3708,
+      "FPs_as_FP_TP": 9319
+    }
+  },
+  "operational_safety": "Advisory score only. Never automatically suppress, close, block, or delete alerts."
+}

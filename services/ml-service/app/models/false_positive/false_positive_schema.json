@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0.0",
+  "model_id": "false_positive_v1.0.0",
+  "description": "Schema for CYBERGUARD False Positive Detection V1",
+  "target_definition": {
+    "cohort": "sus == 1",
+    "y": {
+      "1": "False Positive Alert (benign system trigger, sus==1 and evil==0)",
+      "0": "True Positive Alert (genuine threat, sus==1 and evil==1)"
+    }
+  },
+  "input_features": {
+    "event_name": {
+      "type": "string",
+      "description": "Kernel syscall name triggering the alert",
+      "required": true
+    },
+    "process_name": {
+      "type": "string",
+      "description": "Process executable name generating the event",
+      "required": true
+    },
+    "user_id": {
+      "type": "integer",
+      "description": "Linux User ID executing the process",
+      "required": true
+    },
+    "args_num": {
+      "type": "integer",
+      "description": "Count of syscall arguments",
+      "required": true
+    },
+    "return_value": {
+      "type": "integer",
+      "description": "Syscall exit code / return status",
+      "required": true
+    },
+    "parent_process_id": {
+      "type": "integer",
+      "description": "Parent process PID (optional)",
+      "required": false,
+      "default": -1
+    }
+  },
+  "output_fields": {
+    "false_positive_probability": {
+      "type": "float",
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    "false_positive_score": {
+      "type": "float",
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    "classification": {
+      "type": "string",
+      "enum": [
+        "likely_false_positive",
+        "likely_true_positive"
+      ]
+    },
+    "confidence": {
+      "type": "float",
+      "range": [
+        0.0,
+        1.0
+      ]
+    },
+    "threshold": {
+      "type": "float",
+      "value": 0.75
+    },
+    "explanation": {
+      "type": "object"
+    }
+  }
+}

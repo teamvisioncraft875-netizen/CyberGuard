@@ -1,0 +1,150 @@
+{
+  "model_name": "recommendation_classifier_v1.0.0",
+  "model_version": "v1.0.0",
+  "created_at": "2026-10-06T20:00:00Z",
+  "framework": "scikit-learn",
+  "architecture": "TfidfVectorizer + RandomForestClassifier",
+  "dataset_path": "D:\\cyberguard project  work su\\CyberGuard\\datasets\\Recommendation\\incident_response_playbook_dataset.jsonl",
+  "dataset_sha256": "593c7f8f1e55843da2882ffa36564967e5a6bddf6f2bd45d54edd0cc5cc25083",
+  "dataset_size_records": 174,
+  "splits": {
+    "train_count": 121,
+    "val_count": 26,
+    "test_count": 27,
+    "split_ratio": "70/15/15",
+    "zero_leakage_verified": true
+  },
+  "action_classes": [
+    "block_domain",
+    "block_ip",
+    "isolate_device",
+    "quarantine_email",
+    "revoke_session"
+  ],
+  "validation_metrics": {
+    "top1_acc": 1.0,
+    "top3_acc": 1.0,
+    "top5_acc": 1.0,
+    "mrr": 1.0,
+    "ndcg_at_3": 1.0,
+    "ndcg_at_5": 1.0,
+    "macro_f1": 1.0,
+    "weighted_f1": 1.0
+  },
+  "baseline_validation_metrics": {
+    "top1_acc": 0.8077,
+    "top3_acc": 1.0,
+    "top5_acc": 1.0,
+    "mrr": 0.9038,
+    "ndcg_at_3": 0.929,
+    "ndcg_at_5": 0.929,
+    "macro_f1": 0.5672,
+    "weighted_f1": 0.7607
+  },
+  "frozen_test_metrics": {
+    "top1_acc": 0.8519,
+    "top3_acc": 1.0,
+    "top5_acc": 1.0,
+    "mrr": 0.9259,
+    "ndcg_at_3": 0.9453,
+    "ndcg_at_5": 0.9453,
+    "macro_f1": 0.8667,
+    "weighted_f1": 0.842
+  },
+  "baseline_test_metrics": {
+    "top1_acc": 0.7037,
+    "top3_acc": 1.0,
+    "top5_acc": 1.0,
+    "mrr": 0.8395,
+    "ndcg_at_3": 0.8717,
+    "ndcg_at_5": 0.8868,
+    "macro_f1": 0.6748,
+    "weighted_f1": 0.6502
+  },
+  "per_action_test_report": {
+    "block_domain": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 1.0
+    },
+    "block_ip": {
+      "precision": 1.0,
+      "recall": 0.6666666666666666,
+      "f1-score": 0.8,
+      "support": 6.0
+    },
+    "isolate_device": {
+      "precision": 0.7647058823529411,
+      "recall": 1.0,
+      "f1-score": 0.8666666666666667,
+      "support": 13.0
+    },
+    "quarantine_email": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 3.0
+    },
+    "revoke_session": {
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1-score": 0.6666666666666666,
+      "support": 4.0
+    },
+    "accuracy": 0.8518518518518519,
+    "macro avg": {
+      "precision": 0.9529411764705882,
+      "recall": 0.8333333333333333,
+      "f1-score": 0.8666666666666668,
+      "support": 27.0
+    },
+    "weighted avg": {
+      "precision": 0.8867102396514162,
+      "recall": 0.8518518518518519,
+      "f1-score": 0.8419753086419755,
+      "support": 27.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      1,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      4,
+      2,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      13,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      3,
+      0
+    ],
+    [
+      0,
+      0,
+      2,
+      0,
+      2
+    ]
+  ],
+  "mean_brier_score": 0.04848843765092407,
+  "artifact_sha256": "ab7344dd10cb62b14358f516ab628dfb5bf57181fe7f3a1119f5c5abe029e01c",
+  "file_size_bytes": 311330,
+  "rollback_strategy": "RETAIN_CURRENT_V1"
+}

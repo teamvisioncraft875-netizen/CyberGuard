@@ -186,6 +186,10 @@ datasets/ctu13/
 datasets/Malicious url/
 datasets/malware/
 datasets/Phishing/
+datasets/BETH/
+datasets/Recommendation/
+scratch/
+
 
 # Large ML model artifact - keep locally, do not commit
 services/ml-service/app/models/malware/ember_model_2018.txt
