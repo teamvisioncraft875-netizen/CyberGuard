@@ -44,6 +44,7 @@ const config = Object.freeze({
   REDIS_URL: process.env.REDIS_URL || null,
   BACKEND_URL: process.env.CYBERGUARD_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:5000',
   backend_url: process.env.CYBERGUARD_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:5000',
+  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
 });
 
 module.exports = config;

@@ -312,13 +312,33 @@ class CopilotActionService {
       // Check if an existing approval was passed and is in 'approved' status
       if (payload.approval_id) {
         const existingApproval = await SoarApproval.findById(payload.approval_id, organization_id);
-        if (existingApproval && existingApproval.status === 'approved') {
-          isApproved = true;
-        } else {
+        if (!existingApproval) {
+          const err = new Error(`Action "${action_type}" cannot execute: Approval not found or access denied`);
+          err.statusCode = 403;
+          throw err;
+        }
+
+        if (existingApproval.status !== 'approved') {
           const err = new Error(`Action "${action_type}" cannot execute: Approval is not in approved state`);
           err.statusCode = 403;
           throw err;
         }
+
+        if (existingApproval.consumed) {
+          const err = new Error(`Action "${action_type}" cannot execute: Approval has already been consumed`);
+          err.statusCode = 403;
+          throw err;
+        }
+
+        // Atomically consume approval (race-safe single-use enforcement)
+        const consumedApproval = await SoarApproval.consumeApproval(payload.approval_id, organization_id);
+        if (!consumedApproval) {
+          const err = new Error(`Action "${action_type}" cannot execute: Approval has already been consumed`);
+          err.statusCode = 403;
+          throw err;
+        }
+
+        isApproved = true;
       }
 
       // If not pre-approved, automatically route to approval gating

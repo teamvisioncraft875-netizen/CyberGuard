@@ -3,6 +3,7 @@ const promptBuilder = require('./promptBuilder');
 const socSearchService = require('./socSearchService');
 const mitreReasoningService = require('./mitreReasoningService');
 const { log: auditLog } = require('../auditService');
+const config = require('../../config');
 
 /**
  * CopilotService — Orchestrates Gemini Free Tier (Gemini Flash) AI Copilot assistance.
@@ -10,7 +11,7 @@ const { log: auditLog } = require('../auditService');
  */
 class CopilotService {
   constructor() {
-    this.model = 'gemini-2.5-flash';
+    this.model = config.GEMINI_MODEL || process.env.GEMINI_MODEL || 'gemini-2.0-flash';
     this.defaultTimeoutMs = parseInt(process.env.COPILOT_TIMEOUT_MS, 10) || 10000;
     this.mockHandler = null;
   }
@@ -207,7 +208,7 @@ class CopilotService {
   }
 
   /**
-   * Calls Gemini REST API using gemini-2.5-flash with AbortController timeout.
+   * Calls Gemini REST API using configured model (process.env.GEMINI_MODEL || 'gemini-2.0-flash') with AbortController timeout.
    */
   async callGemini({ apiKey, systemInstruction, userPrompt, timeoutMs }) {
     const controller = new AbortController();
