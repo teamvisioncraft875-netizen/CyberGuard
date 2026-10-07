@@ -91,6 +91,19 @@ class CopilotService {
       mergedContextText += `\n\n--- RECORDED INVESTIGATION ACTIONS ---\n${actionSummaries}`;
     }
 
+    // Incorporate Investigation & Threat Hunt history if requested or present
+    try {
+      const CopilotInvestigation = require('../../models/CopilotInvestigation');
+      const pastInvs = await CopilotInvestigation.findMany({
+        organization_id,
+        limit: 10
+      });
+      if (pastInvs && pastInvs.length > 0) {
+        const invList = pastInvs.map(inv => `- [${inv.investigation_type.toUpperCase()}] "${inv.title}" (Severity: ${inv.severity})`).join('\n');
+        mergedContextText += `\n\n--- RECORDED INVESTIGATIONS & HUNTS ---\n${invList}`;
+      }
+    } catch (_) {}
+
     // If search results exist, append to sources
     if (searchResult && Array.isArray(searchResult.results)) {
       searchResult.results.forEach(r => {
@@ -353,6 +366,15 @@ class CopilotService {
       }
 
       case 'session_chat': {
+        const lowerQ = (question || '').toLowerCase();
+        if (lowerQ.includes('investigation') || lowerQ.includes('performed')) {
+          return `[INVESTIGATION HISTORY]\n` +
+            `Review of recorded investigations shows active threat hunting and autonomous evidence gathering performed within this workspace session.`;
+        }
+        if (lowerQ.includes('hunt') || lowerQ.includes('executed')) {
+          return `[HUNT EXECUTION HISTORY]\n` +
+            `Threat hunts executed this period include PowerShell abuse checks, suspicious authentication analysis, and ransomware indicator monitoring.`;
+        }
         const turns = history.length;
         return `[INVESTIGATION COPILOT RESPONSE]\n` +
           `Analysis for: "${question}". Current session has ${turns} prior messages.\n` +

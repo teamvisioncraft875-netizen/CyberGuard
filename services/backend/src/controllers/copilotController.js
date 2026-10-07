@@ -532,6 +532,492 @@ const copilotController = {
         message: err.message
       });
     }
+  },
+
+  /**
+   * POST /api/v1/copilot/hunt
+   */
+  async hunt(req, res) {
+    try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { query, session_id } = req.body || {};
+      if (!query) {
+        return res.status(400).json({ error: 'BAD_REQUEST', message: 'Field "query" is required' });
+      }
+
+      if (session_id) {
+        const session = await CopilotSession.findById(session_id, organization_id);
+        if (!session) {
+          return res.status(404).json({ error: 'NOT_FOUND', message: `Session ${session_id} not found` });
+        }
+      }
+
+      const threatHuntingService = require('../services/copilot/threatHuntingService');
+      const result = await threatHuntingService.hunt({
+        query,
+        organization_id,
+        session_id,
+        user_id: req.user?.id
+      });
+
+      return res.status(200).json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      console.error('[copilotController.hunt] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/copilot/investigate/ioc
+   */
+  async investigateIoc(req, res) {
+    try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { ioc, session_id } = req.body || {};
+      if (!ioc) {
+        return res.status(400).json({ error: 'BAD_REQUEST', message: 'Field "ioc" is required' });
+      }
+
+      if (session_id) {
+        const session = await CopilotSession.findById(session_id, organization_id);
+        if (!session) {
+          return res.status(404).json({ error: 'NOT_FOUND', message: `Session ${session_id} not found` });
+        }
+      }
+
+      const iocInvestigationService = require('../services/copilot/iocInvestigationService');
+      const result = await iocInvestigationService.investigate({
+        ioc,
+        organization_id,
+        session_id,
+        user_id: req.user?.id
+      });
+
+      return res.status(200).json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      console.error('[copilotController.investigateIoc] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/copilot/investigate/incident
+   */
+  async investigateIncident(req, res) {
+    try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { incident_id, session_id } = req.body || {};
+      if (!incident_id) {
+        return res.status(400).json({ error: 'BAD_REQUEST', message: 'Field "incident_id" is required' });
+      }
+
+      if (session_id) {
+        const session = await CopilotSession.findById(session_id, organization_id);
+        if (!session) {
+          return res.status(404).json({ error: 'NOT_FOUND', message: `Session ${session_id} not found` });
+        }
+      }
+
+      const autonomousInvestigationService = require('../services/copilot/autonomousInvestigationService');
+      const result = await autonomousInvestigationService.investigate({
+        incident_id,
+        organization_id,
+        session_id,
+        user_id: req.user?.id
+      });
+
+      return res.status(200).json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      console.error('[copilotController.investigateIncident] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/copilot/investigate/alert
+   */
+  async investigateAlert(req, res) {
+    try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { alert_id, session_id } = req.body || {};
+      if (!alert_id) {
+        return res.status(400).json({ error: 'BAD_REQUEST', message: 'Field "alert_id" is required' });
+      }
+
+      if (session_id) {
+        const session = await CopilotSession.findById(session_id, organization_id);
+        if (!session) {
+          return res.status(404).json({ error: 'NOT_FOUND', message: `Session ${session_id} not found` });
+        }
+      }
+
+      const autonomousInvestigationService = require('../services/copilot/autonomousInvestigationService');
+      const result = await autonomousInvestigationService.investigate({
+        alert_id,
+        organization_id,
+        session_id,
+        user_id: req.user?.id
+      });
+
+      return res.status(200).json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      console.error('[copilotController.investigateAlert] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/copilot/correlate
+   */
+  async correlate(req, res) {
+    try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { incident_id, alert_id, session_id } = req.body || {};
+      if (!incident_id && !alert_id) {
+        return res.status(400).json({ error: 'BAD_REQUEST', message: 'incident_id or alert_id is required' });
+      }
+
+      if (session_id) {
+        const session = await CopilotSession.findById(session_id, organization_id);
+        if (!session) {
+          return res.status(404).json({ error: 'NOT_FOUND', message: `Session ${session_id} not found` });
+        }
+      }
+
+      const incidentCorrelationService = require('../services/copilot/incidentCorrelationService');
+      const result = await incidentCorrelationService.correlate({
+        incident_id,
+        alert_id,
+        organization_id,
+        session_id,
+        user_id: req.user?.id
+      });
+
+      return res.status(200).json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      console.error('[copilotController.correlate] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/copilot/report
+   */
+  async generateReport(req, res) {
+    try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const investigationReportService = require('../services/copilot/investigationReportService');
+      const result = await investigationReportService.generateReport({
+        ...req.body,
+        organization_id,
+        user_id: req.user?.id
+      });
+
+      return res.status(200).json({
+        success: true,
+        report: result
+      });
+    } catch (err) {
+      console.error('[copilotController.generateReport] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * GET /api/v1/copilot/investigations/:sessionId
+   */
+  async getInvestigations(req, res) {
+    try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { sessionId } = req.params;
+      const session = await CopilotSession.findById(sessionId, organization_id);
+      if (!session) {
+        return res.status(404).json({ error: 'NOT_FOUND', message: `Session ${sessionId} not found` });
+      }
+
+      const CopilotInvestigation = require('../models/CopilotInvestigation');
+      const investigations = await CopilotInvestigation.findBySession(sessionId, organization_id);
+
+      return res.status(200).json({
+        success: true,
+        session_id: sessionId,
+        count: investigations.length,
+        investigations
+      });
+    } catch (err) {
+      console.error('[copilotController.getInvestigations] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/copilot/executive-briefing
+   */
+  async executiveBriefing(req, res) {
+    try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const executiveBriefingService = require('../services/copilot/executiveBriefingService');
+      const result = await executiveBriefingService.generateBriefing({
+        ...req.body,
+        organization_id,
+        user_id: req.user?.id
+      });
+
+      return res.status(200).json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      console.error('[copilotController.executiveBriefing] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/copilot/handover
+   */
+  async shiftHandover(req, res) {
+    try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const shiftHandoverService = require('../services/copilot/shiftHandoverService');
+      const result = await shiftHandoverService.generateHandover({
+        ...req.body,
+        organization_id,
+        user_id: req.user?.id
+      });
+
+      return res.status(200).json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      console.error('[copilotController.shiftHandover] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/copilot/reconstruct
+   */
+  async reconstructTimeline(req, res) {
+    try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const { incident_id, alert_id } = req.body || {};
+      if (!incident_id && !alert_id) {
+        return res.status(400).json({ error: 'BAD_REQUEST', message: 'incident_id or alert_id is required' });
+      }
+
+      const timelineReconstructionService = require('../services/copilot/timelineReconstructionService');
+      const result = await timelineReconstructionService.reconstruct({
+        incident_id,
+        alert_id,
+        organization_id,
+        user_id: req.user?.id
+      });
+
+      return res.status(200).json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      console.error('[copilotController.reconstructTimeline] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/copilot/threat-actor
+   */
+  async profileThreatActor(req, res) {
+    try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const threatActorService = require('../services/copilot/threatActorService');
+      const result = await threatActorService.profileActor({
+        ...req.body,
+        organization_id,
+        user_id: req.user?.id
+      });
+
+      return res.status(200).json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      console.error('[copilotController.profileThreatActor] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * GET /api/v1/copilot/posture
+   */
+  async getSecurityPosture(req, res) {
+    try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const securityPostureService = require('../services/copilot/securityPostureService');
+      const result = await securityPostureService.evaluatePosture({
+        organization_id,
+        user_id: req.user?.id
+      });
+
+      return res.status(200).json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      console.error('[copilotController.getSecurityPosture] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/copilot/dashboard
+   */
+  async generateDashboard(req, res) {
+    try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const query = req.body?.query || req.body?.prompt;
+      if (!query) {
+        return res.status(400).json({ error: 'BAD_REQUEST', message: 'Field "query" is required' });
+      }
+
+      const dashboardGenerationService = require('../services/copilot/dashboardGenerationService');
+      const result = await dashboardGenerationService.generateDashboard({
+        query,
+        organization_id,
+        user_id: req.user?.id
+      });
+
+      return res.status(200).json({
+        success: true,
+        dashboard: result
+      });
+    } catch (err) {
+      console.error('[copilotController.generateDashboard] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * POST /api/v1/copilot/cross-investigation
+   */
+  async crossInvestigation(req, res) {
+    try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const crossInvestigationService = require('../services/copilot/crossInvestigationService');
+      const result = await crossInvestigationService.correlateAcrossInvestigations({
+        ...req.body,
+        organization_id,
+        user_id: req.user?.id
+      });
+
+      return res.status(200).json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      console.error('[copilotController.crossInvestigation] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
+  },
+
+  /**
+   * GET /api/v1/copilot/analyst-metrics
+   */
+  async getAnalystMetrics(req, res) {
+    try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
+      const timeframe_days = parseInt(req.query?.timeframe_days, 10) || 30;
+      const analystMetricsService = require('../services/copilot/analystMetricsService');
+      const result = await analystMetricsService.getMetrics({
+        organization_id,
+        user_id: req.user?.id,
+        timeframe_days
+      });
+
+      return res.status(200).json({
+        success: true,
+        ...result
+      });
+    } catch (err) {
+      console.error('[copilotController.getAnalystMetrics] Error:', err);
+      return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR', message: err.message });
+    }
   }
 };
 

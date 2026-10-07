@@ -30,4 +30,24 @@ router.post('/plan', copilotController.plan);
 router.post('/explain', copilotController.explain);
 router.get('/sessions/:id/timeline', copilotController.getSessionTimeline);
 
+// 5. Threat Hunting & Autonomous Investigation (Sprint C Phase 5)
+router.post('/hunt', copilotController.hunt);
+router.post('/investigate/ioc', copilotController.investigateIoc);
+router.post('/investigate/incident', copilotController.investigateIncident);
+router.post('/investigate/alert', copilotController.investigateAlert);
+router.post('/correlate', copilotController.correlate);
+router.post('/report', copilotController.generateReport);
+router.get('/investigations/:sessionId', copilotController.getInvestigations);
+
+// 6. Enterprise Analyst & Executive Intelligence (Sprint C Phase 6)
+router.post('/executive-briefing', copilotController.executiveBriefing);
+router.post('/handover', copilotController.shiftHandover);
+router.post('/reconstruct', copilotController.reconstructTimeline);
+router.post('/threat-actor', copilotController.profileThreatActor);
+router.get('/posture', copilotController.getSecurityPosture);
+router.post('/dashboard', copilotController.generateDashboard);
+router.post('/cross-investigation', copilotController.crossInvestigation);
+router.get('/analyst-metrics', copilotController.getAnalystMetrics);
+
 module.exports = router;
+

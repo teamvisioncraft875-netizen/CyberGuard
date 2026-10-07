@@ -1,3 +1,4 @@
+const db = require('../../config/db');
 const MitreMapping = require('../../models/MitreMapping');
 const { log: auditLog } = require('../auditService');
 
@@ -67,7 +68,32 @@ const MITRE_KNOWLEDGE_BASE = {
     description: 'Adversaries may abuse command and script interpreters (PowerShell, cmd, bash) to execute malicious commands.',
     evidence_indicators: ['Encoded PowerShell execution (-enc)', 'Hidden window flags', 'Parent-child process anomaly (winword -> powershell)'],
     confidence_baseline: 0.93
+  },
+  'T1053': {
+    name: 'Scheduled Task/Job',
+    tactic: 'Persistence',
+    description: 'Adversaries may abuse task scheduling functionality to facilitate initial or recurring execution of malicious code.',
+    evidence_indicators: ['schtasks creation', 'cron modification', 'at service abuse'],
+    confidence_baseline: 0.89
+  },
+  'T1110': {
+    name: 'Brute Force',
+    tactic: 'Credential Access',
+    description: 'Adversaries may use brute force techniques to attempt login passwords or credential tokens.',
+    evidence_indicators: ['Burst failed authentications', 'Password spray pattern', 'Repeated 401 Unauthorized responses'],
+    confidence_baseline: 0.91
   }
+};
+
+const TACTIC_TECHNIQUE_MAP = {
+  'credential access': ['T1003', 'T1078', 'T1110'],
+  'execution': ['T1059', 'T1204'],
+  'persistence': ['T1078', 'T1053'],
+  'lateral movement': ['T1021'],
+  'command and control': ['T1071', 'T1071.001'],
+  'initial access': ['T1566', 'T1078'],
+  'impact': ['T1486'],
+  'defense evasion': ['T1078']
 };
 
 /**
@@ -165,7 +191,146 @@ class MitreReasoningService {
 
     return report;
   }
+
+  /**
+   * Hunts for alerts, incidents, and attack chains matching a MITRE technique or tactic.
+   */
+  async huntMitre({ query = '', technique = null, tactic = null, organization_id, user_id = null, limit = 20 }, client = null) {
+    if (!organization_id) throw new Error('MitreReasoningService.huntMitre requires organization_id');
+    const dbClient = client || db;
+
+    let targetTechniques = [];
+    let detectedTactic = tactic ? tactic.toLowerCase().trim() : null;
+    let explicitTechnique = technique ? technique.toUpperCase().trim() : null;
+
+    if (!explicitTechnique && query) {
+      const match = query.match(/T\d{4}(?:\.\d{3})?/i);
+      if (match) {
+        explicitTechnique = match[0].toUpperCase();
+      }
+    }
+
+    if (explicitTechnique) {
+      targetTechniques.push(explicitTechnique);
+      const info = MITRE_KNOWLEDGE_BASE[explicitTechnique] || MITRE_KNOWLEDGE_BASE[explicitTechnique.split('.')[0]];
+      if (info && !detectedTactic) {
+        detectedTactic = info.tactic.toLowerCase();
+      }
+    } else {
+      const lowerQuery = String(query).toLowerCase();
+      for (const [tac, techs] of Object.entries(TACTIC_TECHNIQUE_MAP)) {
+        if (lowerQuery.includes(tac) || (detectedTactic && detectedTactic.includes(tac))) {
+          detectedTactic = tac;
+          targetTechniques.push(...techs);
+          break;
+        }
+      }
+    }
+
+    if (targetTechniques.length === 0 && !query) {
+      targetTechniques = Object.keys(MITRE_KNOWLEDGE_BASE);
+    }
+
+    // 1. Query SIEM Alerts
+    const alertConditions = ['organization_id = $1'];
+    const alertParams = [organization_id];
+
+    if (targetTechniques.length > 0) {
+      const orClauses = [];
+      for (const t of targetTechniques) {
+        alertParams.push(`%${t}%`);
+        orClauses.push(`mitre_technique ILIKE $${alertParams.length}`);
+      }
+      alertConditions.push(`(${orClauses.join(' OR ')})`);
+    } else if (query) {
+      alertParams.push(`%${query}%`);
+      alertConditions.push(`(title ILIKE $${alertParams.length} OR metadata::text ILIKE $${alertParams.length})`);
+    }
+
+    alertParams.push(limit);
+    const alertSql = `
+      SELECT id, title, severity, status, mitre_technique, created_at, metadata
+      FROM public.siem_alerts
+      WHERE ${alertConditions.join(' AND ')}
+      ORDER BY created_at DESC
+      LIMIT $${alertParams.length};
+    `;
+    const alertRes = await dbClient.query(alertSql, alertParams);
+    const matchingAlerts = alertRes.rows;
+
+    // 2. Query Incidents
+    const incConditions = ['organization_id = $1'];
+    const incParams = [organization_id];
+
+    if (targetTechniques.length > 0) {
+      const incOr = [];
+      for (const t of targetTechniques) {
+        incParams.push(`%${t}%`);
+        incOr.push(`explanation ILIKE $${incParams.length}`);
+      }
+      if (detectedTactic) {
+        incParams.push(`%${detectedTactic}%`);
+        incOr.push(`threat_type::text ILIKE $${incParams.length}`);
+      }
+      incConditions.push(`(${incOr.join(' OR ')})`);
+    } else if (query) {
+      incParams.push(`%${query}%`);
+      incConditions.push(`(explanation ILIKE $${incParams.length} OR threat_type::text ILIKE $${incParams.length})`);
+    }
+
+    incParams.push(limit);
+    const incSql = `
+      SELECT id, threat_type, risk_level, risk_score, explanation, status, created_at
+      FROM public.incidents
+      WHERE ${incConditions.join(' AND ')}
+      ORDER BY created_at DESC
+      LIMIT $${incParams.length};
+    `;
+    const incRes = await dbClient.query(incSql, incParams);
+    const matchingIncidents = incRes.rows;
+
+    // 3. Query Attack Chains
+    const chainConditions = ['organization_id = $1'];
+    const chainParams = [organization_id];
+
+    if (targetTechniques.length > 0) {
+      const chainOr = [];
+      for (const t of targetTechniques) {
+        chainParams.push(`%${t}%`);
+        chainOr.push(`(timeline::text ILIKE $${chainParams.length} OR metadata::text ILIKE $${chainParams.length})`);
+      }
+      chainConditions.push(`(${chainOr.join(' OR ')})`);
+    }
+
+    chainParams.push(limit);
+    const chainSql = `
+      SELECT id, root_incident_id, confidence_score, chain_length, timeline, created_at
+      FROM public.attack_chain_snapshots
+      WHERE ${chainConditions.join(' AND ')}
+      ORDER BY created_at DESC
+      LIMIT $${chainParams.length};
+    `;
+    const chainRes = await dbClient.query(chainSql, chainParams);
+    const matchingChains = chainRes.rows;
+
+    const baseConfidence = explicitTechnique && MITRE_KNOWLEDGE_BASE[explicitTechnique]
+      ? MITRE_KNOWLEDGE_BASE[explicitTechnique].confidence_baseline
+      : 0.88;
+
+    return {
+      query: query || null,
+      technique: explicitTechnique || (targetTechniques.length === 1 ? targetTechniques[0] : null),
+      tactic: detectedTactic || null,
+      techniques_evaluated: targetTechniques,
+      matching_alerts: matchingAlerts,
+      incidents: matchingIncidents,
+      attack_chains: matchingChains,
+      confidence: baseConfidence,
+      summary: `Found ${matchingAlerts.length} alerts, ${matchingIncidents.length} incidents, and ${matchingChains.length} attack chains for ${explicitTechnique || detectedTactic || query || 'evaluated techniques'}.`
+    };
+  }
 }
 
 const mitreReasoningService = new MitreReasoningService();
 module.exports = mitreReasoningService;
+module.exports.MITRE_KNOWLEDGE_BASE = MITRE_KNOWLEDGE_BASE;
