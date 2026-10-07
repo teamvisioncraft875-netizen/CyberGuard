@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-10-06 18:37:22 UTC",
+  "timestamp": "2026-10-07 01:12:07 UTC",
   "validation_claim": "Validated deepfake audio classification performance on the cleaned, source-disjoint, encoding-normalized test partition of garystafford/deepfake-audio-detection: Accuracy: 90.00%, Balanced Acc: 90.00%, Precision: 85.71%, Recall: 96.00%, F1: 0.9057, ROC-AUC: 0.8976, PR-AUC: 0.8761, 95% CI: [0.7864, 0.9565] (tested against unseen Kokoro & Hume AI TTS architectures). Visual deepfake validation: NOT ESTABLISHED.",
   "status": "PARTIALLY_ESTABLISHED",
   "justification": "1. Audio Deepfake Benchmark (garystafford/deepfake-audio-detection):\n   - Standardized 16 kHz mono polyphase resampling applied across all splits (sampling-rate leakage removed).\n   - Strict cryptographic raw & decoded deduplication passed (zero duplicate / near-duplicate leakage).\n   - Unseen-TTS-Engine test set (N=50: 25 genuine YouTube, 25 fake Kokoro/Hume AI): Accuracy 90.00%, ROC-AUC 0.8976.\n2. Visual Deepfake Benchmark (FaceForensics++):\n   - NOT ESTABLISHED: Full 500GB benchmark requires institutional access; preview samples audited without fabricating real-world benchmark accuracy.",
