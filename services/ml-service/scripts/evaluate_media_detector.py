@@ -487,8 +487,8 @@ def run_full_validation_audit() -> Dict[str, Any]:
             "preview_sample_results": ff_results,
         },
         "validated_deepfake_audio_benchmark": df_audio_audit,
-        "model_version": "deepfake_audio_classifier_v1",
-        "production_threshold": 0.50
+        "model_version": "deepfake_audio_classifier_v2",
+        "production_threshold": audio_m["threshold"] if audio_m else 0.49
     }
 
     # Save to JSON

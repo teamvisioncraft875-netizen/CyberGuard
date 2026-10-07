@@ -94,6 +94,15 @@ def test_real_audio_loading_and_features():
     for field in expected_fields:
         assert field in features, f"Missing expected audio feature: {field}"
 
+    # Verify complete 28 Audio V2 features
+    from app.services.media_anomaly.audio_detector import FEATURE_NAMES
+    for fn in FEATURE_NAMES:
+        assert fn in features, f"Missing Audio V2 feature: {fn}"
+    assert len([fn for fn in FEATURE_NAMES if fn in features]) == 28
+    assert len([k for k in features if k.startswith("mfcc_")]) == 10
+    assert len([k for k in features if k.startswith("spectral_contrast_")]) == 4
+    assert "spectral_bandwidth_hz" in features
+
     assert features["sample_rate"] == 16000
     assert features["duration_sec"] > 0.1
     assert 0.0 <= features["anomaly_score"] <= 1.0

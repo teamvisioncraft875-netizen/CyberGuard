@@ -176,23 +176,25 @@ def test_reproducible_validation_audit_execution():
     assert "podonos_audio_benchmark" in report
     assert "faceforensics_visual_benchmark" in report
     assert "validated_deepfake_audio_benchmark" in report
-    assert report["production_threshold"] == 0.50
+    assert report["production_threshold"] == 0.49
 
     # Podonos must remain private/blocked
     assert report["podonos_audio_benchmark"]["status"] == "BLOCKED_PRIVATE_LABELS"
     # Audio benchmark must be established
     assert report["validated_deepfake_audio_benchmark"]["status"] == "ESTABLISHED_VALIDATED"
     metrics = report["validated_deepfake_audio_benchmark"]["metrics"]
-    assert metrics["accuracy"] >= 0.65
-    assert metrics["balanced_accuracy"] >= 0.65
-    assert metrics["roc_auc"] >= 0.70
+    assert metrics["accuracy"] >= 0.85
+    assert metrics["balanced_accuracy"] >= 0.85
+    assert metrics["roc_auc"] >= 0.85
     assert metrics["samples"] == 50
 
 
 
 def test_deepfake_audio_model_and_schema_artifacts():
-    """Verifies that the serialized model, schema, and training metadata exist and match leakage-fixed specs."""
+    """Verifies that the serialized model, schema, and training metadata exist and match Audio V2 specs."""
     import joblib
+    from app.services.media_anomaly.audio_detector import FEATURE_NAMES
+
     models_dir = PROJECT_ROOT / "services" / "ml-service" / "app" / "models"
     model_path = models_dir / "deepfake_audio_classifier.joblib"
     schema_path = models_dir / "deepfake_audio_schema.json"
@@ -204,26 +206,39 @@ def test_deepfake_audio_model_and_schema_artifacts():
 
     model = joblib.load(model_path)
     assert hasattr(model, "predict_proba"), "Model must support predict_proba"
+    assert hasattr(model, "named_steps"), "Audio V2 model must be an sklearn Pipeline"
+    assert "scaler" in model.named_steps, "Scaler step must be present in Pipeline"
+    assert "clf" in model.named_steps, "Classifier step must be present in Pipeline"
+    assert model.named_steps["clf"].__class__.__name__ == "MLPClassifier", "Classifier must be MLPClassifier"
 
     with open(schema_path, "r", encoding="utf-8") as f:
         schema = json.load(f)
 
-    assert schema["model_type"] in ("LogisticRegression", "RandomForestClassifier", "GradientBoostingClassifier")
-    assert schema["feature_version"] == "2.0.0_leakage_fixed"
-    assert schema["feature_count"] == 13
+    assert schema["model_type"] in ("Pipeline", "MLPClassifier")
+    assert schema["feature_version"] == "3.0.0_28_features"
+    assert schema["feature_count"] == 28
     assert schema["target_sample_rate"] == 16000
     assert schema["audio_channels"] == 1
+    assert schema["frozen_threshold"] == 0.49
+
+    # Verify all 28 expected features are present in schema in exact order
+    assert schema["features"] == FEATURE_NAMES
+    assert list(model.named_steps["scaler"].feature_names_in_) == FEATURE_NAMES
 
     # Anti-leakage assertions: no encoding or Nyquist artifacts exposed
     assert "high_freq_ratio_8k" not in schema["features"], "Encoding leakage feature high_freq_ratio_8k must NOT be present!"
     assert "sample_rate" not in schema["features"], "Original sample rate must not be a classifier feature!"
     assert "duration_sec" not in schema["features"]
 
-    # Redesigned features must be present
+    # Redesigned and additional features must be present
     assert "subband_ratio_4k_to_8k" in schema["features"]
     assert "subband_ratio_2k_to_4k" in schema["features"]
     assert "spectral_flatness" in schema["features"]
     assert "pitch_jitter_pct" in schema["features"]
+    assert "spectral_bandwidth_hz" in schema["features"]
+    assert "spectral_contrast_b1" in schema["features"]
+    assert "mfcc_1_mean" in schema["features"]
+    assert "mfcc_10_mean" in schema["features"]
     assert schema["frozen_threshold"] > 0.0
 
 
