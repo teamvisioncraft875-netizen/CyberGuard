@@ -104,6 +104,8 @@ BEGIN
             ADD CONSTRAINT fk_copilot_session_actions_case
             FOREIGN KEY (case_id) REFERENCES public.soar_cases(id) ON DELETE SET NULL;
     END IF;
+END $$;
+
 -- 4. Trigger to automatically update updated_at on copilot_session_actions
 CREATE OR REPLACE FUNCTION public.set_copilot_session_actions_updated_at()
 RETURNS TRIGGER AS $$
