@@ -26,7 +26,7 @@ const Incident = {
     const dbClient = client || db;
     const resolvedThreatType = (threat_type || 'phishing').toLowerCase();
     const resolvedRiskLevel = (risk_level || 'high').toLowerCase();
-    const validSourceTypes = ['email', 'sms', 'url', 'image', 'audio', 'video', 'login', 'system', 'check', 'telemetry', 'ddos_detection'];
+    const validSourceTypes = ['email', 'sms', 'url', 'image', 'audio', 'video', 'login', 'system', 'check', 'telemetry', 'ddos_detection', 'attack_surface', 'siem'];
     const resolvedSourceType = validSourceTypes.includes(source_type?.toLowerCase()) ? source_type.toLowerCase() : 'email';
 
     const text = `

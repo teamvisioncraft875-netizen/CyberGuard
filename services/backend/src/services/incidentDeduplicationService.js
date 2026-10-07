@@ -162,7 +162,9 @@ class IncidentDeduplicationService {
       case 'technical_threat':
       case 'malware': {
         const deviceId = normalizeString(incident.device_id || incident.deviceId || signals.device_id || details.device_id);
-        const processName = normalizeString(incident.process_name || signals.process_name || details.process_name);
+        const processName = normalizeString(
+          incident.process_name || signals.process_name || details.process_name || details.rule_id || signals.rule_name || signals.rule_id
+        );
         const binarySha = normalizeString(
           incident.binary_sha256 || incident.sha256 || signals.binary_sha256 || signals.sha256 || details.binary_sha256 || details.sha256
         );

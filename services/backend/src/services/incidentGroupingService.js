@@ -171,6 +171,11 @@ async function assignGroup({
         }
       }, dbClient);
 
+      try {
+        const streamingService = require('./siem/streamingService');
+        streamingService.publishCampaignUpdate({ group_id: survivor.id, merged_group_id: orphan.id, action: 'merge' }, orgId);
+      } catch (sErr) {}
+
       return survivor;
     }
 
@@ -296,6 +301,11 @@ async function assignGroup({
         relationship_type: relationshipType
       }
     }, dbClient);
+
+    try {
+      const streamingService = require('./siem/streamingService');
+      streamingService.publishCampaignUpdate({ group_id: newGroup.id, group_type: groupType }, orgId);
+    } catch (sErr) {}
 
     return newGroup;
   };

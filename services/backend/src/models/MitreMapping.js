@@ -86,6 +86,39 @@ const MitreMapping = {
   },
 
   getTechniqueForThreat(threatType, ruleId = null) {
+    if (ruleId) {
+      const cleanRule = String(ruleId).toUpperCase().trim();
+      if (cleanRule === 'SIEM-BURST-BRUTE' || cleanRule === 'SIEM-AUTH-BRUTE' || cleanRule === 'SIEM-RULE-BRUTE' || cleanRule === 'SIEM-RULE-1') {
+        return { technique_id: 'T1110', technique_name: 'Brute Force' };
+      }
+      if (cleanRule === 'SIEM-RULE-SPRAY' || cleanRule === 'SIEM-RULE-2') {
+        return { technique_id: 'T1110.003', technique_name: 'Password Spraying' };
+      }
+      if (cleanRule === 'SIEM-BURST-PRV' || cleanRule === 'SIEM-PRV-ESCALATION' || cleanRule === 'SIEM-RULE-PRV' || cleanRule === 'SIEM-RULE-3') {
+        return { technique_id: 'T1068', technique_name: 'Exploitation for Privilege Escalation' };
+      }
+      if (cleanRule === 'SIEM-RULE-PWSH' || cleanRule === 'SIEM-RULE-4') {
+        return { technique_id: 'T1059', technique_name: 'Command and Scripting Interpreter: PowerShell' };
+      }
+      if (cleanRule === 'SIEM-LM-DEVICE' || cleanRule === 'SIEM-LATERAL-MOVEMENT') {
+        return { technique_id: 'T1021', technique_name: 'Remote Services' };
+      }
+      if (cleanRule === 'SIEM-LM-IP' || cleanRule === 'SIEM-CREDENTIAL-REUSE') {
+        return { technique_id: 'T1078', technique_name: 'Valid Accounts' };
+      }
+      if (cleanRule === 'SIEM-DEF-1102' || cleanRule === 'SIEM-RULE-LOGCLEAR' || cleanRule === 'SIEM-RULE-5') {
+        return { technique_id: 'T1070', technique_name: 'Indicator Removal on Host' };
+      }
+      if (cleanRule === 'SIEM-RULE-REG' || cleanRule === 'SIEM-RULE-6') {
+        return { technique_id: 'T1547', technique_name: 'Boot or Logon Autostart Execution' };
+      }
+      if (cleanRule === 'SIEM-PROC-SUSP') {
+        return { technique_id: 'TA0002', technique_name: 'Execution' };
+      }
+      if (cleanRule === 'SIEM-NET-C2' || cleanRule === 'SIEM-RULE-BEACON' || cleanRule === 'SIEM-RULE-7') {
+        return { technique_id: 'T1071', technique_name: 'Application Layer Protocol' };
+      }
+    }
     if (!threatType) return THREAT_TO_MITRE.phishing;
     const key = String(threatType).toLowerCase().trim();
     if (key === 'attack_surface_exposure' && ruleId) {
