@@ -10,7 +10,10 @@ class PromptBuilder {
     'summarize_ioc',
     'recommend_playbook',
     'investigation_steps',
-    'generate_analyst_note'
+    'generate_analyst_note',
+    'soc_search',
+    'explain_mitre',
+    'session_chat'
   ];
 
   static SYSTEM_PROMPT = `You are CyberGuard AI Security Copilot, a Tier-2/3 SOC analyst virtual assistant.
@@ -39,6 +42,7 @@ STRICT CONSTRAINTS & BEHAVIORAL RULES:
    * @param {string} [params.question] - User inquiry
    * @param {string} params.contextText - Retrieved organizational context
    * @param {Array} params.sources - Source metadata
+   * @param {Array} [params.history] - Conversation history messages
    * @returns {{ systemInstruction: string, userPrompt: string }}
    */
   buildPrompt({
@@ -46,7 +50,8 @@ STRICT CONSTRAINTS & BEHAVIORAL RULES:
     entity_id = null,
     question = '',
     contextText = '',
-    sources = []
+    sources = [],
+    history = []
   }) {
     if (!this.isValidTask(type)) {
       throw new Error(`Unsupported Copilot task: "${type}". Supported: ${PromptBuilder.SUPPORTED_TASKS.join(', ')}`);
@@ -60,16 +65,25 @@ STRICT CONSTRAINTS & BEHAVIORAL RULES:
       summarize_ioc: 'Summarize the provided Indicator of Compromise (IOC), sighting history, malware association, and threat reputation.',
       recommend_playbook: 'Recommend the most appropriate SOAR response playbook(s) from the available playbooks to handle the threat scenario, explaining why.',
       investigation_steps: 'Provide prioritized, actionable triage and investigation steps for the SOC analyst to verify and scope the activity.',
-      generate_analyst_note: 'Draft an executive-ready SOC analyst shift handover note summarizing the key findings, triage status, and next steps.'
+      generate_analyst_note: 'Draft an executive-ready SOC analyst shift handover note summarizing the key findings, triage status, and next steps.',
+      soc_search: 'Execute structured SOC entity search based on natural language query and summarize findings.',
+      explain_mitre: 'Explain MITRE ATT&CK technique mapping, tactic placement, technical indicators, and evidence rationale.',
+      session_chat: 'Conduct multi-turn interactive investigation conversation with the SOC analyst, maintaining context.'
     };
 
     const taskGoal = taskInstructions[type] || 'Provide cybersecurity analysis.';
+
+    let historySection = '';
+    if (Array.isArray(history) && history.length > 0) {
+      const historyLines = history.slice(-10).map(m => `${m.role === 'user' ? 'Analyst' : 'Copilot'}: ${m.content}`).join('\n');
+      historySection = `\n### RECENT INVESTIGATION HISTORY:\n${historyLines}\n`;
+    }
 
     const userPrompt = `### TASK: ${type.toUpperCase()}
 Goal: ${taskGoal}
 Target Entity ID: ${entity_id || 'Not specified'}
 Analyst Question: ${question || 'Provide standard security assessment.'}
-
+${historySection}
 ### PROVIDED CONTEXT:
 ${contextText}
 

@@ -446,13 +446,8 @@ const ThreatIOC = {
   }
 };
 
-<<<<<<< Updated upstream
 ThreatIOC.findById = ThreatIOC.getIOC;
 ThreatIOC.create = ThreatIOC.createIOC;
 ThreatIOC.upsertIOC = ThreatIOC.createIOC;
-=======
-ThreatIOC.create = ThreatIOC.createIOC;
-ThreatIOC.findById = ThreatIOC.getIOC;
->>>>>>> Stashed changes
 
 module.exports = ThreatIOC;

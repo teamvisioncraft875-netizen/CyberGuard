@@ -1,15 +1,29 @@
 const contextRetriever = require('./contextRetriever');
 const promptBuilder = require('./promptBuilder');
+const socSearchService = require('./socSearchService');
+const mitreReasoningService = require('./mitreReasoningService');
 const { log: auditLog } = require('../auditService');
 
 /**
  * CopilotService — Orchestrates Gemini Free Tier (Gemini Flash) AI Copilot assistance.
- * Features robust timeout handling and deterministic offline/fallback synthesis.
+ * Features multi-turn memory, SOC search integration, MITRE reasoning, and deterministic fallback.
  */
 class CopilotService {
   constructor() {
     this.model = 'gemini-2.5-flash';
     this.defaultTimeoutMs = parseInt(process.env.COPILOT_TIMEOUT_MS, 10) || 10000;
+    this.mockHandler = null;
+  }
+
+  /**
+   * Test helper to mock Gemini LLM responses without network calls.
+   */
+  setMockHandler(handler) {
+    this.mockHandler = handler;
+  }
+
+  resetMockHandler() {
+    this.mockHandler = null;
   }
 
   /**
@@ -21,9 +35,10 @@ class CopilotService {
    * @param {string} params.type - Task type
    * @param {string} [params.entity_id] - Entity identifier
    * @param {string} [params.question] - User question
+   * @param {Array} [params.history] - Recent message history for multi-turn sessions
    * @param {number} [params.timeoutMs] - Optional custom timeout
    * @param {Object} [client] - Optional DB client
-   * @returns {Promise<{ answer: string, sources: Array, tokens_used: number }>}
+   * @returns {Promise<{ answer: string, sources: Array, tokens_used: number, extra: Object|null }>}
    */
   async query({
     organization_id,
@@ -31,6 +46,8 @@ class CopilotService {
     type,
     entity_id = null,
     question = '',
+    history = [],
+    sessionActions = [],
     timeoutMs = null
   }, client = null) {
     if (!organization_id) {
@@ -38,6 +55,25 @@ class CopilotService {
     }
     if (!type || !promptBuilder.isValidTask(type)) {
       throw new Error(`CopilotService Error: Invalid or unsupported type "${type}"`);
+    }
+
+    let searchResult = null;
+    let mitreResult = null;
+
+    // Special handling for specialized copilot query types
+    if (type === 'soc_search') {
+      searchResult = await socSearchService.search({
+        organization_id,
+        user_id,
+        query: question || entity_id || 'show recent alerts'
+      }, client);
+    } else if (type === 'explain_mitre') {
+      const targetTechnique = entity_id || (question.match(/\b(T\d{4}(?:\.\d{3})?)\b/i)?.[1]) || 'T1021';
+      mitreResult = await mitreReasoningService.explainMapping({
+        technique: targetTechnique,
+        organization_id,
+        user_id
+      });
     }
 
     // 1. Retrieve tenant-scoped security context
@@ -49,22 +85,60 @@ class CopilotService {
       question
     }, client);
 
-    // 2. Build structured prompt
+    let mergedContextText = contextText;
+    if (sessionActions && sessionActions.length > 0) {
+      const actionSummaries = sessionActions.map(a => `- Action: ${a.action_type} (Status: ${a.status}, Approval: ${a.requires_approval ? 'Required' : 'None'}, Reason: ${a.reason || 'N/A'})`).join('\n');
+      mergedContextText += `\n\n--- RECORDED INVESTIGATION ACTIONS ---\n${actionSummaries}`;
+    }
+
+    // If search results exist, append to sources
+    if (searchResult && Array.isArray(searchResult.results)) {
+      searchResult.results.forEach(r => {
+        sources.push({ type: r.type, id: r.id, label: r.title || r.explanation || r.ioc_value || r.type });
+      });
+    }
+
+    // 2. Build structured prompt with history
     const { systemInstruction, userPrompt } = promptBuilder.buildPrompt({
       type,
       entity_id,
       question,
-      contextText,
-      sources
+      contextText: mergedContextText,
+      sources,
+      history
     });
 
-    // 3. Attempt Gemini API invocation with timeout and graceful fallback
-    const effectiveTimeout = timeoutMs || this.defaultTimeoutMs;
+    // 3. Check for Mock Handler (for testing)
     let answer = null;
     let tokensUsed = 0;
+
+    if (this.mockHandler && typeof this.mockHandler === 'function') {
+      const mockRes = await this.mockHandler({
+        systemInstruction,
+        userPrompt,
+        type,
+        question,
+        entity_id,
+        sources,
+        history,
+        sessionActions,
+        searchResult,
+        mitreResult
+      });
+      if (typeof mockRes === 'string') {
+        answer = mockRes;
+        tokensUsed = Math.ceil((userPrompt.length + answer.length) / 4);
+      } else if (mockRes && mockRes.answer) {
+        answer = mockRes.answer;
+        tokensUsed = mockRes.tokens_used || Math.ceil((userPrompt.length + answer.length) / 4);
+      }
+    }
+
+    // 4. Attempt Gemini API invocation if no mock and API key is present
+    const effectiveTimeout = timeoutMs || this.defaultTimeoutMs;
     const apiKey = process.env.GEMINI_API_KEY;
 
-    if (apiKey && apiKey.trim() && apiKey !== 'test-api-key') {
+    if (!answer && apiKey && apiKey.trim() && apiKey !== 'test-api-key') {
       try {
         const geminiResult = await this.callGemini({
           apiKey,
@@ -75,12 +149,11 @@ class CopilotService {
         answer = geminiResult.text;
         tokensUsed = geminiResult.tokensUsed;
       } catch (err) {
-        // Log API degradation and trigger graceful fallback
         console.warn(`[CopilotService] Gemini API call degraded (${err.message}). Using fallback synthesis.`);
       }
     }
 
-    // If Gemini was unavailable, timed out, or not configured, synthesize deterministic response
+    // 5. Fallback deterministic response synthesis
     if (!answer) {
       answer = this.synthesizeFallbackResponse({
         type,
@@ -88,13 +161,15 @@ class CopilotService {
         question,
         entity,
         contextText,
-        sources
+        sources,
+        history,
+        searchResult,
+        mitreResult
       });
-      // Estimate token usage (approx. 4 chars per token)
       tokensUsed = Math.ceil(((systemInstruction.length + userPrompt.length + answer.length) / 4));
     }
 
-    // 4. Audit Log COPILOT_QUERY (Never storing raw prompt content)
+    // 6. Audit Log COPILOT_QUERY (Never storing raw prompt content)
     await auditLog({
       organization_id,
       user_id,
@@ -112,7 +187,9 @@ class CopilotService {
     return {
       answer,
       sources,
-      tokens_used: tokensUsed
+      tokens_used: tokensUsed,
+      search_results: searchResult ? searchResult.results : undefined,
+      mitre_data: mitreResult || undefined
     };
   }
 
@@ -166,9 +243,18 @@ class CopilotService {
 
   /**
    * Deterministic fallback response synthesizer.
-   * Produces grounded, high-fidelity SOC analyst explanations when the remote LLM is unavailable.
    */
-  synthesizeFallbackResponse({ type, entity_id, question, entity, contextText, sources }) {
+  synthesizeFallbackResponse({
+    type,
+    entity_id,
+    question,
+    entity,
+    contextText,
+    sources,
+    history = [],
+    searchResult,
+    mitreResult
+  }) {
     switch (type) {
       case 'explain_alert': {
         const title = entity?.title || 'Security Alert';
@@ -241,6 +327,36 @@ class CopilotService {
           `• Overview: Current tenant intelligence baseline tracks elevated APT indicators across perimeter endpoints.\n` +
           `• Exposure: Active indicators mapped to command-and-control and lateral traversal.\n` +
           `• Risk Posture: High vigilance recommended for external-facing assets.`;
+      }
+
+      case 'soc_search': {
+        const count = searchResult?.count || 0;
+        const entityName = searchResult?.entity || 'records';
+        return `[SOC SEARCH RESULTS]\n` +
+          `• Found ${count} matching ${entityName} for query: "${question}"\n` +
+          (searchResult?.results || []).slice(0, 5).map((r, i) =>
+            `${i + 1}. [${r.type.toUpperCase()}] ${r.title || r.explanation || r.ioc_value || r.id} (${r.severity || r.risk_level || 'N/A'})`
+          ).join('\n');
+      }
+
+      case 'explain_mitre': {
+        if (mitreResult && mitreResult.recognized) {
+          return `[MITRE ATT&CK REASONING]\n` +
+            `• Technique: ${mitreResult.technique} — ${mitreResult.technique_name}\n` +
+            `• Tactic: ${mitreResult.tactic}\n` +
+            `• Confidence: ${(mitreResult.confidence * 100).toFixed(0)}%\n` +
+            `• Description: ${mitreResult.description}\n` +
+            `• Evidence Reasoning: ${mitreResult.reasoning}`;
+        }
+        return `[MITRE ATT&CK REASONING]\n` +
+          `Technique query processed. Grounded in CyberGuard MITRE dictionary.`;
+      }
+
+      case 'session_chat': {
+        const turns = history.length;
+        return `[INVESTIGATION COPILOT RESPONSE]\n` +
+          `Analysis for: "${question}". Current session has ${turns} prior messages.\n` +
+          `Based on current tenant context, threat indicators require ongoing monitoring. Recommended next steps include host artifact inspection and verification of containment status.`;
       }
 
       default:
