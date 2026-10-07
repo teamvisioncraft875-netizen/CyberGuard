@@ -1,0 +1,73 @@
+{
+  "schema_version": "1.0.0",
+  "model_id": "edr_behavior_v1.0.0",
+  "description": "Schema for CYBERGUARD EDR Behavior Detection V1",
+  "target_definition": {
+    "target": "evil",
+    "values": {
+      "1": "Malicious attack behavior (active attack / red-team execution)",
+      "0": "Benign host operation (normal baseline system behavior)"
+    }
+  },
+  "sample_unit": "PROCESS_EXECUTION_CHAIN_EVENT_STEP",
+  "operating_threshold": 0.03,
+  "input_features": {
+    "process_identity": [
+      "process_category",
+      "parent_process_category"
+    ],
+    "ancestry": [
+      "is_parent_init",
+      "is_parent_kernel",
+      "is_parent_known",
+      "is_spawned_by_sshd",
+      "is_spawned_by_shell",
+      "ancestry_depth"
+    ],
+    "privilege": [
+      "is_root",
+      "is_system_user",
+      "is_interactive_user",
+      "privilege_transition"
+    ],
+    "execution": [
+      "event_category",
+      "is_file_syscall",
+      "is_network_syscall",
+      "is_proc_ctrl_syscall",
+      "is_priv_cap_syscall",
+      "is_failed_syscall",
+      "args_num",
+      "return_val_sign"
+    ],
+    "behavioral_context": [
+      "cum_event_count",
+      "unique_syscall_count",
+      "failed_syscall_count",
+      "failed_syscall_ratio",
+      "syscall_diversity",
+      "recent_event_freq"
+    ]
+  },
+  "prohibited_features": [
+    "evil",
+    "sus",
+    "hostName",
+    "raw processId",
+    "raw parentProcessId",
+    "timestamp",
+    "stackAddresses",
+    "raw args",
+    "threadId",
+    "mountNamespace",
+    "MITRE ground-truth labels"
+  ],
+  "output_fields": {
+    "behavior_score": "float [0.0, 1.0]",
+    "malicious_probability": "float [0.0, 1.0]",
+    "classification": "string: 'malicious_behavior' | 'benign_behavior'",
+    "confidence": "float [0.0, 1.0]",
+    "behavior_summary": "string: advisory textual summary",
+    "observed_process_chain": "string: reconstructed lineage path"
+  }
+}

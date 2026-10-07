@@ -1,0 +1,91 @@
+{
+  "model_name": "correlation_classifier_v1.0.0",
+  "model_version": "v1.0.0",
+  "created_at": "2026-10-07T03:36:42.161418Z",
+  "framework": "scikit-learn",
+  "architecture": "RandomForestClassifier",
+  "dataset": "CTU-13 Benchmark (Scenarios 1, 2, 3, 4)",
+  "dataset_files": {
+    "capture20110810_botnet_42.binetflow.txt": "5e7bd25d1b74617f6d3f7ed6af63e8c820369094b6505c2cc4fa21cd5e8bc880",
+    "capture20110811_botnet_43.binetflow.txt": "9cd97a44198cc7613270a0a923ae43368487f65b1c5fb3300bd97bd55e5f9992",
+    "capture20110812_botnet_44.binetflow.txt": "e61c8f777f7575c8e47504a8f136e6f8b2c8e608a05a277ae16c5b33436bf653",
+    "capture20110815_botnet_45.binetflow.txt": "e8f55a5261e425895986faebdaecc396640c86e669322bacb0ec01255b4c2cc7"
+  },
+  "splits": {
+    "train_scenarios": [
+      "botnet_42",
+      "botnet_43"
+    ],
+    "val_scenarios": [
+      "botnet_45"
+    ],
+    "test_scenarios": [
+      "botnet_44"
+    ],
+    "train_pairs": 7000,
+    "val_pairs": 3000,
+    "test_pairs": 4000,
+    "split_type": "disjoint_capture_group_split",
+    "zero_leakage_verified": true
+  },
+  "feature_names": [
+    "dt_log",
+    "time_decay",
+    "same_src",
+    "same_dst",
+    "shared_ip",
+    "same_proto",
+    "same_dport",
+    "same_attack",
+    "both_attack",
+    "same_tactic",
+    "same_technique",
+    "tactic_affinity"
+  ],
+  "baseline_validation_metrics": {
+    "precision": 0.6625,
+    "recall": 1.0,
+    "f1": 0.797,
+    "roc_auc": 1.0,
+    "pr_auc": 1.0,
+    "false_corr_rate": 0.5093,
+    "missed_corr_rate": 0.0
+  },
+  "baseline_frozen_test_metrics": {
+    "precision": 0.6662,
+    "recall": 1.0,
+    "f1": 0.7997,
+    "roc_auc": 1.0,
+    "pr_auc": 1.0,
+    "false_corr_rate": 0.501,
+    "missed_corr_rate": 0.0
+  },
+  "validation_metrics": {
+    "precision": 1.0,
+    "recall": 0.9793,
+    "f1": 0.9896,
+    "roc_auc": 1.0,
+    "pr_auc": 1.0,
+    "false_corr_rate": 0.0,
+    "missed_corr_rate": 0.0207
+  },
+  "frozen_test_metrics": {
+    "precision": 1.0,
+    "recall": 0.9965,
+    "f1": 0.9982,
+    "roc_auc": 1.0,
+    "pr_auc": 1.0,
+    "false_corr_rate": 0.0,
+    "missed_corr_rate": 0.0035
+  },
+  "clustering_metrics": {
+    "bcubed_precision": 0.87,
+    "bcubed_recall": 0.2276,
+    "bcubed_f1": 0.3608,
+    "ground_truth_incident_clusters": 21,
+    "predicted_incident_clusters": 73
+  },
+  "artifact_sha256": "0967507df831d08bee01649e5ad35a79fcb96d3330a0c2f6e7f58291843af019",
+  "file_size_bytes": 169867,
+  "rollback_strategy": "RETAIN_CURRENT_V1"
+}

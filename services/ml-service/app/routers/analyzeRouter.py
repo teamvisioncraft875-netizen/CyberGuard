@@ -158,3 +158,67 @@ async def analyze_malware_endpoint(request: Request) -> UnifiedAnalysisResponse:
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
 
+
+from app.schemas.recommendation import (
+    IncidentRecommendationRequest,
+    IncidentRecommendationResponse,
+)
+from app.services.recommendation_engine import recommend_actions
+
+from app.schemas.correlation import (
+    CorrelationRequest,
+    CorrelationResponse,
+)
+from app.services.correlation_engine import correlate_events
+
+
+@router.post("/recommendation", response_model=IncidentRecommendationResponse, status_code=status.HTTP_200_OK)
+async def analyze_recommendation_endpoint(payload: IncidentRecommendationRequest) -> IncidentRecommendationResponse:
+    """Generate ranked response, containment, and investigation recommendations for an incident."""
+    return recommend_actions(payload)
+
+
+@router.post("/correlation", response_model=CorrelationResponse, status_code=status.HTTP_200_OK)
+async def analyze_correlation_endpoint(payload: CorrelationRequest) -> CorrelationResponse:
+    """Correlate security alerts/events into unified incident clusters using trained ML correlation model."""
+    return correlate_events(payload)
+
+
+from app.schemas.false_positive import (
+    FalsePositiveAnalysisRequest,
+    FalsePositiveAnalysisResponse,
+    BatchFalsePositiveRequest,
+    BatchFalsePositiveResponse,
+)
+from app.services.false_positive_engine import FalsePositiveEngine
+
+
+@router.post("/false-positive", response_model=FalsePositiveAnalysisResponse, status_code=status.HTTP_200_OK)
+async def analyze_false_positive_endpoint(payload: FalsePositiveAnalysisRequest) -> FalsePositiveAnalysisResponse:
+    """Analyze a security alert and estimate false-positive probability using trained host kernel model."""
+    engine = FalsePositiveEngine.get_instance()
+    return engine.analyze(payload)
+
+
+@router.post("/false-positive/batch", response_model=BatchFalsePositiveResponse, status_code=status.HTTP_200_OK)
+async def analyze_false_positive_batch_endpoint(payload: BatchFalsePositiveRequest) -> BatchFalsePositiveResponse:
+    """Batch evaluate security alerts for false-positive scoring."""
+    engine = FalsePositiveEngine.get_instance()
+    return engine.analyze_batch(payload)
+
+
+from app.schemas.edr_behavior import (
+    EDRBehaviorAnalysisRequest,
+    EDRBehaviorAnalysisResponse,
+)
+from app.services.edr_behavior_engine import EDRBehaviorEngine
+
+
+@router.post("/edr-behavior", response_model=EDRBehaviorAnalysisResponse, status_code=status.HTTP_200_OK)
+async def analyze_edr_behavior_endpoint(payload: EDRBehaviorAnalysisRequest) -> EDRBehaviorAnalysisResponse:
+    """Analyze endpoint process execution chain and syscall behavior using trained behavioral model."""
+    engine = EDRBehaviorEngine.get_instance()
+    return engine.analyze(payload)
+
+
+

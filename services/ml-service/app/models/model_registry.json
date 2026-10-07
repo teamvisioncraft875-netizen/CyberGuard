@@ -193,6 +193,168 @@
         "backup_operating_threshold": 0.5000,
         "notes": "Copy deepfake_audio_classifier.joblib.bak_v1 to deepfake_audio_classifier.joblib and set operating threshold to 0.5000 to revert to v1.0.0 LogisticRegression baseline."
       }
+    },
+    "incident_recommendation": {
+      "engine_name": "Incident Response Action Recommendation Engine",
+      "model_version": "v1.0.0",
+      "architecture": "TfidfVectorizer + RandomForestClassifier",
+      "artifact_path": "services/ml-service/app/models/recommendation/recommendation_classifier_v1.0.0.joblib",
+      "artifact_sha256": "ab7344dd10cb62b14358f516ab628dfb5bf57181fe7f3a1119f5c5abe029e01c",
+      "file_size_bytes": 311330,
+      "file_size_mb": 0.30,
+      "companion_artifacts": [
+        {
+          "name": "recommendation_metadata",
+          "artifact_path": "services/ml-service/app/models/recommendation/recommendation_metadata.json"
+        },
+        {
+          "name": "recommendation_schema",
+          "artifact_path": "services/ml-service/app/models/recommendation/recommendation_schema.json"
+        }
+      ],
+      "operating_threshold": 0.5000,
+      "framework": "scikit-learn",
+      "runtime_loader": "joblib.load",
+      "production_status": "ACTIVE_PRODUCTION",
+      "dataset_sha256": "593c7f8f1e55843da2882ffa36564967e5a6bddf6f2bd45d54edd0cc5cc25083",
+      "metrics": {
+        "top1_accuracy": 0.8519,
+        "top3_accuracy": 1.0000,
+        "top5_accuracy": 1.0000,
+        "mrr": 0.9259,
+        "ndcg_at_3": 0.9453,
+        "ndcg_at_5": 0.9453,
+        "macro_f1": 0.8667,
+        "weighted_f1": 0.8420,
+        "mean_brier_score": 0.0485
+      },
+      "rollback": {
+        "strategy": "RETAIN_CURRENT_V1",
+        "notes": "Initial authoritative production release v1.0.0. Zero rollback required."
+      }
+    },
+    "incident_correlation": {
+      "engine_name": "Incident Correlation & Alert Clustering Engine",
+      "model_version": "v1.0.0",
+      "architecture": "RandomForestClassifier",
+      "artifact_path": "services/ml-service/app/models/correlation/correlation_classifier_v1.0.0.joblib",
+      "artifact_sha256": "0967507df831d08bee01649e5ad35a79fcb96d3330a0c2f6e7f58291843af019",
+      "file_size_bytes": 169867,
+      "file_size_mb": 0.16,
+      "companion_artifacts": [
+        {
+          "name": "correlation_metadata",
+          "artifact_path": "services/ml-service/app/models/correlation/correlation_metadata.json"
+        },
+        {
+          "name": "correlation_schema",
+          "artifact_path": "services/ml-service/app/models/correlation/correlation_schema.json"
+        }
+      ],
+      "operating_threshold": 0.5000,
+      "framework": "scikit-learn",
+      "runtime_loader": "joblib.load",
+      "production_status": "ACTIVE_PRODUCTION",
+      "dataset": "CTU-13 Benchmark (Scenarios 1, 2, 3, 4)",
+      "metrics": {
+        "pairwise_precision": 1.0000,
+        "pairwise_recall": 0.9965,
+        "pairwise_f1": 0.9982,
+        "roc_auc": 1.0000,
+        "pr_auc": 1.0000,
+        "false_correlation_rate": 0.0000,
+        "missed_correlation_rate": 0.0035,
+        "bcubed_precision": 0.8700,
+        "bcubed_recall": 0.2276,
+        "bcubed_f1": 0.3608
+      },
+      "rollback": {
+        "strategy": "RETAIN_CURRENT_V1",
+        "notes": "Initial authoritative production release v1.0.0. Zero rollback required."
+      }
+    },
+    "false_positive": {
+      "engine_name": "False Positive Detection & Alert Scoring Engine",
+      "model_version": "v1.0.0",
+      "architecture": "HistGradientBoostingClassifier",
+      "artifact_path": "services/ml-service/app/models/false_positive/false_positive_classifier_v1.0.0.joblib",
+      "artifact_sha256": "1748df07643b69628c677277f560e550bc0ff8f1ba94e75dbd3651a46e7943f9",
+      "file_size_bytes": 48384,
+      "file_size_mb": 0.05,
+      "companion_artifacts": [
+        {
+          "name": "false_positive_metadata",
+          "artifact_path": "services/ml-service/app/models/false_positive/false_positive_metadata.json"
+        },
+        {
+          "name": "false_positive_schema",
+          "artifact_path": "services/ml-service/app/models/false_positive/false_positive_schema.json"
+        }
+      ],
+      "operating_threshold": 0.7500,
+      "framework": "scikit-learn",
+      "runtime_loader": "joblib.load",
+      "production_status": "ACTIVE_PRODUCTION",
+      "dataset": "BETH Host Telemetry Benchmark",
+      "metrics": {
+        "accuracy": 0.9688,
+        "balanced_accuracy": 0.8525,
+        "threat_preservation_recall": 0.9897,
+        "threat_precision": 0.9769,
+        "threat_f1": 0.9833,
+        "fp_recall": 0.7154,
+        "fp_precision": 0.8509,
+        "fp_f1": 0.7773,
+        "roc_auc": 0.7243,
+        "pr_auc": 0.6360,
+        "brier_score": 0.0313
+      },
+      "rollback": {
+        "strategy": "RETAIN_CURRENT_V1",
+        "notes": "Initial authoritative production release v1.0.0. Zero rollback required."
+      }
+    },
+    "edr_behavior": {
+      "engine_name": "EDR Behavior Detection & Process-Tree Engine",
+      "model_version": "v1.0.0",
+      "architecture": "RandomForestClassifier",
+      "artifact_path": "services/ml-service/app/models/edr_behavior/edr_behavior_classifier_v1.0.0.joblib",
+      "artifact_sha256": "473ad051d93b62a890187affa45160fedc1ff0a4a9630634e2bf85d40beda40d",
+      "file_size_bytes": 149463,
+      "file_size_mb": 0.14,
+      "companion_artifacts": [
+        {
+          "name": "edr_behavior_metadata",
+          "artifact_path": "services/ml-service/app/models/edr_behavior/edr_behavior_metadata.json"
+        },
+        {
+          "name": "edr_behavior_schema",
+          "artifact_path": "services/ml-service/app/models/edr_behavior/edr_behavior_schema.json"
+        }
+      ],
+      "operating_threshold": 0.0300,
+      "framework": "scikit-learn",
+      "runtime_loader": "joblib.load",
+      "production_status": "ACTIVE_PRODUCTION",
+      "dataset": "BETH Host Telemetry Benchmark",
+      "metrics": {
+        "accuracy": 0.9669,
+        "balanced_accuracy": 0.9310,
+        "precision": 0.9767,
+        "recall": 0.9841,
+        "specificity": 0.8780,
+        "f1": 0.9803,
+        "f2": 0.9826,
+        "roc_auc": 0.8749,
+        "pr_auc": 0.9500,
+        "brier_score": 0.3139,
+        "unseen_process_recall": 0.9968
+      },
+      "rollback": {
+        "strategy": "RETAIN_CURRENT_V1",
+        "notes": "Initial authoritative production release v1.0.0. Zero rollback required."
+      }
     }
   }
 }
+

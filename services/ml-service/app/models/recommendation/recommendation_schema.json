@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "input_features": [
+    "threat_type",
+    "severity",
+    "target_asset",
+    "detection_source",
+    "initial_vector",
+    "mitre_tactics",
+    "mitre_techniques",
+    "tags"
+  ],
+  "action_classes": [
+    "block_domain",
+    "block_ip",
+    "isolate_device",
+    "quarantine_email",
+    "revoke_session"
+  ],
+  "ranking_method": "Predictive probability distribution over canonical incident-response actions",
+  "safety_guardrails": {
+    "destructive_actions_require_approval": true,
+    "false_positive_score_discount_enabled": true
+  }
+}
