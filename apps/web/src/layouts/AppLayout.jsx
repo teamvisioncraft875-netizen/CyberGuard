@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Flame,
   Bot,
+  Zap,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { useSocket } from '../hooks/useSocket';
@@ -142,6 +143,13 @@ export function AppLayout({
         icon: Bot,
         adminOnly: true,
       },
+      {
+        id: 'ddos',
+        path: '/ddos',
+        label: 'DDoS Monitor',
+        icon: Zap,
+        adminOnly: true,
+      },
       { id: 'guardian', path: '/guardian', label: 'Guardian Mode', icon: ShieldCheck },
       { id: 'settings', path: '/settings', label: 'Settings', icon: Sliders },
     ];
@@ -155,7 +163,7 @@ export function AppLayout({
       ? (navigationItems.find((i) => i.id === itemOrId)?.path || (itemOrId === 'dashboard' ? '/' : `/${itemOrId}`))
       : itemOrId.path;
 
-    if ((id === 'attack-surface' || id === 'firewall' || id === 'agents') && !isAdmin) {
+    if ((id === 'attack-surface' || id === 'firewall' || id === 'agents' || id === 'ddos') && !isAdmin) {
       return;
     }
 
