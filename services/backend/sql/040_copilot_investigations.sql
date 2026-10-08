@@ -15,11 +15,12 @@ CREATE TABLE IF NOT EXISTS public.copilot_investigations (
     recommendations JSONB NOT NULL DEFAULT '[]'::jsonb,
     graph JSONB NOT NULL DEFAULT '{}'::jsonb,
     metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
-    severity VARCHAR(20) DEFAULT 'medium' CHECK (severity IN ('info', 'low', 'medium', 'high', 'critical')),
+    severity VARCHAR(20) DEFAULT 'medium',
     confidence NUMERIC(5, 2) DEFAULT 0.90,
     created_by UUID REFERENCES public.users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT chk_copilot_investigations_severity CHECK (severity IN ('info', 'low', 'medium', 'high', 'critical'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_copilot_investigations_session ON public.copilot_investigations(session_id);

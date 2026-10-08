@@ -1,11 +1,101 @@
 const db = require('../../config/db');
+const redis = require('../../config/redis');
 const { log: auditLog } = require('../auditService');
+
+// In-memory fallback cache for baseline context when Redis is offline
+const baselineMemoryCache = new Map();
 
 /**
  * Context Retriever — Gathers organization-scoped security context for RAG copilot queries.
  * Enforces strict multi-tenant boundaries and limits token bloat.
  */
 class ContextRetriever {
+  /**
+   * Retrieves baseline tenant context (top IOCs, active playbooks, recent cases)
+   * cached under copilot:baseline_context:{orgId} with a 300-second TTL.
+   */
+  async getBaselineContext(organization_id, dbClient) {
+    const cacheKey = `copilot:baseline_context:${organization_id}`;
+
+    // 1. Try Redis cache
+    try {
+      const cached = await redis.get(cacheKey);
+      if (cached) {
+        return typeof cached === 'string' ? JSON.parse(cached) : cached;
+      }
+    } catch (err) {
+      // Graceful fallback on Redis error
+    }
+
+    // 2. Try in-memory fallback
+    const now = Date.now();
+    const memEntry = baselineMemoryCache.get(cacheKey);
+    if (memEntry && memEntry.expiresAt > now) {
+      return memEntry.data;
+    }
+
+    // 3. Parallel fetch from database
+    const [iocRows, playbookRows, caseRows] = await Promise.all([
+      dbClient.query(
+        `SELECT id, ioc_type, ioc_value, risk_score, threat_actor, malware_family
+         FROM public.threat_iocs
+         WHERE organization_id = $1
+         ORDER BY risk_score DESC LIMIT 5;`,
+        [organization_id]
+      ).catch(() => ({ rows: [] })),
+
+      dbClient.query(
+        `SELECT id, name, description, trigger_type, enabled
+         FROM public.soar_playbooks
+         WHERE organization_id = $1 AND enabled = true
+         ORDER BY created_at DESC LIMIT 5;`,
+        [organization_id]
+      ).catch(() => ({ rows: [] })),
+
+      dbClient.query(
+        `SELECT id, title, severity, status, threat_intel_findings
+         FROM public.soar_cases
+         WHERE organization_id = $1
+         ORDER BY created_at DESC LIMIT 3;`,
+        [organization_id]
+      ).catch(() => ({ rows: [] }))
+    ]);
+
+    const baseline = {
+      iocs: iocRows.rows || [],
+      playbooks: playbookRows.rows || [],
+      cases: caseRows.rows || []
+    };
+
+    // 4. Save to Redis (TTL: 300s)
+    try {
+      await redis.set(cacheKey, JSON.stringify(baseline), { EX: 300 });
+    } catch (err) {
+      // Ignore cache write failure
+    }
+
+    // 5. Save to in-memory fallback
+    baselineMemoryCache.set(cacheKey, {
+      data: baseline,
+      expiresAt: now + 300 * 1000
+    });
+
+    return baseline;
+  }
+
+  /**
+   * Clears the baseline context cache for a specific tenant.
+   */
+  async clearBaselineCache(organization_id) {
+    const cacheKey = `copilot:baseline_context:${organization_id}`;
+    baselineMemoryCache.delete(cacheKey);
+    try {
+      await redis.del(cacheKey);
+    } catch (err) {
+      // Ignore
+    }
+  }
+
   /**
    * Retrieves security context based on query type and optional entity_id.
    *
@@ -118,17 +208,12 @@ class ContextRetriever {
       }
     }
 
-    // 2. Correlate Related Context (IOCs, Cases, Playbooks)
+    // 2. Correlate Related Context (IOCs, Cases, Playbooks) using cached baseline context (300s TTL)
+    const baseline = await this.getBaselineContext(organization_id, dbClient);
+
     // Related Threat IOCs
-    const iocRows = await dbClient.query(
-      `SELECT id, ioc_type, ioc_value, risk_score, threat_actor, malware_family
-       FROM public.threat_iocs
-       WHERE organization_id = $1
-       ORDER BY risk_score DESC LIMIT 5;`,
-      [organization_id]
-    );
-    if (iocRows.rows.length > 0 && type !== 'summarize_ioc') {
-      const iocSummaries = iocRows.rows.map(i => {
+    if (baseline.iocs.length > 0 && type !== 'summarize_ioc') {
+      const iocSummaries = baseline.iocs.map(i => {
         sources.push({ type: 'threat_ioc', id: i.id, label: `${i.ioc_type}:${i.ioc_value}` });
         return `• ${i.ioc_type}: ${i.ioc_value} (Risk: ${i.risk_score}, Actor: ${i.threat_actor || 'N/A'}, Family: ${i.malware_family || 'N/A'})`;
       }).join('\n');
@@ -136,15 +221,8 @@ class ContextRetriever {
     }
 
     // Related SOAR Playbooks (crucial for recommend_playbook)
-    const playbookRows = await dbClient.query(
-      `SELECT id, name, description, trigger_type, enabled
-       FROM public.soar_playbooks
-       WHERE organization_id = $1 AND enabled = true
-       ORDER BY created_at DESC LIMIT 5;`,
-      [organization_id]
-    ).catch(() => ({ rows: [] }));
-    if (playbookRows.rows.length > 0) {
-      const pbSummaries = playbookRows.rows.map(p => {
+    if (baseline.playbooks.length > 0) {
+      const pbSummaries = baseline.playbooks.map(p => {
         sources.push({ type: 'soar_playbook', id: p.id, label: p.name });
         return `• [Playbook ${p.id}] "${p.name}" (Trigger: ${p.trigger_type}): ${p.description || 'No description'}`;
       }).join('\n');
@@ -153,15 +231,8 @@ class ContextRetriever {
 
     // Related SOAR Cases (for investigations and notes)
     if (['investigation_steps', 'generate_analyst_note', 'explain_incident'].includes(type)) {
-      const caseRows = await dbClient.query(
-        `SELECT id, title, severity, status, threat_intel_findings
-         FROM public.soar_cases
-         WHERE organization_id = $1
-         ORDER BY created_at DESC LIMIT 3;`,
-        [organization_id]
-      ).catch(() => ({ rows: [] }));
-      if (caseRows.rows.length > 0) {
-        const caseSummaries = caseRows.rows.map(c => {
+      if (baseline.cases.length > 0) {
+        const caseSummaries = baseline.cases.map(c => {
           sources.push({ type: 'soar_case', id: c.id, label: c.title });
           return `• [Case ${c.id}] "${c.title}" (${c.severity}/${c.status}): Findings=${JSON.stringify(c.threat_intel_findings || {})}`;
         }).join('\n');
