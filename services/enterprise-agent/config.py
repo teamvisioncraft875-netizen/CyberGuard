@@ -75,7 +75,7 @@ def ensure_creds_file_permissions(file_path: Path) -> None:
 
 
 # Default configuration constants
-DEFAULT_BACKEND_URL = "http://localhost:3000"
+DEFAULT_BACKEND_URL = "http://localhost:5000"
 DEFAULT_AGENT_VERSION = "1.0.0"
 DEFAULT_HEARTBEAT_INTERVAL = 60
 DEFAULT_TELEMETRY_INTERVAL = 60

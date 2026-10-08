@@ -66,7 +66,7 @@ Environment variables can be provided via shell exports or a local `.env` file:
 
 | Variable | Default | Description |
 | :--- | :--- | :--- |
-| `CYBERGUARD_BACKEND_URL` | `http://localhost:3000` | Target CYBERGUARD gateway endpoint |
+| `CYBERGUARD_BACKEND_URL` | `http://localhost:5000` | Target CYBERGUARD gateway endpoint |
 | `ENROLLMENT_TOKEN` | *None* | One-time token issued by admin for initial host enrollment |
 | `AGENT_NAME` | `socket.gethostname()` | Custom device name identifier |
 | `AGENT_VERSION` | `1.0.0` | Agent release version reported in heartbeats |
@@ -87,7 +87,7 @@ pip install -r requirements.txt
 ### 2. Configure Environment
 Create a `.env` file in `services/enterprise-agent/`:
 ```bash
-CYBERGUARD_BACKEND_URL=http://localhost:3000
+CYBERGUARD_BACKEND_URL=http://localhost:5000
 ENROLLMENT_TOKEN=enroll_your_token_from_admin
 ```
 
