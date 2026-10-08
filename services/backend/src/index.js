@@ -26,6 +26,7 @@ const threatIntelRoutes = require('./routes/threatIntelRoutes');
 const threatIntelAnalyticsRoutes = require('./routes/threatIntelAnalyticsRoutes');
 const siemRoutes = require('./routes/siemRoutes');
 const soarRoutes = require('./routes/soarRoutes');
+const copilotRoutes = require('./routes/copilotRoutes');
 
 const { checkLimiter, generalLimiter, searchLimiter } = require('./middlewares/rateLimiter');
 
@@ -97,6 +98,7 @@ v1Router.use('/threat-intel/analytics', generalLimiter, threatIntelAnalyticsRout
 v1Router.use('/threat-intel', generalLimiter, threatIntelRoutes);
 v1Router.use('/siem', generalLimiter, siemRoutes);
 v1Router.use('/soar', generalLimiter, soarRoutes);
+v1Router.use('/copilot', generalLimiter, copilotRoutes);
 
 // Mount versioned and root API routers
 app.use('/api/v1', v1Router);
