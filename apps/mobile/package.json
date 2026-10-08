@@ -8,7 +8,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "tunnel": "expo start --tunnel"
+    "tunnel": "expo start --tunnel",
+    "test": "node -r sucrase/register --test 'test/**/*.test.js'"
   },
   "dependencies": {
     "@react-navigation/native": "^6.1.18",

@@ -15,7 +15,8 @@
     "dev:mobile:tunnel": "npm run tunnel --workspace=apps/mobile",
     "dev:mobile:web": "npm run web --workspace=apps/mobile",
     "build:web": "npm run build --workspace=apps/web",
-    "start:backend": "npm start --workspace=services/backend"
+    "start:backend": "npm start --workspace=services/backend",
+    "test:mobile": "npm test --workspace=apps/mobile"
   },
   "keywords": [
     "cybersecurity",
