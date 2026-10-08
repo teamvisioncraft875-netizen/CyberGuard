@@ -57,6 +57,89 @@ export const incidentService = {
     const data = await apiClient.patch(`/actions/${actionId}`, { action_status });
     return data?.action || data;
   },
+
+  /**
+   * Retrieve full investigation workspace context
+   * GET /api/v1/incidents/:id/workspace
+   */
+  async getWorkspace(id) {
+    const data = await apiClient.get(`/incidents/${id}/workspace`);
+    return data;
+  },
+
+  /**
+   * Retrieve attack chain timeline and progression
+   * GET /api/v1/incidents/:id/attack-chain
+   */
+  async getAttackChain(id) {
+    const data = await apiClient.get(`/incidents/${id}/attack-chain`);
+    return data;
+  },
+
+  /**
+   * Retrieve attack chain graph visualization payload
+   * GET /api/v1/incidents/:id/attack-chain/graph
+   */
+  async getAttackChainGraph(id) {
+    const data = await apiClient.get(`/incidents/${id}/attack-chain/graph`);
+    return data;
+  },
+
+  /**
+   * Retrieve correlated / related incidents
+   * GET /api/v1/incidents/:id/related
+   */
+  async getRelatedIncidents(id) {
+    const data = await apiClient.get(`/incidents/${id}/related`);
+    return data;
+  },
+
+  /**
+   * Append an analyst note to the incident investigation
+   * POST /api/v1/incidents/:id/notes
+   */
+  async addNote(id, note) {
+    const data = await apiClient.post(`/incidents/${id}/notes`, { note });
+    return data?.note || data;
+  },
+
+  /**
+   * Assign incident to an analyst
+   * POST /api/v1/incidents/:id/assign
+   */
+  async assignIncident(id, user_id) {
+    const data = await apiClient.post(`/incidents/${id}/assign`, { user_id });
+    return data?.incident || data;
+  },
+
+  /**
+   * Escalate incident to P1 priority
+   * POST /api/v1/incidents/:id/escalate
+   */
+  async escalateIncident(id, reason) {
+    const payload = reason ? { reason } : {};
+    const data = await apiClient.post(`/incidents/${id}/escalate`, payload);
+    return data?.incident || data;
+  },
+
+  /**
+   * Mark incident as resolved
+   * POST /api/v1/incidents/:id/resolve
+   */
+  async resolveIncident(id) {
+    const data = await apiClient.post(`/incidents/${id}/resolve`, {});
+    return data?.incident || data;
+  },
+
+  /**
+   * Reopen a resolved incident to open status
+   * POST /api/v1/incidents/:id/reopen
+   */
+  async reopenIncident(id, reason) {
+    const payload = reason ? { reason } : {};
+    const data = await apiClient.post(`/incidents/${id}/reopen`, payload);
+    return data?.incident || data;
+  },
 };
 
 export default incidentService;
