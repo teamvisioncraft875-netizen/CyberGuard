@@ -208,6 +208,147 @@ class IocInvestigationService {
 
     return result;
   }
+
+  /**
+   * Conducts batch IOC investigation in a single database round-trip (eliminating N+1 queries).
+   */
+  async investigateBatch({ iocs, organization_id, user_id = null }, client = null) {
+    if (!organization_id) throw new Error('IocInvestigationService requires organization_id');
+    if (!Array.isArray(iocs) || iocs.length === 0) {
+      return {
+        threat_intel: [],
+        related_alerts: [],
+        related_incidents: [],
+        affected_assets: [],
+        affected_users: [],
+        mitre: []
+      };
+    }
+
+    const dbClient = client || db;
+    const cleanIocs = Array.from(new Set(iocs.map(i => String(i || '').trim()).filter(Boolean)));
+    if (cleanIocs.length === 0) {
+      return {
+        threat_intel: [],
+        related_alerts: [],
+        related_incidents: [],
+        affected_assets: [],
+        affected_users: [],
+        mitre: []
+      };
+    }
+
+    const lowerIocs = cleanIocs.map(i => i.toLowerCase());
+
+    // 1. Single vectorized query for all threat IOC records
+    const iocRes = await dbClient.query(
+      `SELECT * FROM public.threat_iocs 
+       WHERE organization_id = $1 AND LOWER(ioc_value) = ANY($2::text[]);`,
+      [organization_id, lowerIocs]
+    ).catch(() => ({ rows: [] }));
+
+    const threatIntelList = iocRes.rows.map(r => ({
+      found: true,
+      ioc_type: r.ioc_type,
+      risk_score: r.risk_score,
+      confidence: r.confidence,
+      threat_actor: r.threat_actor,
+      malware_family: r.malware_family,
+      campaign_name: r.campaign_name,
+      tags: r.tags || [],
+      first_seen: r.first_seen,
+      last_seen: r.last_seen
+    }));
+
+    // 2. Batch SIEM Alerts query across all clean IOCs
+    const alertParams = [organization_id];
+    const alertClauses = [];
+    for (const ioc of cleanIocs) {
+      alertParams.push(`%${ioc}%`);
+      const idx = alertParams.length;
+      alertClauses.push(`(metadata::text ILIKE $${idx} OR title ILIKE $${idx})`);
+    }
+
+    let relatedAlerts = [];
+    if (alertClauses.length > 0) {
+      const alertSql = `
+        SELECT id, title, severity, status, mitre_technique, metadata, created_at
+        FROM public.siem_alerts
+        WHERE organization_id = $1 AND (${alertClauses.join(' OR ')})
+        ORDER BY created_at DESC
+        LIMIT 50;
+      `;
+      const alertRes = await dbClient.query(alertSql, alertParams).catch(() => ({ rows: [] }));
+      relatedAlerts = alertRes.rows || [];
+    }
+
+    // 3. Batch Incidents query across all clean IOCs
+    const incParams = [organization_id];
+    const incClauses = [];
+    for (const ioc of cleanIocs) {
+      incParams.push(`%${ioc}%`);
+      const idx = incParams.length;
+      incClauses.push(`(fingerprint ILIKE $${idx} OR explanation ILIKE $${idx})`);
+    }
+
+    let relatedIncidents = [];
+    if (incClauses.length > 0) {
+      const incSql = `
+        SELECT id, threat_type, risk_level, risk_score, explanation, fingerprint, device_id, user_id, status, created_at
+        FROM public.incidents
+        WHERE organization_id = $1 AND (${incClauses.join(' OR ')})
+        ORDER BY created_at DESC
+        LIMIT 50;
+      `;
+      const incRes = await dbClient.query(incSql, incParams).catch(() => ({ rows: [] }));
+      relatedIncidents = incRes.rows || [];
+    }
+
+    // 4. Aggregate Affected Assets, Users, and MITRE techniques in one pass
+    const assetSet = new Set();
+    relatedIncidents.forEach(inc => {
+      if (inc.device_id) assetSet.add(String(inc.device_id));
+    });
+    relatedAlerts.forEach(al => {
+      const meta = al.metadata || {};
+      if (meta.hostname) assetSet.add(String(meta.hostname));
+      if (meta.host) assetSet.add(String(meta.host));
+      if (meta.source_ip && !cleanIocs.includes(meta.source_ip)) assetSet.add(String(meta.source_ip));
+      if (meta.dest_ip && !cleanIocs.includes(meta.dest_ip)) assetSet.add(String(meta.dest_ip));
+    });
+
+    const userSet = new Set();
+    relatedIncidents.forEach(inc => {
+      if (inc.user_id) userSet.add(String(inc.user_id));
+    });
+    relatedAlerts.forEach(al => {
+      const meta = al.metadata || {};
+      if (meta.username) userSet.add(String(meta.username));
+      if (meta.user) userSet.add(String(meta.user));
+      if (meta.email) userSet.add(String(meta.email));
+    });
+
+    const mitreSet = new Set();
+    relatedAlerts.forEach(al => {
+      if (al.mitre_technique) mitreSet.add(al.mitre_technique.trim().toUpperCase());
+    });
+    for (const ti of threatIntelList) {
+      if (Array.isArray(ti.tags)) {
+        ti.tags.forEach(t => {
+          if (/^T\d{4}/i.test(t)) mitreSet.add(t.toUpperCase());
+        });
+      }
+    }
+
+    return {
+      threat_intel: threatIntelList,
+      related_alerts: relatedAlerts,
+      related_incidents: relatedIncidents,
+      affected_assets: Array.from(assetSet).map(a => ({ asset_identifier: a })),
+      affected_users: Array.from(userSet).map(u => ({ user_identifier: u })),
+      mitre: Array.from(mitreSet).map(m => ({ technique: m }))
+    };
+  }
 }
 
 module.exports = new IocInvestigationService();

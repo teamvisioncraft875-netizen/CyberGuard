@@ -84,24 +84,34 @@ class AutonomousInvestigationService {
       primaryTarget = { type: 'target', id: alert_id || incident_id || case_id || ioc, data: {} };
     }
 
-    // 2. Pivot Threat Intelligence on IOCs
+    // 2. Pivot Threat Intelligence on IOCs (Vectorized batch lookup to eliminate N+1 queries)
     let threatIntelResults = [];
-    for (const observable of initialIocs) {
-      const pivotRes = await iocInvestigationService.investigate({
-        ioc: observable,
+    if (initialIocs.length > 0) {
+      const batchPivot = await iocInvestigationService.investigateBatch({
+        iocs: initialIocs,
         organization_id,
         user_id
       }, dbClient).catch(() => null);
 
-      if (pivotRes) {
-        if (pivotRes.threat_intel && pivotRes.threat_intel.found) {
-          threatIntelResults.push(pivotRes.threat_intel);
+      if (batchPivot) {
+        if (Array.isArray(batchPivot.threat_intel)) {
+          threatIntelResults = batchPivot.threat_intel;
         }
-        pivotRes.related_alerts.forEach(a => initialAlerts.push(a));
-        pivotRes.related_incidents.forEach(i => initialIncidents.push(i));
-        pivotRes.affected_assets.forEach(a => initialAssets.push(a.asset_identifier));
-        pivotRes.affected_users.forEach(u => initialUsers.push(u.user_identifier));
-        pivotRes.mitre.forEach(m => initialMitre.push(m.technique));
+        if (Array.isArray(batchPivot.related_alerts)) {
+          batchPivot.related_alerts.forEach(a => initialAlerts.push(a));
+        }
+        if (Array.isArray(batchPivot.related_incidents)) {
+          batchPivot.related_incidents.forEach(i => initialIncidents.push(i));
+        }
+        if (Array.isArray(batchPivot.affected_assets)) {
+          batchPivot.affected_assets.forEach(a => initialAssets.push(a.asset_identifier));
+        }
+        if (Array.isArray(batchPivot.affected_users)) {
+          batchPivot.affected_users.forEach(u => initialUsers.push(u.user_identifier));
+        }
+        if (Array.isArray(batchPivot.mitre)) {
+          batchPivot.mitre.forEach(m => initialMitre.push(m.technique));
+        }
       }
     }
 
@@ -123,15 +133,39 @@ class AutonomousInvestigationService {
     const finalAssets = Array.from(new Set(initialAssets)).map(a => ({ asset_identifier: a }));
     const finalMitre = Array.from(new Set(initialMitre)).map(t => ({ technique: t.toUpperCase() }));
 
-    // 3. Attack Chains
-    const chainRes = await dbClient.query(
-      `SELECT * FROM public.attack_chain_snapshots WHERE organization_id = $1 ORDER BY created_at DESC LIMIT 5;`,
-      [organization_id]
-    );
-    const attackChains = chainRes.rows.filter(c => {
-      const s = JSON.stringify(c);
-      return finalIocs.some(i => s.includes(i)) || finalIncidents.some(inc => inc.id === c.root_incident_id);
-    });
+    // 3. Attack Chains (Filtered via SQL and targeted properties rather than serializing whole graphs)
+    let attackChains = [];
+    const rootIncidentIds = finalIncidents.map(inc => inc.id).filter(Boolean);
+    if (rootIncidentIds.length > 0) {
+      const chainRes = await dbClient.query(
+        `SELECT id, root_incident_id, chain_length, confidence_score, timeline, created_at
+         FROM public.attack_chain_snapshots
+         WHERE organization_id = $1 AND root_incident_id = ANY($2::uuid[])
+         ORDER BY created_at DESC
+         LIMIT 5;`,
+        [organization_id, rootIncidentIds]
+      );
+      attackChains = chainRes.rows;
+    } else {
+      const chainRes = await dbClient.query(
+        `SELECT id, root_incident_id, chain_length, confidence_score, timeline, created_at
+         FROM public.attack_chain_snapshots
+         WHERE organization_id = $1
+         ORDER BY created_at DESC
+         LIMIT 5;`,
+        [organization_id]
+      );
+      if (finalIocs.length > 0) {
+        attackChains = chainRes.rows.filter(c => {
+          if (!Array.isArray(c.timeline)) return false;
+          return c.timeline.some(step => {
+            if (!step) return false;
+            const indicators = step.indicators || step.iocs || [step.source, step.destination, step.entity];
+            return finalIocs.some(i => indicators.includes(i));
+          });
+        });
+      }
+    }
 
     // 4. Generate Investigation Graph
     const graph = investigationGraphService.buildGraphFromEntities({

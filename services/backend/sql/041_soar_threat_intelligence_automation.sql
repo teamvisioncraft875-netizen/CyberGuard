@@ -1,5 +1,5 @@
 -- =========================================================================
--- CYBERGUARD DATABASE MIGRATION 038: SOAR THREAT INTEL AUTOMATION & RESPONSE OPTIMIZATION
+-- CYBERGUARD DATABASE MIGRATION 041: SOAR THREAT INTEL AUTOMATION & RESPONSE OPTIMIZATION
 -- =========================================================================
 
 -- 1. SOAR RESPONSE RECOMMENDATIONS TABLE

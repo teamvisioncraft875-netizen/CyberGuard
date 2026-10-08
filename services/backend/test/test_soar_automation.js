@@ -366,14 +366,25 @@ async function runSoarAutomationSuite() {
       createdApprovalId = approval.id;
     });
 
-    await testAsync('4.2 Non-admin analyst approval attempt returns 403 Forbidden', async () => {
+    await testAsync('4.2 Non-admin analyst approval attempt on L2 returns 403 Forbidden', async () => {
+      // Escalate approval to L2 (under Phase 2 tiered approvals, analyst is only authorized for L1)
+      const escRes = await fetch(`${baseUrl}/api/v1/soar/approvals/${createdApprovalId}/escalate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${tokenAdminA}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ target_level: 'L2', reason: 'Escalating for senior authorization' })
+      });
+      assert.strictEqual(escRes.status, 200);
+
       const res = await fetch(`${baseUrl}/api/v1/soar/approvals/${createdApprovalId}/approve`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${tokenAnalystA}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ reason: 'Analyst attempting unauthorized approval' })
+        body: JSON.stringify({ reason: 'Analyst attempting unauthorized approval on L2 request' })
       });
       assert.strictEqual(res.status, 403);
     });

@@ -102,16 +102,17 @@ class PlaybookEngine {
           retry_count: 0
         }, dbClient);
 
-        // 2. Pre-create execution step records
+        // 2. Pre-create execution step records in bulk (replaces N sequential inserts)
         const steps = playbook.steps || (await SoarPlaybook.getSteps(playbook.id, dbClient));
-        for (const step of steps) {
-          await SoarExecution.createStepRecord({
+        if (Array.isArray(steps) && steps.length > 0) {
+          const stepBatch = steps.map(step => ({
             execution_id: execution.id,
             playbook_step_id: step.id,
             status: 'pending',
             result_payload: {},
             retry_count: 0
-          }, dbClient);
+          }));
+          await SoarExecution.createStepRecordsBatch(stepBatch, dbClient);
         }
 
         // 3. Initiate playbook execution

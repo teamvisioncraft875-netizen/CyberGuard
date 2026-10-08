@@ -61,5 +61,12 @@ app.include_router(analyze_router)
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))
+    # Support ML_PORT explicitly to avoid colliding with Node.js backend gateway (PORT=5000).
+    # If PORT is inherited from a shared root environment and equals 5000, default safely to 8000.
+    ml_port_env = os.getenv("ML_PORT")
+    if ml_port_env:
+        port = int(ml_port_env)
+    else:
+        raw_port = int(os.getenv("PORT", 8000))
+        port = 8000 if raw_port == 5000 else raw_port
     uvicorn.run("app.main:app", host="0.0.0.0", port=port, reload=True)

@@ -256,6 +256,32 @@ const SoarApproval = {
 
     const res = await dbClient.query(dataQuery, params);
     return { data: res.rows, total };
+  },
+
+  /**
+   * Atomically consumes an approved approval for single-use high-risk action execution.
+   * Enforces tenant isolation via joined execution.
+   * Race-safe: exactly one concurrent request can consume an approval.
+   */
+  async consumeApproval(id, organization_id, client = null) {
+    if (!id || !organization_id) return null;
+    const dbClient = client || db;
+
+    const query = `
+      UPDATE public.soar_approvals a
+      SET consumed = true,
+          consumed_at = NOW()
+      FROM public.soar_executions e
+      WHERE a.id = $1
+        AND a.execution_id = e.id
+        AND e.organization_id = $2
+        AND a.status = 'approved'
+        AND a.consumed = false
+      RETURNING a.*, e.organization_id;
+    `;
+
+    const res = await dbClient.query(query, [id, organization_id]);
+    return res.rows[0] || null;
   }
 };
 

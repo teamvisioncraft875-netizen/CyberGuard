@@ -139,7 +139,7 @@ const copilotController = {
         return res.status(404).json({ error: 'NOT_FOUND', message: 'Session not found' });
       }
 
-      const messages = await CopilotMessage.findBySessionId(id, 50);
+      const messages = await CopilotMessage.findBySessionId(id, 50, organization_id);
       return res.status(200).json({
         success: true,
         data: {
@@ -227,7 +227,7 @@ const copilotController = {
       });
 
       // 2. Retrieve recent session history and recorded session actions
-      const history = await CopilotMessage.findRecent(id, 10);
+      const history = await CopilotMessage.findRecent(id, 10, organization_id);
       const sessionActions = await CopilotSessionAction.findBySession(id, organization_id);
 
       // 3. Query Copilot Service with history, actions & retrieved context
@@ -490,6 +490,11 @@ const copilotController = {
    */
   async explain(req, res) {
     try {
+      const organization_id = req.user?.organization_id;
+      if (!organization_id) {
+        return res.status(403).json({ error: 'FORBIDDEN', message: 'Valid organization_id required' });
+      }
+
       const naturalLanguageExecutionService = require('../services/copilot/naturalLanguageExecutionService');
       const result = naturalLanguageExecutionService.explainAction(req.body || {});
 

@@ -223,6 +223,47 @@ const SoarExecution = {
   },
 
   /**
+   * Bulk creates execution step records in a single query.
+   */
+  async createStepRecordsBatch(records = [], client = null) {
+    if (!Array.isArray(records) || records.length === 0) return [];
+
+    const dbClient = client || db;
+    const valueClauses = [];
+    const values = [];
+    let paramIndex = 1;
+
+    for (const rec of records) {
+      if (!rec.execution_id || !rec.playbook_step_id) continue;
+      valueClauses.push(`($${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++}, $${paramIndex++})`);
+      values.push(
+        rec.execution_id,
+        rec.playbook_step_id,
+        (rec.status || 'pending').toLowerCase(),
+        JSON.stringify(rec.result_payload || {}),
+        rec.retry_count || 0
+      );
+    }
+
+    if (valueClauses.length === 0) return [];
+
+    const query = `
+      INSERT INTO public.soar_execution_steps (
+        execution_id,
+        playbook_step_id,
+        status,
+        result_payload,
+        retry_count
+      )
+      VALUES ${valueClauses.join(', ')}
+      RETURNING *;
+    `;
+
+    const res = await dbClient.query(query, values);
+    return res.rows;
+  },
+
+  /**
    * Updates an execution step record with completion status and result payload.
    */
   async updateStepRecord(id, {

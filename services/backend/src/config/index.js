@@ -2,19 +2,18 @@ const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
 
-// Load environment variables across common monorepo locations if not already set
-if (!process.env.JWT_SECRET || !process.env.SUPABASE_DB_URL) {
-  const envPaths = [
-    path.resolve(process.cwd(), '.env'),
-    path.resolve(__dirname, '../../.env'),       // services/backend/.env
-    path.resolve(__dirname, '../../../../.env'), // monorepo root .env
-  ];
+// Load environment variables across common monorepo locations in layered priority
+// Order: process.cwd()/.env -> services/backend/.env -> monorepo root .env
+// Variables defined in higher-priority locations are preserved (override: false).
+const envPaths = [
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(__dirname, '../../.env'),       // services/backend/.env
+  path.resolve(__dirname, '../../../../.env'), // monorepo root .env
+];
 
-  for (const envPath of envPaths) {
-    if (fs.existsSync(envPath)) {
-      dotenv.config({ path: envPath });
-      if (process.env.JWT_SECRET) break;
-    }
+for (const envPath of envPaths) {
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath, override: false });
   }
 }
 
@@ -44,6 +43,7 @@ const config = Object.freeze({
   REDIS_URL: process.env.REDIS_URL || null,
   BACKEND_URL: process.env.CYBERGUARD_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:5000',
   backend_url: process.env.CYBERGUARD_BACKEND_URL || process.env.BACKEND_URL || 'http://localhost:5000',
+  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-2.0-flash',
 });
 
 module.exports = config;

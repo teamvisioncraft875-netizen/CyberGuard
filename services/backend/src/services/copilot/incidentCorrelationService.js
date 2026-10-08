@@ -163,20 +163,38 @@ class IncidentCorrelationService {
       correlatedAlerts = cAlertRes.rows;
     }
 
-    // 5. Query Attack Chains
+    // 5. Query Attack Chains (Filtered via SQL root_incident_id without blocking JSON.stringify serialization)
     let correlatedChains = [];
-    const chainSql = `
-      SELECT id, root_incident_id, chain_length, confidence_score, timeline, created_at
-      FROM public.attack_chain_snapshots
-      WHERE organization_id = $1
-      ORDER BY created_at DESC
-      LIMIT 5;
-    `;
-    const chainRes = await dbClient.query(chainSql, [organization_id]);
-    correlatedChains = chainRes.rows.filter(c => {
-      const str = JSON.stringify(c.timeline || {});
-      return extractedIndicators.some(i => str.includes(i)) || (targetIncident && c.root_incident_id === targetIncident.id);
-    });
+    if (targetIncident && targetIncident.id) {
+      const chainSql = `
+        SELECT id, root_incident_id, chain_length, confidence_score, timeline, created_at
+        FROM public.attack_chain_snapshots
+        WHERE organization_id = $1 AND root_incident_id = $2
+        ORDER BY created_at DESC
+        LIMIT 5;
+      `;
+      const chainRes = await dbClient.query(chainSql, [organization_id, targetIncident.id]);
+      correlatedChains = chainRes.rows;
+    } else {
+      const chainSql = `
+        SELECT id, root_incident_id, chain_length, confidence_score, timeline, created_at
+        FROM public.attack_chain_snapshots
+        WHERE organization_id = $1
+        ORDER BY created_at DESC
+        LIMIT 5;
+      `;
+      const chainRes = await dbClient.query(chainSql, [organization_id]);
+      if (extractedIndicators.length > 0) {
+        correlatedChains = chainRes.rows.filter(c => {
+          if (!Array.isArray(c.timeline)) return false;
+          return c.timeline.some(step => {
+            if (!step) return false;
+            const indicators = step.indicators || step.iocs || [step.source, step.destination, step.entity];
+            return extractedIndicators.some(i => indicators.includes(i));
+          });
+        });
+      }
+    }
 
     // 6. Calculate Correlation Score & Evidence
     let baseScore = 0.20;

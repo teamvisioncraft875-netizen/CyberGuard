@@ -110,7 +110,7 @@ class NaturalLanguageExecutionService {
 
         if (approvalId) {
           const approvalRecord = await SoarApproval.findById(approvalId, organization_id).catch(() => null);
-          if (approvalRecord && approvalRecord.status === 'approved') {
+          if (approvalRecord && approvalRecord.status === 'approved' && !approvalRecord.consumed) {
             isPreApproved = true;
           }
         }
@@ -304,7 +304,7 @@ class NaturalLanguageExecutionService {
     }
 
     // 2. Retrieve messages
-    const messages = await CopilotMessage.findRecent(session_id, 100);
+    const messages = await CopilotMessage.findRecent(session_id, 100, organization_id);
 
     // 3. Retrieve recorded actions
     const actions = await CopilotSessionAction.findBySession(session_id, organization_id);

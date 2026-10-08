@@ -33,35 +33,119 @@ const CopilotMessage = {
     return res.rows[0];
   },
 
-  async findBySessionId(session_id, limit = 50, client = null) {
+  /**
+   * Retrieves messages for a session in chronological order.
+   * Enforces tenant isolation by joining copilot_sessions when organization_id is supplied.
+   */
+  async findBySessionId(session_id, arg2 = 50, arg3 = null, client = null) {
     if (!session_id) return [];
-    const dbClient = client || db;
-    const query = `
-      SELECT *
-      FROM public.copilot_messages
-      WHERE session_id = $1
-      ORDER BY timestamp ASC
-      LIMIT $2;
-    `;
-    const res = await dbClient.query(query, [session_id, limit]);
+
+    let limit = 50;
+    let organization_id = null;
+    let dbClient = client;
+
+    if (typeof arg2 === 'number') {
+      limit = arg2;
+      if (typeof arg3 === 'string') organization_id = arg3;
+      else if (arg3 && typeof arg3.query === 'function') dbClient = arg3;
+    } else if (typeof arg2 === 'string') {
+      organization_id = arg2;
+      if (typeof arg3 === 'number') limit = arg3;
+      else if (arg3 && typeof arg3.query === 'function') dbClient = arg3;
+    } else if (arg2 && typeof arg2.query === 'function') {
+      dbClient = arg2;
+    }
+
+    const effectiveClient = dbClient || db;
+    let query;
+    let params;
+
+    if (organization_id) {
+      query = `
+        SELECT m.*
+        FROM public.copilot_messages m
+        JOIN public.copilot_sessions s ON m.session_id = s.id
+        WHERE m.session_id = $1
+          AND s.organization_id = $2
+        ORDER BY m.timestamp ASC
+        LIMIT $3;
+      `;
+      params = [session_id, organization_id, limit];
+    } else {
+      query = `
+        SELECT m.*
+        FROM public.copilot_messages m
+        JOIN public.copilot_sessions s ON m.session_id = s.id
+        WHERE m.session_id = $1
+        ORDER BY m.timestamp ASC
+        LIMIT $2;
+      `;
+      params = [session_id, limit];
+    }
+
+    const res = await effectiveClient.query(query, params);
     return res.rows;
   },
 
-  async findRecent(session_id, limit = 10, client = null) {
+  /**
+   * Retrieves the most recent messages for a session (ordered chronologically).
+   * Enforces tenant isolation by joining copilot_sessions when organization_id is supplied.
+   */
+  async findRecent(session_id, arg2 = 10, arg3 = null, client = null) {
     if (!session_id) return [];
-    const dbClient = client || db;
-    const query = `
-      SELECT *
-      FROM (
+
+    let limit = 10;
+    let organization_id = null;
+    let dbClient = client;
+
+    if (typeof arg2 === 'number') {
+      limit = arg2;
+      if (typeof arg3 === 'string') organization_id = arg3;
+      else if (arg3 && typeof arg3.query === 'function') dbClient = arg3;
+    } else if (typeof arg2 === 'string') {
+      organization_id = arg2;
+      if (typeof arg3 === 'number') limit = arg3;
+      else if (arg3 && typeof arg3.query === 'function') dbClient = arg3;
+    } else if (arg2 && typeof arg2.query === 'function') {
+      dbClient = arg2;
+    }
+
+    const effectiveClient = dbClient || db;
+    let query;
+    let params;
+
+    if (organization_id) {
+      query = `
         SELECT *
-        FROM public.copilot_messages
-        WHERE session_id = $1
-        ORDER BY timestamp DESC
-        LIMIT $2
-      ) sub
-      ORDER BY timestamp ASC;
-    `;
-    const res = await dbClient.query(query, [session_id, limit]);
+        FROM (
+          SELECT m.*
+          FROM public.copilot_messages m
+          JOIN public.copilot_sessions s ON m.session_id = s.id
+          WHERE m.session_id = $1
+            AND s.organization_id = $2
+          ORDER BY m.timestamp DESC
+          LIMIT $3
+        ) sub
+        ORDER BY timestamp ASC;
+      `;
+      params = [session_id, organization_id, limit];
+    } else {
+      query = `
+        SELECT *
+        FROM (
+          SELECT m.*
+          FROM public.copilot_messages m
+          JOIN public.copilot_sessions s ON m.session_id = s.id
+          WHERE m.session_id = $1
+          ORDER BY m.timestamp DESC
+          LIMIT $2
+        ) sub
+        ORDER BY timestamp ASC;
+      `;
+      params = [session_id, limit];
+    }
+
+    const res = await effectiveClient.query(query, params);
     return res.rows;
   }
 };
