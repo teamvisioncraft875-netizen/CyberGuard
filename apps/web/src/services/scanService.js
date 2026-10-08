@@ -102,6 +102,24 @@ export const scanService = {
     const data = await apiClient.post('/check/media', payload);
     return data;
   },
+
+  /**
+   * Inspect code, environment files, or text snippets for exposed credentials, private keys, and tokens
+   * POST /api/v1/check/secret
+   *
+   * @param {Object} payload
+   * @param {string} payload.input - Code, configuration, or text content to inspect
+   * @param {string} [payload.context] - Optional file name, commit, or source context
+   * @returns {Promise<{ id: string|null, risk_level: string, risk_score: number, explanation: string, detected_secrets: Array<{ secret_type: string, severity: string, location: string }>, signals: Object, recommended_actions: Array<string> }>}
+   */
+  async checkSecret({ input, context } = {}) {
+    const payload = { input };
+    if (context && typeof context === 'string' && context.trim().length > 0) {
+      payload.context = context.trim();
+    }
+    const data = await apiClient.post('/check/secret', payload);
+    return data;
+  },
 };
 
 export default scanService;

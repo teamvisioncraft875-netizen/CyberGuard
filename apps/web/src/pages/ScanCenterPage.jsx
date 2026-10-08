@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '../utils/cn';
 import { normalizeRisk } from '../utils/risk';
 import { normalizeAction } from '../utils/actions';
@@ -20,10 +21,14 @@ import {
   Layers,
   UploadCloud,
   Link2,
+  KeyRound,
+  ShieldAlert,
+  Lock,
 } from 'lucide-react';
 
 export function ScanCenterPage() {
-  const [activeTab, setActiveTab] = useState('message'); // 'message' | 'url' | 'media'
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('message'); // 'message' | 'url' | 'media' | 'secret'
 
   // Form states
   const [messageText, setMessageText] = useState('');
@@ -40,6 +45,10 @@ export function ScanCenterPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [analyzedFileName, setAnalyzedFileName] = useState(null);
 
+  // Secret tab states
+  const [secretInput, setSecretInput] = useState('');
+  const [secretContext, setSecretContext] = useState('');
+
   // Lifecycle stage: 'IDLE' | 'FILE_SELECTED' | 'VALIDATING' | 'REQUESTING_UPLOAD_URL' | 'UPLOADING' | 'ANALYZING' | 'RESULT' | 'ERROR'
   const [uploadStage, setUploadStage] = useState('IDLE');
 
@@ -55,6 +64,8 @@ export function ScanCenterPage() {
     setUploadProgress(0);
     setAnalyzedFileName(null);
     setUploadStage(selectedMediaFile ? 'FILE_SELECTED' : 'IDLE');
+    setSecretInput('');
+    setSecretContext('');
   };
 
   const handleScan = async (e) => {
@@ -175,6 +186,16 @@ export function ScanCenterPage() {
           });
           setUploadStage('RESULT');
         }
+      } else if (activeTab === 'secret') {
+        if (!secretInput.trim()) {
+          setErrorMessage('Please enter or paste text containing potential secrets or configuration keys.');
+          setIsScanning(false);
+          return;
+        }
+        result = await scanService.checkSecret({
+          input: secretInput.trim(),
+          context: secretContext.trim() || undefined,
+        });
       }
 
       setScanResult(result);
@@ -183,8 +204,12 @@ export function ScanCenterPage() {
         setErrorMessage('Authentication session expired. Please sign in again.');
       } else if (err.status === 429 || err.code === 'RATE_LIMITED') {
         setErrorMessage(
-          'Too many scan requests. Rate limit is 100 requests per 15 minutes. Please wait before retrying.'
+          activeTab === 'secret'
+            ? 'Too many secret scan requests. Rate limit is 20 requests per 15 minutes. Please wait before retrying.'
+            : 'Too many scan requests. Rate limit is 100 requests per 15 minutes. Please wait before retrying.'
         );
+      } else if (err.status === 400 || err.code === 'INVALID_INPUT') {
+        setErrorMessage(err.message || 'Invalid input: a non-empty text string is required.');
       } else if (err.status === 502 || err.code === 'DETECTION_ENGINE_UNAVAILABLE') {
         setErrorMessage(
           'Detection engine service is currently unavailable. Please verify the AI/ML inspection service is active.'
@@ -278,6 +303,22 @@ export function ScanCenterPage() {
             <FileImage className="w-3.5 h-3.5" />
             <span>Media</span>
           </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveTab('secret');
+              handleReset();
+            }}
+            className={cn(
+              'px-3 py-1.5 rounded transition-colors flex items-center gap-1.5',
+              activeTab === 'secret'
+                ? 'bg-card text-foreground font-semibold shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <KeyRound className="w-3.5 h-3.5" />
+            <span>Secret / Token</span>
+          </button>
         </div>
       </div>
 
@@ -292,7 +333,9 @@ export function ScanCenterPage() {
                 ? 'Message Threat Analysis'
                 : activeTab === 'url'
                 ? 'Destination URL Inspection'
-                : 'Multimedia Deepfake Scan'}
+                : activeTab === 'media'
+                ? 'Multimedia Deepfake Scan'
+                : 'Secret & Credential Exposure Scan'}
             </span>
             <span className="text-[10px] font-mono uppercase text-muted-foreground bg-muted/60 px-2 py-0.5 rounded">
               POST /api/v1/check/{activeTab}
@@ -488,6 +531,67 @@ export function ScanCenterPage() {
               </div>
             )}
 
+            {/* TAB 4: SECRET & CREDENTIAL SCAN */}
+            {activeTab === 'secret' && (
+              <div className="space-y-4">
+                {/* Privacy Callout */}
+                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400 text-xs leading-relaxed">
+                  <Lock className="w-4 h-4 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold">Privacy Notice:</span> Never submit live production root credentials or passwords. Evaluated input is securely analyzed in-memory and rate-limited. Raw values are not persisted or logged.
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center text-xs font-semibold uppercase text-foreground/80 tracking-wide">
+                    <label htmlFor="secret-textarea">Secret / Code Content</label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSecretInput('AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE\nAWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY');
+                          setSecretContext('.env.production');
+                        }}
+                        className="text-primary font-normal hover:underline text-[11px] normal-case"
+                      >
+                        Paste Test AWS Sample
+                      </button>
+                      {secretInput && (
+                        <button
+                          type="button"
+                          onClick={() => setSecretInput('')}
+                          className="text-muted-foreground hover:text-foreground text-[11px] normal-case font-mono"
+                        >
+                          Clear Text
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <textarea
+                    id="secret-textarea"
+                    rows={6}
+                    value={secretInput}
+                    onChange={(e) => setSecretInput(e.target.value)}
+                    placeholder="Paste config snippet, .env file excerpt, database connection URL, or API token..."
+                    className="w-full rounded-lg border border-input bg-background p-3 text-xs text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono"
+                    required
+                  />
+                  <div className="flex justify-between items-center text-[10px] text-muted-foreground font-mono">
+                    <span>{secretInput.length} characters</span>
+                    <span>Analyzed in-memory</span>
+                  </div>
+                </div>
+
+                <Input
+                  label="Source Context (Optional)"
+                  placeholder="e.g., .env.production, database.config.js, or git_commit"
+                  value={secretContext}
+                  onChange={(e) => setSecretContext(e.target.value)}
+                  helperText="Optional file path or environment descriptor to assist classification context"
+                />
+              </div>
+            )}
+
             {/* Action Buttons */}
             <div className="pt-2 flex items-center justify-between gap-3">
               <Button
@@ -504,11 +608,15 @@ export function ScanCenterPage() {
                     ? `Uploading (${uploadProgress}%)...`
                     : uploadStage === 'ANALYZING'
                     ? 'Analyzing Media...'
+                    : activeTab === 'secret'
+                    ? 'Inspecting Secrets...'
                     : 'Inspecting...'
+                  : activeTab === 'secret'
+                  ? 'Inspect Secret'
                   : 'Inspect Threat'}
               </Button>
 
-              {(scanResult || errorMessage || selectedMediaFile) && (
+              {(scanResult || errorMessage || selectedMediaFile || secretInput) && (
                 <Button
                   type="button"
                   variant="outline"
@@ -608,6 +716,73 @@ export function ScanCenterPage() {
                   {scanResult.explanation || 'No threat indicators detected in evaluated input.'}
                 </div>
               </div>
+
+              {/* Linked Incident Banner if returned */}
+              {scanResult.id && (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs">
+                  <div className="flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4 text-primary shrink-0" />
+                    <span className="text-foreground">
+                      Persisted Incident ID: <code className="font-mono font-bold">{scanResult.id}</code>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/incidents')}
+                    className="text-primary hover:underline font-mono text-[11px] font-semibold flex items-center gap-1"
+                  >
+                    View in Incidents &rarr;
+                  </button>
+                </div>
+              )}
+
+              {/* Detected Secrets Inventory (if present) */}
+              {Array.isArray(scanResult.detected_secrets) && scanResult.detected_secrets.length > 0 && (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-1.5">
+                      <KeyRound className="w-3.5 h-3.5 text-primary" />
+                      <span>Detected Secrets ({scanResult.detected_secrets.length})</span>
+                    </h3>
+                    <span className="text-[10px] font-mono text-muted-foreground">
+                      Raw values masked for security
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    {scanResult.detected_secrets.map((sec, idx) => {
+                      const severity = (sec.severity || 'high').toLowerCase();
+                      const severityVariant =
+                        severity === 'critical'
+                          ? 'destructive'
+                          : severity === 'high'
+                          ? 'default'
+                          : 'secondary';
+
+                      return (
+                        <div
+                          key={`sec-${sec.secret_type}-${idx}`}
+                          className="p-3 rounded-lg border border-border bg-muted/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="font-mono text-[11px] font-bold">
+                              {sec.secret_type}
+                            </Badge>
+                            <Badge variant={severityVariant} className="text-[10px] uppercase font-mono">
+                              {severity}
+                            </Badge>
+                          </div>
+                          {sec.location && (
+                            <span className="font-mono text-[11px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded border border-border">
+                              Location: {sec.location}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Recommended Actions Section */}
               <div className="space-y-2">

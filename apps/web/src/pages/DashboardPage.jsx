@@ -14,6 +14,8 @@ import {
   ChevronRight,
   Search,
   AlertCircle,
+  Crosshair,
+  ExternalLink,
 } from 'lucide-react';
 
 export function DashboardPage({ onSelectIncident }) {
@@ -32,6 +34,25 @@ export function DashboardPage({ onSelectIncident }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRisk, setSelectedRisk] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
+
+  // MITRE ATT&CK Coverage state — isolated lifecycle to prevent blocking main dashboard
+  const [mitreData, setMitreData] = useState([]);
+  const [isMitreLoading, setIsMitreLoading] = useState(true);
+  const [mitreError, setMitreError] = useState(null);
+
+  // Fetch MITRE ATT&CK techniques breakdown from GET /api/v1/analytics/mitre
+  const fetchMitreData = useCallback(async () => {
+    setIsMitreLoading(true);
+    setMitreError(null);
+    try {
+      const data = await analyticsService.getMitre();
+      setMitreData(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setMitreError(err?.response?.data?.message || err?.message || 'Failed to load MITRE ATT&CK coverage');
+    } finally {
+      setIsMitreLoading(false);
+    }
+  }, []);
 
   // Fetch real analytics and incidents from backend
   const fetchDashboardData = useCallback(async () => {
@@ -75,9 +96,16 @@ export function DashboardPage({ onSelectIncident }) {
     setIsLoading(false);
   }, []);
 
+  // Combined refresh handler for top dashboard controls
+  const handleRefresh = useCallback(() => {
+    fetchDashboardData();
+    fetchMitreData();
+  }, [fetchDashboardData, fetchMitreData]);
+
   useEffect(() => {
     fetchDashboardData();
-  }, [fetchDashboardData]);
+    fetchMitreData();
+  }, [fetchDashboardData, fetchMitreData]);
 
   const { onIncident } = useSocket();
 
@@ -202,6 +230,25 @@ export function DashboardPage({ onSelectIncident }) {
     ];
   }, [trends]);
 
+  // Derived MITRE statistics calculated purely from real backend array
+  const { totalMappedEvents, topTechnique, maxEventCount } = useMemo(() => {
+    if (!mitreData || mitreData.length === 0) {
+      return { totalMappedEvents: 0, topTechnique: null, maxEventCount: 0 };
+    }
+    let total = 0;
+    let top = mitreData[0];
+    let max = 0;
+    for (const item of mitreData) {
+      const count = Number(item.incident_count) || 0;
+      total += count;
+      if (count > max) {
+        max = count;
+        top = item;
+      }
+    }
+    return { totalMappedEvents: total, topTechnique: top, maxEventCount: max };
+  }, [mitreData]);
+
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto w-full pb-12 font-sans">
       {/* 1. Header Bar: Plain, factual, calm Datadog/Sentry style */}
@@ -238,12 +285,12 @@ export function DashboardPage({ onSelectIncident }) {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchDashboardData}
-            isLoading={isLoading}
+            onClick={handleRefresh}
+            isLoading={isLoading || isMitreLoading}
             className="h-8 px-2.5 text-xs font-mono"
             title="Reload telemetry from API gateway"
           >
-            <RefreshCw className={cn('w-3.5 h-3.5 mr-1.5', isLoading && 'animate-spin')} />
+            <RefreshCw className={cn('w-3.5 h-3.5 mr-1.5', (isLoading || isMitreLoading) && 'animate-spin')} />
             Refresh
           </Button>
         </div>
@@ -261,7 +308,7 @@ export function DashboardPage({ onSelectIncident }) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={fetchDashboardData}
+            onClick={handleRefresh}
             className="text-xs h-7 self-start sm:self-auto text-primary hover:underline"
           >
             Retry Connection
@@ -300,6 +347,21 @@ export function DashboardPage({ onSelectIncident }) {
             </div>
           </div>
 
+          {/* MITRE skeleton placeholder in main page loading state */}
+          <div className="p-6 rounded-xl bg-card border border-border space-y-4 animate-pulse">
+            <div className="w-48 h-5 bg-muted rounded"></div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-16 bg-muted/40 rounded-lg"></div>
+              ))}
+            </div>
+            <div className="space-y-2 pt-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-12 bg-muted/30 rounded-lg"></div>
+              ))}
+            </div>
+          </div>
+
           <div className="p-6 rounded-xl bg-card border border-border space-y-4 animate-pulse">
             <div className="w-40 h-5 bg-muted rounded"></div>
             <div className="space-y-3">
@@ -309,7 +371,7 @@ export function DashboardPage({ onSelectIncident }) {
             </div>
           </div>
         </div>
-      ) : !apiError && overview.total_incidents === 0 && recentIncidents.length === 0 ? (
+      ) : !apiError && overview.total_incidents === 0 && recentIncidents.length === 0 && mitreData.length === 0 ? (
         /* EMPTY STATE VIEW */
         <div className="py-16 px-6 rounded-xl bg-card border border-border text-center flex flex-col items-center justify-center space-y-4">
           <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
@@ -319,7 +381,7 @@ export function DashboardPage({ onSelectIncident }) {
           <p className="font-body text-xs text-muted-foreground max-w-sm">
             There are no recorded incidents matching the selected timeframe. All incoming telemetry feeds are clear.
           </p>
-          <Button variant="outline" size="sm" onClick={fetchDashboardData}>
+          <Button variant="outline" size="sm" onClick={handleRefresh}>
             Check Again
           </Button>
         </div>
@@ -616,7 +678,212 @@ export function DashboardPage({ onSelectIncident }) {
             </div>
           </div>
 
-          {/* 4. Recent Incidents Table: Backed by GET /api/v1/incidents */}
+          {/* 4. MITRE ATT&CK Coverage Section: Backed by GET /api/v1/analytics/mitre */}
+          <div className="rounded-xl bg-card border border-border overflow-hidden">
+            <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-headline text-lg font-bold text-foreground">
+                    MITRE ATT&CK Coverage
+                  </h3>
+                  <Badge variant="accent" size="sm" className="font-mono">
+                    Enterprise Matrix
+                  </Badge>
+                </div>
+                <p className="font-body text-xs text-muted-foreground mt-0.5">
+                  Observed adversary techniques mapped from security telemetry and incident detections
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={fetchMitreData}
+                  disabled={isMitreLoading}
+                  className="h-8 px-2.5 text-xs font-mono text-muted-foreground hover:text-foreground"
+                  title="Refresh MITRE ATT&CK coverage"
+                  aria-label="Refresh MITRE ATT&CK coverage"
+                >
+                  <RefreshCw className={cn('w-3.5 h-3.5 mr-1.5', isMitreLoading && 'animate-spin')} />
+                  Refresh
+                </Button>
+              </div>
+            </div>
+
+            <div className="p-5">
+              {isMitreLoading ? (
+                <div className="space-y-4 animate-pulse">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="p-3.5 rounded-lg bg-muted/40 border border-border space-y-2">
+                        <div className="w-24 h-3 bg-muted rounded"></div>
+                        <div className="w-12 h-6 bg-muted rounded"></div>
+                        <div className="w-28 h-2.5 bg-muted/60 rounded"></div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-2 pt-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="h-14 bg-muted/30 rounded-lg"></div>
+                    ))}
+                  </div>
+                </div>
+              ) : mitreError ? (
+                <div className="py-8 px-4 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                    <AlertCircle className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="font-headline text-sm font-semibold text-foreground">
+                      MITRE ATT&CK data unavailable
+                    </h4>
+                    <p className="font-body text-xs text-muted-foreground max-w-sm">
+                      {mitreError}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchMitreData}
+                    className="h-8 px-3 text-xs font-mono"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
+                    Retry
+                  </Button>
+                </div>
+              ) : mitreData.length === 0 ? (
+                <div className="py-8 px-4 flex flex-col items-center justify-center text-center space-y-3">
+                  <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                    <Crosshair className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-1 max-w-md">
+                    <h4 className="font-headline text-sm font-semibold text-foreground">
+                      No MITRE ATT&CK activity has been mapped yet.
+                    </h4>
+                    <p className="font-body text-xs text-muted-foreground">
+                      All incoming security detections and telemetry events are monitored against the MITRE ATT&CK matrix. Techniques will appear here as incidents are classified.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {/* Summary Metric Chips */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="p-3.5 rounded-lg bg-muted/30 border border-border">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        Total Mapped Techniques
+                      </span>
+                      <div className="font-mono text-2xl font-bold text-foreground mt-1">
+                        {mitreData.length}
+                      </div>
+                      <span className="text-[11px] text-muted-foreground mt-0.5 block">
+                        Unique techniques observed
+                      </span>
+                    </div>
+
+                    <div className="p-3.5 rounded-lg bg-muted/30 border border-border">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        Mapped Threat Events
+                      </span>
+                      <div className="font-mono text-2xl font-bold text-foreground mt-1">
+                        {totalMappedEvents}
+                      </div>
+                      <span className="text-[11px] text-muted-foreground mt-0.5 block">
+                        Telemetry events correlated
+                      </span>
+                    </div>
+
+                    <div className="p-3.5 rounded-lg bg-muted/30 border border-border">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                        Most Active Technique
+                      </span>
+                      <div className="font-mono text-base font-bold text-foreground mt-1 truncate" title={topTechnique?.technique_name}>
+                        {topTechnique?.technique_name || 'N/A'}
+                      </div>
+                      <span className="font-mono text-[11px] text-primary mt-0.5 block">
+                        {topTechnique ? `${topTechnique.technique_id} • ${topTechnique.incident_count} events` : '-'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Techniques Breakdown List */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-mono text-muted-foreground uppercase px-2 pb-1">
+                      <span>Technique</span>
+                      <span>Distribution & Volume</span>
+                    </div>
+
+                    <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                      {mitreData.map((item) => {
+                        const count = Number(item.incident_count) || 0;
+                        const share = totalMappedEvents > 0 ? Math.round((count / totalMappedEvents) * 100) : 0;
+                        const barWidth = maxEventCount > 0 ? Math.round((count / maxEventCount) * 100) : 0;
+                        const cleanId = String(item.technique_id || '').trim();
+                        const mitreUrl = cleanId
+                          ? `https://attack.mitre.org/techniques/${cleanId.replace('.', '/')}/`
+                          : null;
+
+                        return (
+                          <div
+                            key={cleanId || item.technique_name}
+                            className="p-3 rounded-lg bg-muted/20 hover:bg-muted/40 border border-border transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/25 shrink-0">
+                                {cleanId}
+                              </span>
+                              <div className="min-w-0">
+                                <span className="font-medium text-xs text-foreground truncate block">
+                                  {item.technique_name || 'Unknown Technique'}
+                                </span>
+                                {mitreUrl && (
+                                  <a
+                                    href={mitreUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors font-mono mt-0.5"
+                                    aria-label={`View MITRE ATT&CK reference for ${cleanId}`}
+                                  >
+                                    <span>MITRE Reference</span>
+                                    <ExternalLink className="w-2.5 h-2.5" />
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-4 sm:w-64 shrink-0">
+                              <div className="flex-1">
+                                <div className="w-full bg-muted/60 h-2 rounded-full overflow-hidden">
+                                  <div
+                                    className="bg-primary h-full rounded-full transition-all duration-500"
+                                    style={{ width: `${Math.max(barWidth, 6)}%` }}
+                                  />
+                                </div>
+                              </div>
+                              <div className="text-right whitespace-nowrap font-mono text-xs">
+                                <span className="font-bold text-foreground">{count}</span>
+                                <span className="text-[10px] text-muted-foreground ml-1">
+                                  ({share}%)
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-border flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-muted-foreground font-mono">
+                    <span>Source: MITRE ATT&CK Enterprise Matrix</span>
+                    <span>Endpoint: /api/v1/analytics/mitre</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 5. Recent Incidents Table: Backed by GET /api/v1/incidents */}
           <div className="rounded-xl bg-card border border-border overflow-hidden">
             <div className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-border">
               <div>
