@@ -147,16 +147,21 @@ def _load_media_payload(file_url: str) -> Tuple[bytes, str]:
     if file_url.startswith(("http://", "https://")):
         if not _is_safe_url(file_url):
             raise ValueError("Access to private, loopback, or cloud metadata network addresses is prohibited (SSRF protection)")
-        req = urllib.request.Request(file_url, headers={"User-Agent": "CyberGuard-Forensic-Analyzer/1.0"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            content_length = resp.headers.get("Content-Length")
-            if content_length and int(content_length) > MAX_MEDIA_BYTES:
-                raise ValueError(f"Remote file exceeds 10 MB limit ({content_length} bytes)")
-            data = resp.read(MAX_MEDIA_BYTES + 1)
-            if len(data) > MAX_MEDIA_BYTES:
-                raise ValueError("Remote file exceeds 10 MB limit")
-            mime = resp.headers.get("Content-Type", "application/octet-stream")
-            return data, mime
+        try:
+            req = urllib.request.Request(file_url, headers={"User-Agent": "CyberGuard-Forensic-Analyzer/1.0"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                content_length = resp.headers.get("Content-Length")
+                if content_length and int(content_length) > MAX_MEDIA_BYTES:
+                    raise ValueError(f"Remote file exceeds 10 MB limit ({content_length} bytes)")
+                data = resp.read(MAX_MEDIA_BYTES + 1)
+                if len(data) > MAX_MEDIA_BYTES:
+                    raise ValueError("Remote file exceeds 10 MB limit")
+                mime = resp.headers.get("Content-Type", "application/octet-stream")
+                return data, mime
+        except urllib.error.HTTPError as http_err:
+            raise FileNotFoundError(f"Media file could not be accessed at storage URL (HTTP {http_err.code}): {http_err.reason}")
+        except urllib.error.URLError as url_err:
+            raise FileNotFoundError(f"Failed to connect to media storage URL: {url_err.reason}")
 
     # 4. Raw Base64 string directly
     try:

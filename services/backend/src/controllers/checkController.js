@@ -163,17 +163,17 @@ const checkController = {
       });
     }
 
-    const resolvedFileUrl = file_url || resolveStorageUrl(file_path);
+    const resolvedFileUrl = file_url || (await resolveStorageUrl(file_path));
 
     let mlResult;
     try {
       mlResult = await callMlEngine('/internal/analyze/media', { file_url: resolvedFileUrl, media_type });
     } catch (err) {
       console.error('[checkController.checkMedia ML Service Error]', err.message);
-      if (err.message && (err.message.includes('HTTP 404') || err.message.includes('could not be resolved'))) {
+      if (err.message && (err.message.includes('HTTP 404') || err.message.includes('could not be resolved') || err.message.includes('could not be accessed'))) {
         return res.status(404).json({
           error: 'FILE_NOT_FOUND',
-          message: 'Media file could not be found at specified storage URL',
+          message: 'Media file could not be found or accessed at specified storage URL',
           file_url: resolvedFileUrl
         });
       }

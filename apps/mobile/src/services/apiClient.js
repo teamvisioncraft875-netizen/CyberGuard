@@ -20,6 +20,31 @@ const processQueue = (error, token = null) => {
   failedQueue = [];
 };
 
+export async function getEffectiveApiUrl() {
+  try {
+    const custom = await storageService.getItem(CONFIG.CUSTOM_API_URL_KEY);
+    if (custom && typeof custom === 'string' && custom.trim().length > 0) {
+      return custom.trim();
+    }
+  } catch (err) {
+    console.warn('[apiClient] Failed to read custom API URL:', err.message);
+  }
+  return CONFIG.API_URL;
+}
+
+export async function setCustomApiUrl(url) {
+  if (!url || !url.trim()) {
+    await storageService.removeItem(CONFIG.CUSTOM_API_URL_KEY);
+    return CONFIG.API_URL;
+  }
+  let clean = url.trim().replace(/\/+$/, '');
+  if (!clean.endsWith('/api/v1') && !clean.includes('/api/')) {
+    clean = `${clean}/api/v1`;
+  }
+  await storageService.setItem(CONFIG.CUSTOM_API_URL_KEY, clean);
+  return clean;
+}
+
 /**
  * Enhanced fetch wrapper with JWT bearer injection and automatic 401 token refresh.
  * Enforces:
@@ -29,7 +54,8 @@ const processQueue = (error, token = null) => {
  * 4. Failed refresh immediately clears the session and triggers logout callback.
  */
 export async function apiRequest(endpoint, options = {}) {
-  const url = endpoint.startsWith('http') ? endpoint : `${CONFIG.API_URL}${endpoint}`;
+  const baseUrl = await getEffectiveApiUrl();
+  const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}${endpoint}`;
   const headers = {
     'Content-Type': 'application/json',
     ...(options.headers || {})
@@ -119,7 +145,7 @@ export async function apiRequest(endpoint, options = {}) {
     }
 
     try {
-      const refreshRes = await fetch(`${CONFIG.API_URL}/auth/refresh`, {
+      const refreshRes = await fetch(`${baseUrl}/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken })
@@ -167,5 +193,7 @@ export const apiClient = {
     apiRequest(endpoint, { method: 'POST', body: JSON.stringify(body), headers }),
   patch: (endpoint, body, headers) =>
     apiRequest(endpoint, { method: 'PATCH', body: JSON.stringify(body), headers }),
-  delete: (endpoint, headers) => apiRequest(endpoint, { method: 'DELETE', headers })
+  delete: (endpoint, headers) => apiRequest(endpoint, { method: 'DELETE', headers }),
+  getEffectiveApiUrl,
+  setCustomApiUrl
 };

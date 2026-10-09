@@ -13,8 +13,14 @@ from PIL import Image, ImageSequence
 import scipy.fft as fft
 from pathlib import Path
 from typing import Dict, Any, Tuple
-import torch
-import torch.nn as nn
+try:
+    import torch
+    import torch.nn as nn
+    HAS_TORCH = True
+except ImportError:
+    torch = None
+    nn = None
+    HAS_TORCH = False
 
 
 def _load_image_frame(image_input: str | bytes, target_size: Tuple[int, int] = (256, 256)) -> np.ndarray:
@@ -201,42 +207,46 @@ def extract_image_forensic_features(image_input: str | bytes) -> Dict[str, Any]:
     }
 
 
-class AttentionPoolingVisualDetector(nn.Module):
-    """
-    Temporal Attention-Pooled Neural Network for visual deepfake detection.
-    Processes frame embeddings (e.g. 20 x 1024 dims from CLIP ViT-H/14),
-    learns frame-level manipulation attention weights, and predicts manipulation probability.
-    Supports single-frame images [batch, 1, 1024] and pooled embeddings [batch, 1024].
-    """
-    def __init__(self, in_features: int = 1024, hidden_dim: int = 256, dropout: float = 0.3):
-        super().__init__()
-        self.in_features = in_features
-        self.hidden_dim = hidden_dim
-        self.attention = nn.Sequential(
-            nn.Linear(in_features, 128),
-            nn.Tanh(),
-            nn.Linear(128, 1)
-        )
-        self.classifier = nn.Sequential(
-            nn.Linear(in_features, hidden_dim),
-            nn.LayerNorm(hidden_dim),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(hidden_dim, 64),
-            nn.LayerNorm(64),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(64, 1)
-        )
+if HAS_TORCH:
+    class AttentionPoolingVisualDetector(nn.Module):
+        """
+        Temporal Attention-Pooled Neural Network for visual deepfake detection.
+        Processes frame embeddings (e.g. 20 x 1024 dims from CLIP ViT-H/14),
+        learns frame-level manipulation attention weights, and predicts manipulation probability.
+        Supports single-frame images [batch, 1, 1024] and pooled embeddings [batch, 1024].
+        """
+        def __init__(self, in_features: int = 1024, hidden_dim: int = 256, dropout: float = 0.3):
+            super().__init__()
+            self.in_features = in_features
+            self.hidden_dim = hidden_dim
+            self.attention = nn.Sequential(
+                nn.Linear(in_features, 128),
+                nn.Tanh(),
+                nn.Linear(128, 1)
+            )
+            self.classifier = nn.Sequential(
+                nn.Linear(in_features, hidden_dim),
+                nn.LayerNorm(hidden_dim),
+                nn.ReLU(),
+                nn.Dropout(dropout),
+                nn.Linear(hidden_dim, 64),
+                nn.LayerNorm(64),
+                nn.ReLU(),
+                nn.Dropout(dropout),
+                nn.Linear(64, 1)
+            )
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if x.dim() == 2:
-            x = x.unsqueeze(1)
-        attn_scores = self.attention(x)
-        attn_weights = torch.softmax(attn_scores, dim=1)
-        pooled = (x * attn_weights).sum(dim=1)
-        logits = self.classifier(pooled).squeeze(-1)
-        return logits
+        def forward(self, x: torch.Tensor) -> torch.Tensor:
+            if x.dim() == 2:
+                x = x.unsqueeze(1)
+            attn_scores = self.attention(x)
+            attn_weights = torch.softmax(attn_scores, dim=1)
+            pooled = (x * attn_weights).sum(dim=1)
+            logits = self.classifier(pooled).squeeze(-1)
+            return logits
+else:
+    class AttentionPoolingVisualDetector:
+        pass
 
 
 _LOADED_VISUAL_MODEL = None
@@ -261,7 +271,7 @@ def get_visual_deepfake_classifier() -> Tuple[Any, Dict[str, Any] | None]:
                 with open(schema_path, "r", encoding="utf-8") as f:
                     _LOADED_VISUAL_SCHEMA = json.load(f)
 
-                if pt_path.exists():
+                if pt_path.exists() and HAS_TORCH:
                     model = AttentionPoolingVisualDetector(in_features=1024)
                     weights = torch.load(pt_path, map_location="cpu", weights_only=True)
                     model.load_state_dict(weights)

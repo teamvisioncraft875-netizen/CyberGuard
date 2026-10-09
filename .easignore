@@ -1,0 +1,56 @@
+# Exclude Git metadata (prevents uploading 122 MB of commit history)
+.git
+.git/**
+**/.git
+**/.git/**
+.agents
+.agents/**
+docs
+docs/**
+
+# Root-level exclusions only
+/.venv
+/.venv/**
+/venv
+/venv/**
+/services
+/services/**
+/datasets
+/datasets/**
+/build
+/build/**
+/dist
+/dist/**
+/.archify
+/.archify/**
+/apps/web
+/apps/web/**
+/scratch
+/scratch/**
+
+# Dependencies (installed fresh on EAS builder)
+node_modules
+node_modules/**
+**/node_modules
+**/node_modules/**
+
+# Python & binaries
+__pycache__
+__pycache__/**
+*.pyc
+*.exe
+*.binetflow
+*.pcap
+*.flac
+*.npy
+
+# Logs and caches
+*.log
+.expo
+.expo/**
+.vscode
+.vscode/**
+
+# Ensure all mobile source directories and assets are preserved
+!apps/mobile
+!apps/mobile/**

@@ -120,17 +120,29 @@ function validateUserMediaOwnership(pathOrUrl, userId) {
 
 /**
  * Resolves a storage file_path into a complete URL accessible by the ML service.
+ * Generates a signed download URL so external workers and ML services can access
+ * the object without requiring authorization headers.
  *
  * @param {string} pathOrUrl
- * @returns {string} Fully resolved file URL
+ * @returns {Promise<string>} Fully resolved file URL
  */
-function resolveStorageUrl(pathOrUrl) {
+async function resolveStorageUrl(pathOrUrl) {
   if (!pathOrUrl || typeof pathOrUrl !== 'string') return '';
   if (pathOrUrl.startsWith('http://') || pathOrUrl.startsWith('https://') || pathOrUrl.startsWith('data:')) {
     return pathOrUrl;
   }
   const cleanPath = pathOrUrl.replace(/^\/+/, '');
-  return `${config.SUPABASE_URL.replace(/\/+$/, '')}/storage/v1/object/authenticated/${BUCKET_NAME}/${cleanPath}`;
+  try {
+    const { data, error } = await supabase.storage
+      .from(BUCKET_NAME)
+      .createSignedUrl(cleanPath, DEFAULT_EXPIRY_SECONDS);
+    if (!error && data?.signedUrl) {
+      return data.signedUrl;
+    }
+  } catch (err) {
+    console.warn('[Storage] Supabase client createSignedUrl warning:', err.message);
+  }
+  return `${config.SUPABASE_URL.replace(/\/+$/, '')}/storage/v1/object/public/${BUCKET_NAME}/${cleanPath}`;
 }
 
 module.exports = {

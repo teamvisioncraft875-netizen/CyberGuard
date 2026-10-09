@@ -19,13 +19,21 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a0f1d"
       },
-      "package": "com.cyberguard.guardapp"
+      "package": "com.cyberguard.guardapp",
+      "usesCleartextTraffic": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store"
-    ]
+      "expo-secure-store",
+      "./plugins/withMonorepo.js"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "16b4d6f7-b263-4c52-b721-891c91001ac6"
+      }
+    },
+    "owner": "subhasankarsau"
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import {
 import { COLORS } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { CyberButton } from '../../components/CyberButton';
+import { getEffectiveApiUrl, setCustomApiUrl } from '../../services/apiClient';
+import { CONFIG } from '../../constants/config';
 
 export function LoginScreen({ navigation }) {
   const { login, error, clearError } = useAuth();
@@ -21,6 +23,61 @@ export function LoginScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState('');
+
+  // Server Endpoint Configuration State
+  const [serverUrl, setServerUrl] = useState('');
+  const [showServerConfig, setShowServerConfig] = useState(false);
+  const [serverTestStatus, setServerTestStatus] = useState(null);
+  const [testingServer, setTestingServer] = useState(false);
+
+  useEffect(() => {
+    getEffectiveApiUrl().then((url) => {
+      setServerUrl(url);
+    });
+  }, []);
+
+  const handleTestConnection = async (target) => {
+    const raw = (target || serverUrl || '').trim();
+    if (!raw) {
+      setServerTestStatus({ ok: false, message: 'Please enter a valid server URL' });
+      return;
+    }
+    setTestingServer(true);
+    setServerTestStatus(null);
+    try {
+      const clean = raw.replace(/\/+$/, '');
+      const healthUrl = clean.includes('/api/v1') ? `${clean}/health` : `${clean}/api/v1/health`;
+      const res = await fetch(healthUrl, { method: 'GET' });
+      if (res.ok) {
+        setServerTestStatus({ ok: true, message: 'Connected to CYBERGUARD Backend!' });
+      } else {
+        setServerTestStatus({ ok: false, message: `Server replied with HTTP ${res.status}` });
+      }
+    } catch (err) {
+      setServerTestStatus({
+        ok: false,
+        message: `Connection failed: ${err.message}. Ensure PC and phone are on the same Wi-Fi.`
+      });
+    } finally {
+      setTestingServer(false);
+    }
+  };
+
+  const handleSaveServerUrl = async () => {
+    try {
+      const saved = await setCustomApiUrl(serverUrl);
+      setServerUrl(saved);
+      await handleTestConnection(saved);
+    } catch (err) {
+      setServerTestStatus({ ok: false, message: `Failed to save: ${err.message}` });
+    }
+  };
+
+  const handleResetServerUrl = async () => {
+    await setCustomApiUrl(null);
+    setServerUrl(CONFIG.API_URL);
+    setServerTestStatus(null);
+  };
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -34,7 +91,13 @@ export function LoginScreen({ navigation }) {
     try {
       await login(email.trim(), password);
     } catch (err) {
-      setFormError(err.message || 'Authentication failed');
+      const msg = err.message || 'Authentication failed';
+      if (msg.toLowerCase().includes('network request failed')) {
+        setFormError('Network request failed: Could not reach backend server. Tap "Server Settings" below to adjust the IP.');
+        setShowServerConfig(true);
+      } else {
+        setFormError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -128,6 +191,78 @@ export function LoginScreen({ navigation }) {
               <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
                 <Text style={styles.signupLink}>Create an account</Text>
               </TouchableOpacity>
+            </View>
+
+            {/* Server Settings Link/Panel */}
+            <View style={styles.serverSection}>
+              <TouchableOpacity
+                style={styles.serverToggleBtn}
+                onPress={() => setShowServerConfig(!showServerConfig)}
+              >
+                <Text style={styles.serverToggleText}>
+                  ⚙️ {showServerConfig ? 'Hide Server Configuration' : 'Server Connection Settings'}
+                </Text>
+              </TouchableOpacity>
+
+              {showServerConfig && (
+                <View style={styles.serverCard}>
+                  <Text style={styles.serverCardTitle}>API BACKEND ADDRESS</Text>
+                  <Text style={styles.serverCardHint}>
+                    Change IP if backend runs on a different host/network
+                  </Text>
+                  <TextInput
+                    style={styles.serverInput}
+                    placeholder="http://192.168.1.21:5000/api/v1"
+                    placeholderTextColor={COLORS.textMuted}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={serverUrl}
+                    onChangeText={setServerUrl}
+                  />
+
+                  {serverTestStatus && (
+                    <View
+                      style={[
+                        styles.serverStatusBanner,
+                        serverTestStatus.ok ? styles.serverStatusSuccess : styles.serverStatusError
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.serverStatusText,
+                          serverTestStatus.ok ? styles.serverStatusTextSuccess : styles.serverStatusTextError
+                        ]}
+                      >
+                        {serverTestStatus.ok ? '✓ ' : '⚠ '} {serverTestStatus.message}
+                      </Text>
+                    </View>
+                  )}
+
+                  <View style={styles.serverButtonRow}>
+                    <TouchableOpacity
+                      style={[styles.smallBtn, styles.testBtn]}
+                      onPress={() => handleTestConnection(serverUrl)}
+                      disabled={testingServer}
+                    >
+                      <Text style={styles.smallBtnText}>
+                        {testingServer ? 'Testing...' : 'Test'}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.smallBtn, styles.saveBtn]}
+                      onPress={handleSaveServerUrl}
+                    >
+                      <Text style={styles.smallBtnText}>Save</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.smallBtn, styles.resetBtn]}
+                      onPress={handleResetServerUrl}
+                    >
+                      <Text style={[styles.smallBtnText, styles.resetBtnText]}>Reset</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             </View>
           </View>
         </ScrollView>
@@ -258,5 +393,107 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: 13,
     fontWeight: '700'
+  },
+  serverSection: {
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    paddingTop: 16
+  },
+  serverToggleBtn: {
+    alignItems: 'center',
+    paddingVertical: 6
+  },
+  serverToggleText: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    fontWeight: '600'
+  },
+  serverCard: {
+    marginTop: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 12
+  },
+  serverCardTitle: {
+    color: COLORS.textSecondary,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    marginBottom: 4
+  },
+  serverCardHint: {
+    color: COLORS.textMuted,
+    fontSize: 11,
+    marginBottom: 10
+  },
+  serverInput: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    color: COLORS.textPrimary,
+    fontSize: 13,
+    marginBottom: 10
+  },
+  serverStatusBanner: {
+    padding: 8,
+    borderRadius: 6,
+    marginBottom: 10
+  },
+  serverStatusSuccess: {
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    borderLeftWidth: 3,
+    borderLeftColor: '#22c55e'
+  },
+  serverStatusError: {
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.danger
+  },
+  serverStatusText: {
+    fontSize: 11,
+    fontWeight: '600'
+  },
+  serverStatusTextSuccess: {
+    color: '#22c55e'
+  },
+  serverStatusTextError: {
+    color: COLORS.danger
+  },
+  serverButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8
+  },
+  smallBtn: {
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  testBtn: {
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border
+  },
+  saveBtn: {
+    backgroundColor: COLORS.primary
+  },
+  resetBtn: {
+    backgroundColor: 'transparent'
+  },
+  smallBtnText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600'
+  },
+  resetBtnText: {
+    color: COLORS.textMuted
   }
 });

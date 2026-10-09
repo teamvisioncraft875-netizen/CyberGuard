@@ -29,4 +29,5 @@ export const CONFIG = {
   TOKEN_KEY: 'cyberguard_access_token',
   REFRESH_TOKEN_KEY: 'cyberguard_refresh_token',
   USER_KEY: 'cyberguard_user_profile',
+  CUSTOM_API_URL_KEY: 'cyberguard_custom_api_url'
 };

@@ -1,6 +1,7 @@
 import { io } from 'socket.io-client';
 import { CONFIG } from '../constants/config';
 import { storageService } from './storageService';
+import { getEffectiveApiUrl } from './apiClient';
 
 let socketInstance = null;
 const listeners = new Set();
@@ -30,7 +31,9 @@ export const socketService = {
     }
 
     try {
-      socketInstance = io(CONFIG.WS_URL, {
+      const apiUrl = await getEffectiveApiUrl();
+      const wsUrl = apiUrl ? apiUrl.replace(/\/api\/v1\/?$/, '') : CONFIG.WS_URL;
+      socketInstance = io(wsUrl, {
         auth: {
           token: `Bearer ${token}`
         },
