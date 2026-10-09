@@ -281,7 +281,12 @@ def extract_audio_forensic_features(audio_input: str | bytes) -> Dict[str, Any]:
         if jitter_pct < 0.65:
             score_pitch = 0.80  # Robotic invariance
         elif jitter_pct > 5.0:
-            score_pitch = 0.75  # Phase discontinuity / glitch
+            # If the recording exhibits natural spectral rolloff (no steep cutoff) and standard speech centroid/flatness,
+            # high jitter is caused by acoustic noise, wind, or microphone clipping rather than vocoder phase discontinuity.
+            if not has_steep_cutoff and 800 <= mean_centroid <= 3800 and 0.04 <= spectral_flatness <= 0.25:
+                score_pitch = 0.35  # Acoustic clipping / noise discount
+            else:
+                score_pitch = 0.75  # Neural vocoder phase glitch
         else:
             score_pitch = 0.20  # Natural human range
 

@@ -150,6 +150,14 @@ class EDRBehaviorEngine:
 
         # Update causal lineage state
         if pid not in self._pid_table:
+            if len(self._pid_table) > 50000:
+                excess_keys = [k for k in self._pid_table.keys() if k not in (0, 1)][:5000]
+                for k in excess_keys:
+                    self._pid_table.pop(k, None)
+                    self._proc_cum_count.pop(k, None)
+                    self._proc_failed_count.pop(k, None)
+                    self._proc_seen_syscalls.pop(k, None)
+
             self._pid_table[pid] = {
                 "processName": pname,
                 "userId": uid,

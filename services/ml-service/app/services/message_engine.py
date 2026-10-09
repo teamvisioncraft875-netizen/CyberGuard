@@ -113,6 +113,25 @@ def analyze_message(request: MessageAnalyzeRequest) -> UnifiedAnalysisResponse:
     # 1. Basic input sanitization & prompt injection resistance
     sanitized_text, injection_detected = sanitize_message_input(request.text)
 
+    # Empty text guard
+    if not sanitized_text:
+        return UnifiedAnalysisResponse(
+            risk_level=RiskLevel.SAFE,
+            risk_score=0,
+            explanation="Empty message content provided; no threat indicators detected.",
+            signals={
+                "urgency_score": 0.0,
+                "credential_solicitation": False,
+                "brand_targeted": None,
+                "contains_url": False,
+                "prompt_injection_detected": False,
+                "model_type": "empty_input",
+                "source_type": request.source_type.value,
+            },
+            recommended_actions=["No action required; empty input."],
+            confidence_score=1.0,
+        )
+
     # If active adversarial injection detected, immediately flag
     if injection_detected:
         return UnifiedAnalysisResponse(
@@ -226,6 +245,52 @@ def analyze_message(request: MessageAnalyzeRequest) -> UnifiedAnalysisResponse:
         if has_link:
             score += 10
         score = min(100, max(0, score))
+
+    # Deep inspection of embedded URLs
+    embedded_urls = re.findall(r"https?://[^\s<>\"']+|www\.[^\s<>\"']+", sanitized_text)
+    highest_embedded_url_risk = None
+    malicious_url_context = None
+
+    if embedded_urls:
+        try:
+            from app.services.url_engine import analyze_url
+            from app.schemas.analyze import UrlAnalyzeRequest
+            for raw_u in embedded_urls:
+                norm_u = raw_u if raw_u.startswith("http") else f"http://{raw_u}"
+                u_res = analyze_url(UrlAnalyzeRequest(url=norm_u))
+                if u_res.risk_level == RiskLevel.CRITICAL:
+                    highest_embedded_url_risk = RiskLevel.CRITICAL
+                    malicious_url_context = (raw_u, u_res)
+                    break
+                elif u_res.risk_level == RiskLevel.HIGH and highest_embedded_url_risk != RiskLevel.CRITICAL:
+                    highest_embedded_url_risk = RiskLevel.HIGH
+                    malicious_url_context = (raw_u, u_res)
+        except Exception as u_err:
+            logger.debug(f"Embedded URL analysis note: {u_err}")
+
+    # Compound threat escalation if embedded URL is malicious
+    if highest_embedded_url_risk == RiskLevel.CRITICAL and malicious_url_context:
+        bad_url, url_eval = malicious_url_context
+        score = max(score, url_eval.risk_score, 95)
+        risk_level = RiskLevel.CRITICAL
+        explanation = f"Critical Threat: Message contains confirmed malicious phishing URL ({bad_url}): {url_eval.explanation}"
+        actions = [
+            "Do not click any embedded links",
+            "Quarantine message immediately across enterprise mail gateway",
+            "Block destination URL network-wide on gateway and DNS",
+        ]
+    elif highest_embedded_url_risk == RiskLevel.HIGH and malicious_url_context and score < 80:
+        bad_url, url_eval = malicious_url_context
+        score = max(score, url_eval.risk_score, 80)
+        risk_level = RiskLevel.HIGH
+        explanation = f"High Risk: Message contains suspicious URL ({bad_url}): {url_eval.explanation}"
+    # Promotional / Marketing Guard:
+    # If the message contains promotional urgency phrases but NO credential solicitation,
+    # NO malicious embedded URLs, and the supervised model probability does not cross the threat threshold,
+    # cap the score at LOW (<= 35) to prevent legitimate sales/marketing alerts from triggering phishing alarms.
+    if not credential_solicitation and not highest_embedded_url_risk and (ml_prob is None or ml_prob < threshold):
+        if not targeted_brand and score >= 50:
+            score = 35
 
     if score >= 80:
         risk_level = RiskLevel.HIGH if score < 95 else RiskLevel.CRITICAL

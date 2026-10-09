@@ -95,68 +95,98 @@ def extract_image_forensic_features(image_input: str | bytes) -> Dict[str, Any]:
     power_spectrum = np.abs(f_shifted) ** 2
     log_power = np.log1p(power_spectrum)
 
-    # 2. Radial Frequency Profile
-    radii, radial_mean = _compute_radial_profile(log_power)
+    # 2. Radial Frequency Profiles
+    # Both linear radial profile (for energy & slope) and log radial profile (for residual peaks & heatmap)
+    radii, radial_mean_log = _compute_radial_profile(log_power)
+    _, radial_mean_linear = _compute_radial_profile(power_spectrum)
     max_r = len(radii)
 
-    # 3. High-Frequency Energy Ratio
-    # Natural images have high frequencies decaying steeply; generative models exhibit elevated HF tails
+    # 3. High-Frequency Energy Ratio (Linear domain)
+    # Natural optical images have high frequencies decaying steeply (linear HF ratio < 0.02)
+    # Generative and synthetic upsampling models exhibit elevated HF tails (> 0.08)
     hf_start = int(0.50 * max_r)
-    total_energy = float(np.sum(radial_mean) + 1e-12)
-    hf_energy = float(np.sum(radial_mean[hf_start:]))
-    hf_ratio = float(hf_energy / total_energy)
+    total_linear_energy = float(np.sum(radial_mean_linear) + 1e-12)
+    hf_linear_energy = float(np.sum(radial_mean_linear[hf_start:]))
+    hf_ratio = float(hf_linear_energy / total_linear_energy)
 
-    # 4. Spectral Slope (Power Law Decay 1/f^alpha)
-    # Fit linear regression log(P) = alpha * log(r) + beta over middle-to-high frequencies
-    fit_start = max(3, int(0.08 * max_r))
+    # 4. Spectral Slope (Power Law Decay P(r) ~ r^-alpha)
+    # Fit linear regression log(P) = alpha * log(r) + beta over middle-to-high linear power frequencies
+    fit_start = max(3, int(0.05 * max_r))
     fit_end = max(fit_start + 5, int(0.85 * max_r))
-    log_r = np.log(radii[fit_start:fit_end].astype(np.float64) + 1e-8)
-    log_p = np.log(radial_mean[fit_start:fit_end].astype(np.float64) + 1e-8)
-
-    if len(log_r) >= 5 and np.std(log_r) > 1e-6:
+    valid_mask = (radial_mean_linear[fit_start:fit_end] > 1e-12) & (radii[fit_start:fit_end] > 0)
+    if np.sum(valid_mask) >= 5:
+        log_r = np.log(radii[fit_start:fit_end][valid_mask].astype(np.float64))
+        log_p = np.log(radial_mean_linear[fit_start:fit_end][valid_mask].astype(np.float64))
         slope, _ = np.polyfit(log_r, log_p, 1)
         spectral_slope = float(slope)
     else:
         spectral_slope = -2.0
 
-    # 5. Periodic Spectral Peak Detection
-    # Convolutions with stride > 1 and upsampling (ConvTranspose2d) create periodic spikes
-    smooth_radial = np.convolve(radial_mean, np.ones(5) / 5.0, mode="same")
-    residual = radial_mean[fit_start:fit_end] - smooth_radial[fit_start:fit_end]
+    # 5. Periodic Spectral Peak Detection (Residual analysis on log radial profile)
+    # Convolutions with stride > 1 and deconvolution/upsampling create narrow periodic spikes
+    smooth_radial = np.convolve(radial_mean_log, np.ones(5) / 5.0, mode="same")
+    residual = radial_mean_log[fit_start:fit_end] - smooth_radial[fit_start:fit_end]
     std_res = float(np.std(residual) + 1e-8)
-    peaks = np.where(residual > 2.2 * std_res)[0]
+    # 3.5 std threshold ensures normal texture noise variance does not trigger false peaks
+    peaks = np.where(residual > 3.5 * std_res)[0]
     periodic_peak_count = int(len(peaks))
 
     # 6. Radial Entropy
-    prob_dist = radial_mean / total_energy
+    prob_dist = radial_mean_linear / total_linear_energy
     radial_entropy = -float(np.sum(prob_dist * np.log(prob_dist + 1e-12)))
 
     # 7. Heatmap Generation
     heatmap_b64 = _generate_spectrum_heatmap_base64(log_power)
 
     # 8. Continuous Anomaly Score Formulation [0.0, 1.0]
-    # Synthetic cues:
-    # a. Periodic peaks (weight 0.40): 0 peaks -> 0.15, 1 peak -> 0.55, >=2 peaks -> 0.85
-    # b. Spectral slope deviation from natural (-2.0) (weight 0.30)
-    # c. High frequency ratio elevation (> 0.35) (weight 0.30)
-    if periodic_peak_count == 0:
-        score_peaks = 0.15
+    # Calibrated against authentic optical photography:
+    # a. Periodic peaks (weight 0.45): 0 peaks -> 0.05, 1 peak -> 0.35, >=2 peaks -> 0.70+
+    # JPEG compression & micro-texture discrimination:
+    # If the global power-law decay slope is steep optical roll-off (<= -1.8) and linear HF energy
+    # is negligible (< 0.015), isolated peaks are characteristic of 8x8 DCT compression blocks or natural
+    # micro-textures, NOT generative upsampling grids.
+    is_optical_decay = spectral_slope <= -1.8 and hf_ratio < 0.015
+    if is_optical_decay:
+        if periodic_peak_count <= 2:
+            score_peaks = 0.08
+        else:
+            score_peaks = 0.30
+    elif periodic_peak_count == 0:
+        score_peaks = 0.05
     elif periodic_peak_count == 1:
-        score_peaks = 0.58
+        score_peaks = 0.35
     elif periodic_peak_count == 2:
-        score_peaks = 0.78
+        score_peaks = 0.70
     else:
-        score_peaks = 0.92
+        score_peaks = 0.90
 
-    slope_dev = abs(spectral_slope - (-2.0))
-    score_slope = float(np.clip(slope_dev / 1.5, 0.1, 0.9))
+    # b. Spectral slope (weight 0.30):
+    # Natural camera lenses and scenes have steep negative roll-off (slope <= -1.4).
+    # Flat (slope > -0.8) or positive slopes indicate synthetic/GAN frequency plateaus.
+    if spectral_slope <= -1.4:
+        score_slope = 0.05
+    elif spectral_slope <= -1.0:
+        score_slope = 0.25
+    elif spectral_slope <= -0.5:
+        score_slope = 0.60
+    else:
+        score_slope = 0.85
 
-    score_hf = float(np.clip((hf_ratio - 0.20) / 0.30, 0.1, 0.95))
+    # c. High frequency ratio (weight 0.25):
+    # Natural optical capture has linear HF ratio < 0.02.
+    if hf_ratio < 0.02:
+        score_hf = 0.05
+    elif hf_ratio < 0.05:
+        score_hf = 0.20
+    elif hf_ratio < 0.10:
+        score_hf = 0.55
+    else:
+        score_hf = 0.85
 
     raw_anomaly = (
-        0.40 * score_peaks +
+        0.45 * score_peaks +
         0.30 * score_slope +
-        0.30 * score_hf
+        0.25 * score_hf
     )
     anomaly_score = float(np.clip(raw_anomaly, 0.05, 0.95))
 

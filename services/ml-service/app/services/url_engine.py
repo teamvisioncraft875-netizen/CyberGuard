@@ -6,8 +6,14 @@ import warnings
 import joblib
 import numpy as np
 
+from urllib.parse import urlparse
 from app.schemas.analyze import UrlAnalyzeRequest, UnifiedAnalysisResponse, RiskLevel
-from app.utils.url_preprocessor import extract_url_features, extract_brand_target, URL_FEATURE_COLUMNS
+from app.utils.url_preprocessor import (
+    extract_url_features,
+    extract_brand_target,
+    URL_FEATURE_COLUMNS,
+    is_legitimate_domain,
+)
 
 logger = logging.getLogger("cyberguard.url_engine")
 
@@ -63,16 +69,29 @@ def analyze_url(request: UrlAnalyzeRequest) -> UnifiedAnalysisResponse:
             confidence_score=1.0,
         )
 
-    features = extract_url_features(url_str)
-    target_brand = extract_brand_target(url_str)
+    # Extract hostname and verify domain legitimacy
+    norm_url = url_str if (url_str.startswith("http://") or url_str.startswith("https://")) else f"http://{url_str}"
+    try:
+        parsed = urlparse(norm_url)
+        hostname = (parsed.hostname or "").lower()
+    except Exception:
+        hostname = ""
 
-    # Heuristic pattern detection
+    is_trusted = is_legitimate_domain(hostname)
+
+    features = extract_url_features(url_str)
+    target_brand = extract_brand_target(url_str) if not is_trusted else None
+
+    # Compound heuristic pattern detection for untrusted hosts
     is_critical_phishing = (
-        (target_brand is not None and features["is_suspicious_tld"] == 1.0)
-        or (target_brand is not None and features["has_suspicious_keyword"] == 1.0)
-        or (features["has_suspicious_keyword"] == 1.0 and features["is_suspicious_tld"] == 1.0)
-        or (features["has_ip_address"] == 1.0 and features["has_suspicious_keyword"] == 1.0)
-        or (features["has_ip_address"] == 1.0 and target_brand is not None)
+        not is_trusted and (
+            (target_brand is not None and features["is_suspicious_tld"] == 1.0)
+            or (target_brand is not None and features["has_suspicious_keyword"] == 1.0)
+            or (features["has_suspicious_keyword"] == 1.0 and features["is_suspicious_tld"] == 1.0)
+            or (features["has_ip_address"] == 1.0 and features["has_suspicious_keyword"] == 1.0)
+            or (features["has_ip_address"] == 1.0 and target_brand is not None)
+            or (target_brand is not None and features["entropy"] >= 3.8 and features["num_subdomains"] >= 2)
+        )
     )
 
     # Supervised ML inference
@@ -91,7 +110,15 @@ def analyze_url(request: UrlAnalyzeRequest) -> UnifiedAnalysisResponse:
             logger.warning(f"Supervised URL inference failed: {e}. Falling back to heuristics.")
             ml_prob = None
 
-    if ml_prob is not None:
+    if is_trusted:
+        # Verified authentic legitimate infrastructure (Google, Apple, Microsoft, GitHub, Wikipedia, etc.)
+        risk_level = RiskLevel.SAFE
+        risk_score = 5
+        explanation = "URL hosted on verified authentic and legitimate domain infrastructure."
+        recommended_actions = ["No action required; safe to browse"]
+        confidence = 0.99
+
+    elif ml_prob is not None:
         is_threat = ml_prob >= threshold
         if is_critical_phishing:
             risk_level = RiskLevel.CRITICAL
@@ -106,7 +133,7 @@ def analyze_url(request: UrlAnalyzeRequest) -> UnifiedAnalysisResponse:
                 "Revoke active sessions for credentials entered on this site",
             ]
             confidence = max(0.95, round(ml_prob, 4))
-        elif is_threat or target_brand or features["has_suspicious_keyword"] == 1.0 or features["is_suspicious_tld"] == 1.0 or features["has_ip_address"] == 1.0:
+        elif is_threat or target_brand or (features["has_suspicious_keyword"] == 1.0 and features["is_suspicious_tld"] == 1.0) or features["has_ip_address"] == 1.0:
             risk_level = RiskLevel.HIGH
             risk_score = min(89, max(70, int(70 + (ml_prob - threshold) / max(0.01, 1.0 - threshold) * 19))) if is_threat else 75
             matched_indicators = []
@@ -124,16 +151,31 @@ def analyze_url(request: UrlAnalyzeRequest) -> UnifiedAnalysisResponse:
                 "Isolate URL in sandbox browser",
             ]
             confidence = max(0.85, round(ml_prob, 4))
+        elif features["has_suspicious_keyword"] == 1.0 or features["is_suspicious_tld"] == 1.0:
+            risk_level = RiskLevel.MEDIUM
+            risk_score = 45
+            explanation = "Moderate Risk: URL contains sensitive keywords or non-standard domain structure on an unverified host."
+            recommended_actions = [
+                "Exercise caution before submitting credentials",
+                "Verify domain authenticity before logging in",
+            ]
+            confidence = 0.80
         else:
             risk_level = RiskLevel.SAFE
-            risk_score = max(5, min(20, int(ml_prob * 20)))
+            risk_score = max(5, min(19, int(ml_prob * 19)))
             explanation = "URL structure conforms to standard legitimate domain patterns."
             recommended_actions = ["No action required; safe to browse"]
             confidence = max(0.85, round(1.0 - ml_prob, 4))
 
     else:
         # Fallback heuristic logic if model unreadable
-        if is_critical_phishing:
+        if is_trusted:
+            risk_level = RiskLevel.SAFE
+            risk_score = 5
+            explanation = "URL hosted on verified authentic and legitimate domain infrastructure."
+            recommended_actions = ["No action required; safe to browse"]
+            confidence = 0.99
+        elif is_critical_phishing:
             risk_level = RiskLevel.CRITICAL
             risk_score = 95
             brand_name = target_brand.title() if target_brand else "major enterprise"
@@ -146,12 +188,7 @@ def analyze_url(request: UrlAnalyzeRequest) -> UnifiedAnalysisResponse:
                 "Revoke active sessions for credentials entered on this site",
             ]
             confidence = 0.98
-        elif (
-            target_brand is not None
-            or features["has_suspicious_keyword"] == 1.0
-            or features["is_suspicious_tld"] == 1.0
-            or features["has_ip_address"] == 1.0
-        ):
+        elif target_brand is not None or (features["has_suspicious_keyword"] == 1.0 and features["is_suspicious_tld"] == 1.0) or features["has_ip_address"] == 1.0:
             risk_level = RiskLevel.HIGH
             risk_score = 75
             matched_indicators = []
@@ -169,6 +206,15 @@ def analyze_url(request: UrlAnalyzeRequest) -> UnifiedAnalysisResponse:
                 "Isolate URL in sandbox browser",
             ]
             confidence = 0.85
+        elif features["has_suspicious_keyword"] == 1.0 or features["is_suspicious_tld"] == 1.0:
+            risk_level = RiskLevel.MEDIUM
+            risk_score = 45
+            explanation = "Moderate Risk: URL contains sensitive keywords or non-standard domain structure on an unverified host."
+            recommended_actions = [
+                "Exercise caution before submitting credentials",
+                "Verify domain authenticity before logging in",
+            ]
+            confidence = 0.80
         else:
             risk_level = RiskLevel.SAFE
             risk_score = 10

@@ -66,6 +66,8 @@ const checkController = {
     return res.status(200).json({
       id: incident.id,
       risk_level: (mlResult.risk_level || 'low').toLowerCase(),
+      risk_score: typeof mlResult.risk_score === 'number' ? mlResult.risk_score : (mlResult.risk_level?.toLowerCase() === 'safe' ? 5 : 50),
+      confidence_score: typeof mlResult.confidence_score === 'number' ? mlResult.confidence_score : 0.85,
       explanation: mlResult.explanation,
       recommended_actions: recommendedActions,
       signals: mlResult.signals || {}
@@ -124,6 +126,8 @@ const checkController = {
     return res.status(200).json({
       id: incident.id,
       risk_level: (mlResult.risk_level || 'low').toLowerCase(),
+      risk_score: typeof mlResult.risk_score === 'number' ? mlResult.risk_score : (mlResult.risk_level?.toLowerCase() === 'safe' ? 5 : 50),
+      confidence_score: typeof mlResult.confidence_score === 'number' ? mlResult.confidence_score : 0.85,
       explanation: mlResult.explanation,
       recommended_actions: recommendedActions,
       signals: mlResult.signals || {},

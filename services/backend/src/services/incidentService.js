@@ -161,11 +161,11 @@ async function persistDetectionIncident({
 
   let incident = null;
   let dbError = null;
+  let threatIntelEnrichment = null;
 
   const runInsert = async (dbClient) => {
     // Insert into incidents with fingerprint metadata
     // 0. Threat Intelligence Correlation & Risk Boost (pre-insert)
-    let threatIntelEnrichment = null;
     let finalRiskScore = riskScore;
     let finalRiskLevel = riskLevel;
 

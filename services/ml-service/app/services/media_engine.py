@@ -5,6 +5,7 @@ pitch jitter, high-frequency cutoff) and images (2D FFT, radial power spectrum, 
 """
 
 import base64
+import io
 import ipaddress
 import os
 import re
@@ -330,11 +331,12 @@ def analyze_media(request: MediaAnalyzeRequest) -> UnifiedAnalysisResponse:
                 "Report potential executive/identity impersonation attempt to Security Operations"
             ]
         else:
+            peaks_desc = "zero periodic grid peaks" if peaks == 0 else f"{peaks} isolated spectral variation"
             explanation = (
                 f"Supervised visual deepfake classifier and 2D Fourier transform analysis indicate authentic optical capture "
                 f"(score: {classification_score:.2f}, verdict: {supervised_classification}): "
                 f"spectral decay slope = {slope} with continuous high-frequency roll-off (ratio = {hf_ratio}) "
-                f"and zero periodic grid peaks."
+                f"and {peaks_desc}."
             )
             recommended_actions = [
                 "No periodic lattice or synthetic manipulation anomalies detected; proceed with standard verification"

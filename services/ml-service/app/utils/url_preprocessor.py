@@ -193,13 +193,34 @@ def extract_url_features(url: Optional[str]) -> Dict[str, float]:
 
 
 AUTHENTIC_BRAND_DOMAINS: Dict[str, Set[str]] = {
-    "amazon": {"amazon.com", "amazon.co.uk", "amazon.de", "amazon.fr", "amazon.co.jp", "amazon.ca", "amazon.in"},
-    "paypal": {"paypal.com", "paypal.me"},
-    "microsoft": {"microsoft.com", "live.com", "office.com", "azure.com", "outlook.com"},
-    "apple": {"apple.com", "icloud.com"},
-    "google": {"google.com", "google.co.uk", "google.ca", "google.de", "google.co.in", "youtube.com"},
-    "facebook": {"facebook.com", "fb.com", "meta.com"},
-    "netflix": {"netflix.com"},
+    "amazon": {
+        "amazon.com", "amazon.co.uk", "amazon.de", "amazon.fr", "amazon.co.jp",
+        "amazon.ca", "amazon.in", "amazon.it", "amazon.es", "amazon.com.au",
+        "amazon.com.mx", "aws.amazon.com", "media-amazon.com", "primevideo.com",
+    },
+    "paypal": {
+        "paypal.com", "paypal.me", "paypal-community.com",
+    },
+    "microsoft": {
+        "microsoft.com", "live.com", "office.com", "office365.com", "azure.com",
+        "outlook.com", "microsoftonline.com", "windows.com", "visualstudio.com",
+        "msn.com", "bing.com",
+    },
+    "apple": {
+        "apple.com", "icloud.com", "appleid.apple.com", "cdn-apple.com", "mzstatic.com",
+    },
+    "google": {
+        "google.com", "google.co.uk", "google.ca", "google.de", "google.co.in",
+        "google.co.jp", "google.fr", "google.it", "google.es", "google.com.br",
+        "google.com.au", "youtube.com", "blogger.com", "gmail.com",
+        "googleusercontent.com", "gstatic.com", "googlesource.com",
+    },
+    "facebook": {
+        "facebook.com", "fb.com", "meta.com", "messenger.com", "instagram.com", "whatsapp.com",
+    },
+    "netflix": {
+        "netflix.com", "nflxext.com", "nflxvideo.net",
+    },
     "chase": {"chase.com"},
     "wellsfargo": {"wellsfargo.com"},
     "bankofamerica": {"bankofamerica.com"},
@@ -207,12 +228,51 @@ AUTHENTIC_BRAND_DOMAINS: Dict[str, Set[str]] = {
     "fedex": {"fedex.com"},
 }
 
+TOP_LEGITIMATE_DOMAINS: Set[str] = {
+    "google.com", "youtube.com", "facebook.com", "instagram.com", "whatsapp.com",
+    "twitter.com", "x.com", "linkedin.com", "apple.com", "icloud.com",
+    "microsoft.com", "microsoftonline.com", "office.com", "live.com", "azure.com", "bing.com",
+    "amazon.com", "aws.amazon.com", "wikipedia.org", "wikimedia.org",
+    "github.com", "gitlab.com", "reddit.com", "stackoverflow.com", "netflix.com",
+    "yahoo.com", "paypal.com", "chase.com", "wellsfargo.com", "bankofamerica.com",
+    "dhl.com", "fedex.com", "cloudflare.com", "wordpress.org", "wordpress.com",
+    "medium.com", "nytimes.com", "cnn.com", "bbc.com", "bbc.co.uk", "reuters.com",
+    "bloomberg.com", "mozilla.org", "adobe.com", "dropbox.com", "slack.com",
+    "zoom.us", "spotify.com", "ebay.com", "walmart.com", "cyberguard.io",
+}
+
+
+def is_legitimate_domain(hostname: Optional[str]) -> bool:
+    """
+    Checks if a hostname belongs to an authentic, verified top-reputation domain
+    or an authentic registered domain of a major service.
+    """
+    if not hostname:
+        return False
+    h = hostname.lower()
+
+    # 1. Check top legitimate domains
+    for d in TOP_LEGITIMATE_DOMAINS:
+        if h == d or h.endswith("." + d):
+            return True
+
+    # 2. Check authentic brand ecosystems
+    for brand, domains in AUTHENTIC_BRAND_DOMAINS.items():
+        for ad in domains:
+            if h == ad or h.endswith("." + ad):
+                return True
+
+    return False
+
 
 def extract_brand_target(url: Optional[str], candidate_brands: Optional[List[str]] = None) -> Optional[str]:
     """
     Identifies which well-known brand is potentially targeted/impersonated by this URL.
-    Returns the brand name only if the URL mentions the brand but is NOT hosted on the
-    brand's authentic registered domain(s).
+    Returns the brand name only if:
+    1. The URL is NOT hosted on an authentic domain of that brand, AND
+    2. The URL is NOT hosted on a verified top legitimate domain, AND
+    3. Either the hostname itself mentions or mimics the brand (e.g. 'paypal-security.com'),
+       OR the URL mentions the brand while hosted on an untrusted / non-authentic host (e.g. 'sl83684.pro/amazon-login').
     """
     if not url or not isinstance(url, str):
         return None
@@ -221,18 +281,34 @@ def extract_brand_target(url: Optional[str], candidate_brands: Optional[List[str
     try:
         parsed = urlparse(norm_url)
         hostname = (parsed.hostname or "").lower()
+        path_and_query = (parsed.path or "") + ("?" + parsed.query if parsed.query else "")
     except Exception:
         hostname = ""
+        path_and_query = ""
+
+    if not hostname:
+        return None
+
+    # Verified authentic top legitimate domains are not impersonation lures
+    if is_legitimate_domain(hostname):
+        return None
 
     brands = candidate_brands or DEFAULT_CANDIDATE_BRANDS
     for brand in brands:
         b_lower = brand.lower()
-        if b_lower in url_lower:
-            # Check if this hostname is the legitimate authentic domain of the brand
-            auth_domains = AUTHENTIC_BRAND_DOMAINS.get(b_lower, {f"{b_lower}.com"})
-            is_authentic = any(hostname == ad or hostname.endswith("." + ad) for ad in auth_domains)
-            if not is_authentic:
-                return b_lower
+        auth_domains = AUTHENTIC_BRAND_DOMAINS.get(b_lower, {f"{b_lower}.com"})
+        is_authentic = any(hostname == ad or hostname.endswith("." + ad) for ad in auth_domains)
+        if is_authentic:
+            continue
+
+        # Check if brand appears in hostname (e.g. paypal-update.com, login.amazon.security.net)
+        if b_lower in hostname:
+            return b_lower
+
+        # Check if brand appears in path/query on an untrusted host (e.g. sl83684.pro/loading.php?user=amazon_account_update)
+        if b_lower in path_and_query:
+            return b_lower
+
     return None
 
 

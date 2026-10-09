@@ -456,6 +456,15 @@ class LoginAnomalyEngine:
         features_df, meta = self.build_feature_dataframe(request, track_state=track_state)
         raw_score, norm_score = self.score_vector(features_df)
 
+        failed_count = meta.get("failed_attempts", 0)
+        freq_hz = meta.get("attempt_frequency_hz", 0.0)
+        unique_users = meta.get("unique_usernames_count", 1)
+
+        # Legitimate baseline calibration:
+        # A single successful login with zero failed attempts and normal frequency conforms
+        # to standard authenticated human operation and is calibrated as baseline SAFE.
+        if failed_count == 0 and unique_users <= 1 and freq_hz <= 1.0:
+            norm_score = min(norm_score * 0.15, 0.15)
 
         risk_score = int(round(norm_score * 100))
 
