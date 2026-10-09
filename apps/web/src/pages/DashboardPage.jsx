@@ -250,17 +250,18 @@ export function DashboardPage({ onSelectIncident }) {
   }, [mitreData]);
 
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto w-full pb-12 font-sans">
-      {/* 1. Header Bar: Plain, factual, calm Datadog/Sentry style */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
-        <div>
-          <h1 className="font-headline text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
-            Security Overview
-          </h1>
-          <p className="font-body text-xs text-muted-foreground mt-1">
-            Real-time telemetry of active threats, incident trends, and severity distribution
-          </p>
-        </div>
+    <div className="dashboard-page -m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-4rem)] flex-1 bg-[#FFFFFF]">
+      <div className="space-y-6 max-w-[1600px] mx-auto w-full pb-12 font-sans">
+        {/* 1. Header Bar: Plain, factual, calm Datadog/Sentry style */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+          <div>
+            <h1 className="font-headline text-2xl lg:text-3xl font-bold tracking-tight text-slate-900">
+              Security Overview
+            </h1>
+            <p className="font-body text-xs text-slate-600 mt-1">
+              Real-time telemetry of active threats, incident trends, and severity distribution
+            </p>
+          </div>
 
         {/* Timeframe Selector & Refresh Button */}
         <div className="flex items-center gap-3">
@@ -1038,6 +1039,7 @@ export function DashboardPage({ onSelectIncident }) {
           </div>
         </>
       )}
+    </div>
     </div>
   );
 }
