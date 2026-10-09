@@ -1,0 +1,8 @@
+{
+  "url": "rogers-ca.com",
+  "source_dataset": "URL threat",
+  "row_index": 2,
+  "original_label": 1,
+  "source_name": "OTX",
+  "defanged_url": "rogers-ca[.]com"
+}

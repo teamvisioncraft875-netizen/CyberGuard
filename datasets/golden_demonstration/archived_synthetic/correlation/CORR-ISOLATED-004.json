@@ -1,0 +1,34 @@
+{
+  "alerts": [
+    {
+      "alert_id": "alt-c4-01",
+      "timestamp": "2026-10-08T14:00:00+00:00",
+      "src_ip": "172.16.1.50",
+      "dst_ip": "172.16.1.1",
+      "sport": 60111,
+      "dport": 8080,
+      "proto": "tcp",
+      "attack_type": "web_probe",
+      "mitre_tactic": "TA0001",
+      "mitre_technique": "T1190",
+      "severity": "low",
+      "risk_score": 20.0,
+      "host": "DMZ-GW-01"
+    },
+    {
+      "alert_id": "alt-c4-02",
+      "timestamp": "2026-10-11T14:00:00+00:00",
+      "src_ip": "10.200.0.12",
+      "dst_ip": "10.200.0.254",
+      "sport": 34567,
+      "dport": 161,
+      "proto": "udp",
+      "attack_type": "snmp_poll",
+      "mitre_tactic": "TA0007",
+      "mitre_technique": "T1046",
+      "severity": "low",
+      "risk_score": 15.0,
+      "host": "NOC-MON-02"
+    }
+  ]
+}

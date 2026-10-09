@@ -1,0 +1,163 @@
+{
+  "models_baseline": {
+    "phishing/phishing_classifier_v1.0.0.joblib": "0a3f4ce38a9df04d9b852752023014b31a9748beddf8da7c339ab15b4c97c72b",
+    "phishing/phishing_vectorizer_v1.0.0.joblib": "58b6b929e4926acbbc6dd3d72d80276b3f2cbd57e1bb165adb59ccc69a34ddfe",
+    "url/malicious_url_classifier_v1.0.0.joblib": "c657040891cb2ba4981ef56492713f8d2f5900e0721ad2c21424dfe17c9a6d12",
+    "malware/ember_model_2018.txt": "2efaf2366ec824020feb953a29f72dec287efc530280b607a38181865d78ae12",
+    "deepfake_visual_classifier.pt": "d1ae1d66f72196c8b4e679edd319817dfae8b479ac7aa6792b0b52934b0bc5b3",
+    "deepfake_audio_classifier.joblib": "452577e565da60e89dbe5be6c7dcca5eefe89f8b1d8154ca759c8643e7d778ca",
+    "recommendation/recommendation_classifier_v1.0.0.joblib": "ab7344dd10cb62b14358f516ab628dfb5bf57181fe7f3a1119f5c5abe029e01c",
+    "correlation/correlation_classifier_v1.0.0.joblib": "0967507df831d08bee01649e5ad35a79fcb96d3330a0c2f6e7f58291843af019",
+    "false_positive/false_positive_classifier_v1.0.0.joblib": "1748df07643b69628c677277f560e550bc0ff8f1ba94e75dbd3651a46e7943f9",
+    "edr_behavior/edr_behavior_classifier_v1.0.0.joblib": "473ad051d93b62a890187affa45160fedc1ff0a4a9630634e2bf85d40beda40d",
+    "network_threat_model.joblib": "170b7fab315847c0de5d39eaf8c41a5ccba6187fdf0512b2d865075d33b2a64d",
+    "network_anomaly_forest.joblib": "460ef0194511018e55d30260c496df59f9582167a4da982348e5f34edc43bff5",
+    "login_anomaly_forest.joblib": "dc0900ad8d56f1d51431a4b8e5bf7693c39e534df48b67a5d6bce2f50340b70e"
+  },
+  "dataset_baseline": {
+    "datasets\\visualdeepfake\\authentic\\00000.jpg": {
+      "size_bytes": 27593,
+      "sha256": "2cb2c51c1f2b4f1ccd35513b12cd360a71cfc779fc7c1a0de3a21f0d8e7488a5"
+    },
+    "datasets\\visualdeepfake\\authentic\\00001.jpg": {
+      "size_bytes": 30027,
+      "sha256": "5c986f2f957d9d2cdfe77cebdabcbd5ccd780b9d0f0a62c7d674261077b7a40d"
+    },
+    "datasets\\visualdeepfake\\authentic\\00002.jpg": {
+      "size_bytes": 23595,
+      "sha256": "30e1482ab8f16cec6c694387e6d24a3129d38bc3714f192c804a18065080293f"
+    },
+    "datasets\\visualdeepfake\\authentic\\00005.jpg": {
+      "size_bytes": 25771,
+      "sha256": "9dc2e788cdd95077adb8eb66662f1275fdd9bc0cb4ff6d2f03f021991dcdd53c"
+    },
+    "datasets\\visualdeepfake\\authentic\\00009.jpg": {
+      "size_bytes": 24386,
+      "sha256": "ae7960c80122e0819df7b64e6c35e09549655a2b9d299fed9ad325a59da2dda9"
+    },
+    "datasets\\visualdeepfake\\authentic\\00015.jpg": {
+      "size_bytes": 24178,
+      "sha256": "3e6e768df7e232f8eb39d646d0a2b5753d7c0e575814121d17b85da0e48e9759"
+    },
+    "datasets\\visualdeepfake\\authentic\\00020.jpg": {
+      "size_bytes": 29058,
+      "sha256": "a0bb84cb43318c2f2d609629941ffce3afb5ec9efab2c8cf1109a2b8a6bfe1ca"
+    },
+    "datasets\\visualdeepfake\\authentic\\00027.jpg": {
+      "size_bytes": 34890,
+      "sha256": "1afa7b317468331b6addaf8f27da0808f9423915bbb74470d6bd0fc674cbb879"
+    },
+    "datasets\\visualdeepfake\\authentic\\00034.jpg": {
+      "size_bytes": 23426,
+      "sha256": "a0b9eca45d0fd1cc0dc8ca3fa5c6c65b36ac4525d86d39b3359c5b60f37d16ac"
+    },
+    "datasets\\visualdeepfake\\authentic\\00039.jpg": {
+      "size_bytes": 26950,
+      "sha256": "e71224c359c96af6fc8f6d65a216777c4285cc5581c1d5b5578f85db0b6370b9"
+    },
+    "datasets\\visualdeepfake\\authentic\\00047.jpg": {
+      "size_bytes": 38508,
+      "sha256": "5a395ea155404988196ac1bd3a284d0bed67286898db451644c665122b59f814"
+    },
+    "datasets\\visualdeepfake\\authentic\\00048.jpg": {
+      "size_bytes": 24817,
+      "sha256": "f91f353b61adc0b64ff0af4939ef659f12dab09904892c95548e42f496103da3"
+    },
+    "datasets\\visualdeepfake\\authentic\\WhatsApp Image 2026-10-09 at 8.11.33 AM.jpeg": {
+      "size_bytes": 199847,
+      "sha256": "040c2153b863c0d6638890d999223601bccd0817109c1acbccd3024ad0eaf161"
+    },
+    "datasets\\visualdeepfake\\authentic\\WhatsApp Image 2026-10-09 at 8.11.34 AM.jpeg": {
+      "size_bytes": 83239,
+      "sha256": "b9d56fe754691b967aa667b0a8eaf8cc553f7eb7bc22a4982d59c6e2ac7a408d"
+    },
+    "datasets\\visualdeepfake\\authentic\\WhatsApp Image 2026-10-09 at 8.11.36 AM.jpeg": {
+      "size_bytes": 38951,
+      "sha256": "b31450a0b949543bb9a2dc92f4f29bd4d77ffe372d03a402bb87c7d97c352511"
+    },
+    "datasets\\visualdeepfake\\authentic\\WhatsApp Image 2026-10-09 at 8.11.37 AM.jpeg": {
+      "size_bytes": 114437,
+      "sha256": "a5bc25f4342414ae8ac74d91bd8f8b980db66ef3e591dc2e48a05ca9e9e3d6fe"
+    },
+    "datasets\\visualdeepfake\\deepfake\\001DDU0NI4.jpg": {
+      "size_bytes": 24973,
+      "sha256": "d8863793365684f7c5c2173c6f14fa4ec4ecfe0b94858a38c9de245b4d2dbf5e"
+    },
+    "datasets\\visualdeepfake\\deepfake\\00276TOPP4.jpg": {
+      "size_bytes": 28067,
+      "sha256": "93010eed7cdd517c4cbccc1593889fc7ae809006ad08297fd2452c356fd7be87"
+    },
+    "datasets\\visualdeepfake\\deepfake\\002KDWZBHU.jpg": {
+      "size_bytes": 31885,
+      "sha256": "75bd30b1011172995a66a60766ca492ecc2e88214612a64ff27ee37bae8a9e32"
+    },
+    "datasets\\visualdeepfake\\deepfake\\002PMM0QG9.jpg": {
+      "size_bytes": 27725,
+      "sha256": "ba72912672e78bde8eabc80df9dd7a4a9e8560884efa81427d0625d3f1c4c42a"
+    },
+    "datasets\\visualdeepfake\\deepfake\\002TJAKUYX.jpg": {
+      "size_bytes": 34609,
+      "sha256": "86fe6788763ad4b37283f99b6562ea2713a0164344dd55582402b315da86a80f"
+    },
+    "datasets\\visualdeepfake\\deepfake\\003IRD4LS5.jpg": {
+      "size_bytes": 29614,
+      "sha256": "790e682434647b34a248b27657e3e20cb88d79af71f57c3c3be594fdc5af45ad"
+    },
+    "datasets\\visualdeepfake\\deepfake\\003QUB4VC9.jpg": {
+      "size_bytes": 27840,
+      "sha256": "ac6ee8117add1c45ac012aa4b7c4ef39d7510571fa21aeaaee68c3a1e8a8f462"
+    },
+    "datasets\\visualdeepfake\\deepfake\\00483R5CC4.jpg": {
+      "size_bytes": 21816,
+      "sha256": "fb2875da5f2cdfc0134316ce496782237fe8ed787a6d3f4180d9443420b0de15"
+    },
+    "datasets\\visualdeepfake\\deepfake\\007A5R0QAV.jpg": {
+      "size_bytes": 34904,
+      "sha256": "9f4215ef1794d5f93a31de02289ab1b6da73302341fe61c125b2073a6fe44aba"
+    },
+    "datasets\\visualdeepfake\\deepfake\\007SMMOPYB.jpg": {
+      "size_bytes": 32513,
+      "sha256": "6f35f96a4707700b780de1976d8ca33e1c14dd7f9cfd084cedbab1760eedd598"
+    },
+    "datasets\\visualdeepfake\\deepfake\\00GYML2PNL.jpg": {
+      "size_bytes": 30758,
+      "sha256": "8787180e00f186fd20ac0de7052b1e3699fe5f92a0e1afb2edcf838741c8cdc2"
+    },
+    "datasets\\visualdeepfake\\deepfake\\00JC8ESFO5.jpg": {
+      "size_bytes": 31035,
+      "sha256": "47828a71a5b6d6b1826eb9e6d86332c1585581f00d30a3a3166ef07a33cc93f0"
+    },
+    "datasets\\audio_deepfake\\common_voice_en_21094020_speechify_0.wav": {
+      "size_bytes": 43074,
+      "sha256": "451e366dded2cab4d7894cc726b1d17c206612f6f732c81b57f7aff7b8c230f5"
+    },
+    "datasets\\audio_deepfake\\common_voice_en_32642394 (1).wav": {
+      "size_bytes": 221262,
+      "sha256": "807ae413ef70cd4c13742ef91fc4caf793060938b5714b9f1a1bd24a029bbf21"
+    },
+    "datasets\\audio_deepfake\\common_voice_en_32642394.wav": {
+      "size_bytes": 221262,
+      "sha256": "807ae413ef70cd4c13742ef91fc4caf793060938b5714b9f1a1bd24a029bbf21"
+    },
+    "datasets\\audio_deepfake\\common_voice_hi_23852750.wav": {
+      "size_bytes": 127566,
+      "sha256": "a6a6fe8e3f909a3d536856d5d3ffb8b9fb192174443dd8ca837f6cdcc882ec47"
+    },
+    "datasets\\audio_deepfake\\common_voice_hi_24941365_elevenlabs_5.wav": {
+      "size_bytes": 166448,
+      "sha256": "ca5e0ef4754a617a8441024410a82e76793ae00a19b8d93ccb253f0b02c34708"
+    },
+    "datasets\\SMS Spam Collection\\readme": {
+      "size_bytes": 5868,
+      "sha256": "8753cd2d3cab68f80c8257851b8c2037778c267f55accb6fd1b5a2e32d36a84e"
+    },
+    "datasets\\SMS Spam Collection\\SMSSpamCollection": {
+      "size_bytes": 477907,
+      "sha256": "7d039a24a6083ed9ef0f806ebad56bbb976e3aeb8de05669173bfdc4996c239d"
+    },
+    "datasets\\URL threat\\train-00000-of-00001.parquet": {
+      "size_bytes": 373039,
+      "sha256": "b1848e2b82bd23b9314f9ded4002de937ee28c787568ff93a63a0adeff0e96e4"
+    }
+  }
+}

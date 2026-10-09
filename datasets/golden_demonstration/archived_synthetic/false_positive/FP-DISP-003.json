@@ -1,0 +1,11 @@
+{
+  "alert_id": "ALT-2026-003",
+  "event_name": "openat",
+  "process_name": "logrotate",
+  "user_id": 0,
+  "args_num": 2,
+  "return_value": 0,
+  "parent_process_id": 1,
+  "alert_type": "file_access_anomaly",
+  "severity": "low"
+}

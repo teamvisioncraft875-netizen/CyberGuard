@@ -1,0 +1,11 @@
+{
+  "alert_id": "ALT-2026-001",
+  "event_name": "security_file_open",
+  "process_name": "landscape-sysin",
+  "user_id": 0,
+  "args_num": 2,
+  "return_value": 0,
+  "parent_process_id": 1,
+  "alert_type": "file_access_anomaly",
+  "severity": "low"
+}

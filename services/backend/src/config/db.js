@@ -38,8 +38,14 @@ const pool = new Pool({
   keepAliveInitialDelayMillis: 10000,
 });
 
+pool.on('connect', (client) => {
+  client.on('error', (err) => {
+    console.warn('[CYBERGUARD DB] Idle client connection closed or reset safely:', err.message);
+  });
+});
+
 pool.on('error', (err) => {
-  console.error('[CYBERGUARD DB] Unexpected idle client error:', err.message);
+  console.warn('[CYBERGUARD DB] Unexpected idle client error safely handled:', err.message);
 });
 
 /**
@@ -89,6 +95,9 @@ async function getClient() {
     throw new Error('[CYBERGUARD DB] SUPABASE_DB_URL environment variable is not defined.');
   }
   const client = await pool.connect();
+  client.on('error', (err) => {
+    console.warn('[CYBERGUARD DB] Checked-out client socket error handled:', err.message);
+  });
   return client;
 }
 

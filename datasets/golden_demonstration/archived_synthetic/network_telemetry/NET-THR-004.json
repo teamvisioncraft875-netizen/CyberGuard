@@ -1,0 +1,13 @@
+{
+  "user_id": "usr_worm_04",
+  "timestamp": "2026-09-25T12:00:00Z",
+  "event_type": "network_flow",
+  "details": {
+    "dur": 0.08,
+    "tot_pkts": 450.0,
+    "tot_bytes": 520000.0,
+    "src_bytes": 500000.0,
+    "proto": "tcp",
+    "dport": 445
+  }
+}

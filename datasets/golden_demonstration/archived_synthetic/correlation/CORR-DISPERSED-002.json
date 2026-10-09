@@ -1,0 +1,34 @@
+{
+  "alerts": [
+    {
+      "alert_id": "alt-c2-01",
+      "timestamp": "2026-10-06T14:00:00+00:00",
+      "src_ip": "10.0.1.20",
+      "dst_ip": "192.168.1.1",
+      "sport": 54321,
+      "dport": 80,
+      "proto": "tcp",
+      "attack_type": "web_scan",
+      "mitre_tactic": "TA0001",
+      "mitre_technique": "T1190",
+      "severity": "low",
+      "risk_score": 25.0,
+      "host": "HOST-ALPHA"
+    },
+    {
+      "alert_id": "alt-c2-02",
+      "timestamp": "2026-10-06T22:00:00+00:00",
+      "src_ip": "192.168.50.100",
+      "dst_ip": "8.8.8.8",
+      "sport": 40122,
+      "dport": 53,
+      "proto": "udp",
+      "attack_type": "dns_anomaly",
+      "mitre_tactic": "TA0011",
+      "mitre_technique": "T1071",
+      "severity": "low",
+      "risk_score": 20.0,
+      "host": "HOST-BETA"
+    }
+  ]
+}

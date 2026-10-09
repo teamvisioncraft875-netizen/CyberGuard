@@ -1,0 +1,10 @@
+{
+  "process_name": "tsm",
+  "event_name": "execve",
+  "user_id": 1001,
+  "parent_process_name": "bash",
+  "parent_process_id": 7307,
+  "process_id": 7548,
+  "return_value": 0,
+  "args_num": 2
+}

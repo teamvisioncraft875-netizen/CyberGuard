@@ -1,0 +1,11 @@
+{
+  "alert_id": "ALT-2026-004",
+  "event_name": "execve",
+  "process_name": "update-notifier",
+  "user_id": 1000,
+  "args_num": 1,
+  "return_value": 0,
+  "parent_process_id": 1200,
+  "alert_type": "execution_anomaly",
+  "severity": "low"
+}

@@ -1,0 +1,8 @@
+{
+  "url": "mydramalist.com",
+  "source_dataset": "URL threat",
+  "row_index": 12,
+  "original_label": 0,
+  "source_name": "tranco",
+  "defanged_url": "mydramalist[.]com"
+}

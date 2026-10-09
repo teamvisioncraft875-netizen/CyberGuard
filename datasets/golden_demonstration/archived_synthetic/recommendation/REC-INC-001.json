@@ -1,0 +1,49 @@
+{
+  "incident_id": "inc-malware-001",
+  "title": "Ransomware payload detected on finance workstation",
+  "severity": "critical",
+  "risk_score": 92,
+  "threat_type": "malware",
+  "entities": {
+    "hosts": [
+      "FIN-WS-104"
+    ],
+    "users": [
+      "alice.smith"
+    ],
+    "ips": [
+      "192.168.10.45"
+    ],
+    "devices": [
+      "dev-998877"
+    ]
+  },
+  "timeline": {
+    "first_seen": "2026-10-06T12:00:00Z",
+    "last_seen": "2026-10-06T12:04:12Z",
+    "alert_count": 8,
+    "alerts_per_minute": 2.0
+  },
+  "alert_count": 8,
+  "source_engines": [
+    "malware",
+    "system_anomaly"
+  ],
+  "alert_types": [
+    "pe_suspicious_entropy",
+    "ransomware_canary"
+  ],
+  "mitre_techniques": [
+    "T1204",
+    "T1486"
+  ],
+  "mitre_tactics": [
+    "TA0002",
+    "TA0040"
+  ],
+  "host_context": {
+    "os": "Windows 11",
+    "isolated": false
+  },
+  "false_positive_score": null
+}

@@ -1,0 +1,13 @@
+{
+  "user_id": "usr_beacon_02",
+  "timestamp": "2026-09-25T12:00:00Z",
+  "event_type": "network_flow",
+  "details": {
+    "dur": 120.0,
+    "tot_pkts": 60.0,
+    "tot_bytes": 4800.0,
+    "src_bytes": 2400.0,
+    "proto": "tcp",
+    "dport": 6667
+  }
+}

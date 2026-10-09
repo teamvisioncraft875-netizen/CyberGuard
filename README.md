@@ -61,27 +61,35 @@ cyberguard/
 - Python (3.10+)
 - PostgreSQL / cloud DB access
 
-### Setup
+### Setup & Execution Guide
+
+Before running, ensure all project dependencies are installed (`npm install` in root, backend, web, and mobile; `pip install -r requirements.txt` in `services/ml-service`).
+
+#### 1. Backend Gateway (Port 5000)
 ```bash
-# Clone the repo
-git clone <repo-url>
-cd cyberguard
-
-# Backend
-cd services/backend
-npm install
-npm run dev
-
-# ML Service
-cd services/ml-service
-pip install -r requirements.txt --break-system-packages
-uvicorn main:app --reload
-
-# Web frontend
-cd apps/web
-npm install
-npm run dev
+npm run dev:backend
 ```
+
+#### 2. Web Command Dashboard (Port 3000)
+```bash
+npm run dev:web
+```
+
+#### 3. AI/ML Detection Microservice (Port 8000)
+```bash
+cd services/ml-service
+.\venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+#### 4. Mobile Application (React Native / Expo)
+1. Install **Expo Go SDK 51** on your Android device via browser:
+   - Download APK: [Expo Go SDK 51 (Exponent-2.31.2.apk)](https://d1ahtucjixef4r.cloudfront.net/Exponent-2.31.2.apk)
+2. Connect your computer and mobile phone to the same Wi-Fi / mobile hotspot.
+3. Start the mobile development server from project root:
+```bash
+npm run dev:mobile
+```
+4. Scan the generated QR code in Expo Go.
 
 ---
 

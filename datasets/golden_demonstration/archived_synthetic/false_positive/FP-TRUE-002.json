@@ -1,0 +1,11 @@
+{
+  "alert_id": "ALT-2026-998",
+  "event_name": "execve",
+  "process_name": "nc",
+  "user_id": 1001,
+  "args_num": 4,
+  "return_value": 0,
+  "parent_process_id": 7307,
+  "alert_type": "reverse_shell_detected",
+  "severity": "critical"
+}

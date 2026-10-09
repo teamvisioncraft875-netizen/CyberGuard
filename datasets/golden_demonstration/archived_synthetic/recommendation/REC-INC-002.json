@@ -1,0 +1,47 @@
+{
+  "incident_id": "inc-phish-002",
+  "title": "Credential harvesting lure accessed by corporate user",
+  "severity": "high",
+  "risk_score": 82,
+  "threat_type": "phishing",
+  "entities": {
+    "hosts": [
+      "CORP-LT-202"
+    ],
+    "users": [
+      "bob.johnson"
+    ],
+    "ips": [
+      "10.0.4.15"
+    ],
+    "devices": [
+      "dev-443322"
+    ]
+  },
+  "timeline": {
+    "first_seen": "2026-10-06T14:10:00Z",
+    "last_seen": "2026-10-06T14:12:00Z",
+    "alert_count": 3,
+    "alerts_per_minute": 1.5
+  },
+  "alert_count": 3,
+  "source_engines": [
+    "phishing",
+    "malicious_url"
+  ],
+  "alert_types": [
+    "credential_harvesting_url",
+    "urgent_solicitation"
+  ],
+  "mitre_techniques": [
+    "T1566.002"
+  ],
+  "mitre_tactics": [
+    "TA0001"
+  ],
+  "host_context": {
+    "os": "macOS",
+    "isolated": false
+  },
+  "false_positive_score": null
+}
