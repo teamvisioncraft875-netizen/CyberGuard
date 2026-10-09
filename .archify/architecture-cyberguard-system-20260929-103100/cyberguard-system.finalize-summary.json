@@ -7,13 +7,13 @@
   "quality": "showcase",
   "specification": {
     "path": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\candidate.json",
-    "sha256": "408b4c5318b21636c8fcf473c2afe91abcab4b5c2f70273ec5c357076e0243f4",
-    "bytes": 22284
+    "sha256": "506f0cfe28ae8a894c4a966384190fca7415bda91a7d225cbcd0136edd0e53c2",
+    "bytes": 20296
   },
   "artifact": {
     "path": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.html",
-    "sha256": "1d03d3f81fd9b6b565c81782d3abcbb538903811d3817bb82e1907f08031fc30",
-    "bytes": 844285
+    "sha256": "df70438ef730503211194172133eabda6a7174ddde8906721c8a207b5327498c",
+    "bytes": 836071
   },
   "gates": {
     "validate": "pass",
@@ -37,19 +37,19 @@
     "installedVersion": "3.0.1",
     "availableVersion": "3.0.1",
     "releaseNotes": null,
-    "checkedAt": "2026-10-02T21:54:20.311Z",
+    "checkedAt": "2026-10-09T17:45:56.989Z",
     "source": "cache",
     "noticeRequired": false,
     "noticeText": null
   },
   "visualReview": "not-requested",
-  "durationMs": 7402,
+  "durationMs": 6941,
   "visualReviewRecommendation": {
     "action": "inspect-route-readability",
     "signals": {
-      "resolvedCrossovers": 29,
-      "routesOverSuggestedBends": 13,
-      "routesOverSuggestedStretch": 1
+      "resolvedCrossovers": 13,
+      "routesOverSuggestedBends": 12,
+      "routesOverSuggestedStretch": 3
     },
     "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
     "affectedRoutes": {
@@ -79,24 +79,47 @@
         },
         {
           "left": {
-            "id": "conn-sensor-gw",
-            "from": "sensor_guard",
+            "id": "conn-agent-gw",
+            "from": "agent_fleet",
             "to": "api_gw",
-            "label": "telemetry stream",
-            "collectionIndex": 2,
-            "artifactIndex": 3
+            "label": "heartbeat &amp; port telemetry",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "right": {
+            "id": "conn-gw-auth",
+            "from": "api_gw",
+            "to": "auth_mw",
+            "label": "verify JWT &amp; RBAC",
+            "collectionIndex": 5,
+            "artifactIndex": 6
+          },
+          "point": [
+            397,
+            298
+          ],
+          "sharedNode": "api_gw"
+        },
+        {
+          "left": {
+            "id": "conn-agent-gw",
+            "from": "agent_fleet",
+            "to": "api_gw",
+            "label": "heartbeat &amp; port telemetry",
+            "collectionIndex": 3,
+            "artifactIndex": 4
           },
           "right": {
             "id": "conn-ws-mobile",
             "from": "realtime_ws",
             "to": "client_mobile",
-            "label": "push &amp; Guardian alerts",
+            "label": "Guardian alerts",
             "collectionIndex": 22,
             "artifactIndex": 23
           },
           "point": [
-            259,
-            377
+            377.5,
+            427
           ]
         },
         {
@@ -104,20 +127,20 @@
             "id": "conn-gw-mgmt",
             "from": "api_gw",
             "to": "ctrl_mgmt",
-            "label": "resource routing",
-            "collectionIndex": 6,
-            "artifactIndex": 7
+            "label": "surface &amp; DDoS routing",
+            "collectionIndex": 7,
+            "artifactIndex": 8
           },
           "right": {
             "id": "conn-svc-ws",
             "from": "svc_incident",
             "to": "realtime_ws",
-            "label": "incident:new event",
+            "label": "incident:new",
             "collectionIndex": 20,
             "artifactIndex": 21
           },
           "point": [
-            546,
+            562,
             377
           ]
         },
@@ -126,66 +149,66 @@
             "id": "conn-gw-mgmt",
             "from": "api_gw",
             "to": "ctrl_mgmt",
-            "label": "resource routing",
-            "collectionIndex": 6,
-            "artifactIndex": 7
+            "label": "surface &amp; DDoS routing",
+            "collectionIndex": 7,
+            "artifactIndex": 8
           },
           "right": {
-            "id": "conn-incident-policy",
+            "id": "conn-incident-soar",
             "from": "svc_incident",
-            "to": "eng_policy",
-            "label": "policy rules",
-            "collectionIndex": 27,
-            "artifactIndex": 28
+            "to": "ctrl_actions",
+            "label": "trigger playbooks",
+            "collectionIndex": 25,
+            "artifactIndex": 26
           },
           "point": [
-            546,
-            469
+            648,
+            456.06666666666666
           ]
         },
         {
           "left": {
-            "id": "conn-check-svc",
-            "from": "ctrl_check",
-            "to": "svc_incident",
-            "label": "persist triage",
-            "collectionIndex": 8,
-            "artifactIndex": 9
+            "id": "conn-mlgw-media",
+            "from": "ml_gw",
+            "to": "eng_media",
+            "label": "audio &amp; visual deepfake",
+            "collectionIndex": 13,
+            "artifactIndex": 14
           },
           "right": {
-            "id": "conn-svc-mitre",
-            "from": "svc_incident",
-            "to": "ext_mitre",
-            "label": "ATT&amp;CK taxonomy",
-            "collectionIndex": 15,
-            "artifactIndex": 16
+            "id": "conn-mlgw-adv",
+            "from": "ml_gw",
+            "to": "eng_advanced",
+            "label": "EDR &amp; malware",
+            "collectionIndex": 14,
+            "artifactIndex": 15
           },
           "point": [
-            657,
-            326
+            1080,
+            298
           ],
-          "sharedNode": "svc_incident"
+          "sharedNode": "ml_gw"
         },
         {
           "left": {
             "id": "conn-mlgw-media",
             "from": "ml_gw",
             "to": "eng_media",
-            "label": "dispatch media",
-            "collectionIndex": 12,
-            "artifactIndex": 13
+            "label": "audio &amp; visual deepfake",
+            "collectionIndex": 13,
+            "artifactIndex": 14
           },
           "right": {
             "id": "conn-svc-mitre",
             "from": "svc_incident",
             "to": "ext_mitre",
             "label": "ATT&amp;CK taxonomy",
-            "collectionIndex": 15,
-            "artifactIndex": 16
+            "collectionIndex": 16,
+            "artifactIndex": 17
           },
           "point": [
             1080,
-            326
+            297
           ]
         },
         {
@@ -193,43 +216,21 @@
             "id": "conn-mlgw-media",
             "from": "ml_gw",
             "to": "eng_media",
-            "label": "dispatch media",
-            "collectionIndex": 12,
-            "artifactIndex": 13
+            "label": "audio &amp; visual deepfake",
+            "collectionIndex": 13,
+            "artifactIndex": 14
           },
           "right": {
-            "id": "conn-anomaly-db",
-            "from": "eng_anomaly",
-            "to": "db_postgres",
-            "label": "read login history",
-            "collectionIndex": 19,
-            "artifactIndex": 20
+            "id": "conn-svc-fcm",
+            "from": "svc_incident",
+            "to": "ext_fcm",
+            "label": "push alerts",
+            "collectionIndex": 17,
+            "artifactIndex": 18
           },
           "point": [
             1080,
-            347
-          ]
-        },
-        {
-          "left": {
-            "id": "conn-svc-mitre",
-            "from": "svc_incident",
-            "to": "ext_mitre",
-            "label": "ATT&amp;CK taxonomy",
-            "collectionIndex": 15,
-            "artifactIndex": 16
-          },
-          "right": {
-            "id": "conn-anomaly-db",
-            "from": "eng_anomaly",
-            "to": "db_postgres",
-            "label": "read login history",
-            "collectionIndex": 19,
-            "artifactIndex": 20
-          },
-          "point": [
-            1200,
-            326
+            346.99999999999994
           ]
         }
       ],
@@ -244,16 +245,28 @@
             "artifactIndex": 2
           },
           "bends": 3,
-          "stretch": 1.25
+          "stretch": 1.274
+        },
+        {
+          "relationship": {
+            "id": "conn-agent-gw",
+            "from": "agent_fleet",
+            "to": "api_gw",
+            "label": "heartbeat &amp; port telemetry",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "bends": 4,
+          "stretch": 1.494
         },
         {
           "relationship": {
             "id": "conn-gw-mgmt",
             "from": "api_gw",
             "to": "ctrl_mgmt",
-            "label": "resource routing",
-            "collectionIndex": 6,
-            "artifactIndex": 7
+            "label": "surface &amp; DDoS routing",
+            "collectionIndex": 7,
+            "artifactIndex": 8
           },
           "bends": 3,
           "stretch": 1
@@ -263,12 +276,24 @@
             "id": "conn-mlgw-anomaly",
             "from": "ml_gw",
             "to": "eng_anomaly",
-            "label": "dispatch telemetry",
-            "collectionIndex": 11,
-            "artifactIndex": 12
+            "label": "login &amp; traffic",
+            "collectionIndex": 12,
+            "artifactIndex": 13
           },
           "bends": 3,
-          "stretch": 1.257
+          "stretch": 1.25
+        },
+        {
+          "relationship": {
+            "id": "conn-mlgw-adv",
+            "from": "ml_gw",
+            "to": "eng_advanced",
+            "label": "EDR &amp; malware",
+            "collectionIndex": 14,
+            "artifactIndex": 15
+          },
+          "bends": 3,
+          "stretch": 1
         },
         {
           "relationship": {
@@ -276,35 +301,35 @@
             "from": "svc_incident",
             "to": "ext_mitre",
             "label": "ATT&amp;CK taxonomy",
-            "collectionIndex": 15,
-            "artifactIndex": 16
+            "collectionIndex": 16,
+            "artifactIndex": 17
           },
           "bends": 3,
-          "stretch": 1.065,
-          "directCorridorBlockers": [
-            {
-              "id": "eng_media",
-              "label": "Deepfake &amp; Audio",
-              "box": [
-                1120,
-                350,
-                160,
-                54
-              ]
-            }
-          ]
+          "stretch": 1
         },
         {
           "relationship": {
             "id": "conn-svc-fcm",
             "from": "svc_incident",
             "to": "ext_fcm",
-            "label": "push dispatch",
-            "collectionIndex": 16,
-            "artifactIndex": 17
+            "label": "push alerts",
+            "collectionIndex": 17,
+            "artifactIndex": 18
           },
           "bends": 4,
-          "stretch": 1.079
+          "stretch": 1.09,
+          "directCorridorBlockers": [
+            {
+              "id": "eng_media",
+              "label": "Deepfake Visual &amp; Audio",
+              "box": [
+                1120,
+                350,
+                170,
+                54
+              ]
+            }
+          ]
         },
         {
           "relationship": {
@@ -315,32 +340,8 @@
             "collectionIndex": 21,
             "artifactIndex": 22
           },
-          "bends": 4,
-          "stretch": 1.278
-        },
-        {
-          "relationship": {
-            "id": "conn-ws-mobile",
-            "from": "realtime_ws",
-            "to": "client_mobile",
-            "label": "push &amp; Guardian alerts",
-            "collectionIndex": 22,
-            "artifactIndex": 23
-          },
-          "bends": 4,
-          "stretch": 1
-        },
-        {
-          "relationship": {
-            "id": "conn-check-store",
-            "from": "ctrl_check",
-            "to": "store_media",
-            "label": "upload media",
-            "collectionIndex": 23,
-            "artifactIndex": 24
-          },
-          "bends": 4,
-          "stretch": 1
+          "bends": 3,
+          "stretch": 1.129
         }
       ],
       "truncated": true
@@ -348,12 +349,12 @@
     "hints": [
       "api_gw has 3 relationships facing its left side, which fits 2 ports: make that side at least 60px, or move some of those neighbours so they face another side of api_gw.",
       "ml_gw has 3 relationships facing its right side, which fits 2 ports: make that side at least 60px, or move some of those neighbours so they face another side of ml_gw.",
-      "svc_incident has 3 relationships facing its right side, which fits 2 ports: make that side at least 60px, or move some of those neighbours so they face another side of svc_incident.",
-      "db_postgres has 3 relationships facing its left side, which fits 2 ports: make that side at least 60px, or move some of those neighbours so they face another side of db_postgres.",
-      "svc_execution has 4 relationships facing its right side, which fits 2 ports: make that side at least 74px, or move some of those neighbours so they face another side of svc_execution.",
       "client_mobile → api_gw and sensor_guard → api_gw cross next to api_gw: move node client_mobile or sensor_guard so the two reach api_gw from different sides (for example one level with it, one directly above or below it).",
-      "sensor_guard → api_gw crosses realtime_ws → client_mobile: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
-      "api_gw → ctrl_mgmt crosses svc_incident → realtime_ws: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor."
+      "agent_fleet → api_gw and api_gw → auth_mw cross next to api_gw: move node agent_fleet or auth_mw so the two reach api_gw from different sides (for example one level with it, one directly above or below it).",
+      "agent_fleet → api_gw crosses realtime_ws → client_mobile: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "api_gw → ctrl_mgmt crosses svc_incident → realtime_ws: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "api_gw → ctrl_mgmt crosses svc_incident → ctrl_actions: move the node of whichever is a branch, return, or second entrance to the other side of the main path, so that relationship runs through an empty corridor.",
+      "ml_gw → eng_media and ml_gw → eng_advanced cross next to ml_gw: move node eng_media or eng_advanced so the two reach ml_gw from different sides (for example one level with it, one directly above or below it)."
     ],
     "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
   }

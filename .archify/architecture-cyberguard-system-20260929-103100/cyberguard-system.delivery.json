@@ -1,17 +1,17 @@
 {
   "schemaVersion": 1,
-  "receiptId": "bc86f6fc-c725-4a37-90ad-f3889fcc50f4",
+  "receiptId": "69f303be-8c59-4ae4-a16e-77b2974cf6ab",
   "status": "current",
   "command": "deliver",
   "type": "architecture",
   "input": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\candidate.json",
   "output": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.html",
   "specification": {
-    "sha256": "408b4c5318b21636c8fcf473c2afe91abcab4b5c2f70273ec5c357076e0243f4",
-    "bytes": 22284
+    "sha256": "506f0cfe28ae8a894c4a966384190fca7415bda91a7d225cbcd0136edd0e53c2",
+    "bytes": 20296
   },
   "artifact": {
-    "sha256": "1d03d3f81fd9b6b565c81782d3abcbb538903811d3817bb82e1907f08031fc30",
-    "bytes": 844285
+    "sha256": "df70438ef730503211194172133eabda6a7174ddde8906721c8a207b5327498c",
+    "bytes": 836071
   }
 }

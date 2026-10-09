@@ -5,16 +5,16 @@
   "status": "pass",
   "type": "architecture",
   "quality": "showcase",
-  "startedAt": "2026-10-02T22:07:29.434Z",
+  "startedAt": "2026-10-09T17:48:24.850Z",
   "specification": {
     "path": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\candidate.json",
-    "sha256": "408b4c5318b21636c8fcf473c2afe91abcab4b5c2f70273ec5c357076e0243f4",
-    "bytes": 22284
+    "sha256": "506f0cfe28ae8a894c4a966384190fca7415bda91a7d225cbcd0136edd0e53c2",
+    "bytes": 20296
   },
   "artifact": {
     "path": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.html",
-    "sha256": "1d03d3f81fd9b6b565c81782d3abcbb538903811d3817bb82e1907f08031fc30",
-    "bytes": 844285
+    "sha256": "df70438ef730503211194172133eabda6a7174ddde8906721c8a207b5327498c",
+    "bytes": 836071
   },
   "stages": {
     "validate": {
@@ -32,7 +32,7 @@
         "--quality",
         "showcase",
         "--repo-root",
-        "c:\\Users\\subha\\Downloads\\CyberGuard",
+        "C:\\Users\\subha\\Downloads\\CyberGuard",
         "--json"
       ],
       "receipt": {
@@ -40,8 +40,8 @@
         "ok": true,
         "command": "validate",
         "specification": {
-          "sha256": "408b4c5318b21636c8fcf473c2afe91abcab4b5c2f70273ec5c357076e0243f4",
-          "bytes": 22284
+          "sha256": "506f0cfe28ae8a894c4a966384190fca7415bda91a7d225cbcd0136edd0e53c2",
+          "bytes": 20296
         },
         "validation": {
           "checksPassed": 9,
@@ -56,7 +56,7 @@
     "deliver": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 2547,
+      "durationMs": 2648,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\subha\\Downloads\\archify-tool\\archify\\bin\\archify.mjs",
@@ -67,24 +67,24 @@
         "--quality",
         "showcase",
         "--repo-root",
-        "c:\\Users\\subha\\Downloads\\CyberGuard",
+        "C:\\Users\\subha\\Downloads\\CyberGuard",
         "--json"
       ],
       "receipt": {
         "schemaVersion": 1,
-        "receiptId": "bc86f6fc-c725-4a37-90ad-f3889fcc50f4",
+        "receiptId": "69f303be-8c59-4ae4-a16e-77b2974cf6ab",
         "ok": true,
         "command": "deliver",
         "type": "architecture",
         "input": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\candidate.json",
         "output": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.html",
         "specification": {
-          "sha256": "408b4c5318b21636c8fcf473c2afe91abcab4b5c2f70273ec5c357076e0243f4",
-          "bytes": 22284
+          "sha256": "506f0cfe28ae8a894c4a966384190fca7415bda91a7d225cbcd0136edd0e53c2",
+          "bytes": 20296
         },
         "artifact": {
-          "sha256": "1d03d3f81fd9b6b565c81782d3abcbb538903811d3817bb82e1907f08031fc30",
-          "bytes": 844285
+          "sha256": "df70438ef730503211194172133eabda6a7174ddde8906721c8a207b5327498c",
+          "bytes": 836071
         },
         "validation": {
           "checksPassed": 9,
@@ -97,8 +97,8 @@
         "evidence": {
           "verified": true,
           "repository": "https://github.com/teamvisioncraft875-netizen/CyberGuard",
-          "revision": "3cf59d74ebc6cd8bffc60cbe8d1f0e3230b1bdae",
-          "references": 21
+          "revision": "c221ff57eb7f4fc589541da33122eeda2c45da21",
+          "references": 23
         },
         "update": {
           "status": "unavailable",
@@ -116,7 +116,7 @@
     "check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 446,
+      "durationMs": 310,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\subha\\Downloads\\archify-tool\\archify\\bin\\archify.mjs",
@@ -128,8 +128,8 @@
         "ok": true,
         "file": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.html",
         "artifact": {
-          "sha256": "1d03d3f81fd9b6b565c81782d3abcbb538903811d3817bb82e1907f08031fc30",
-          "bytes": 844285
+          "sha256": "df70438ef730503211194172133eabda6a7174ddde8906721c8a207b5327498c",
+          "bytes": 836071
         },
         "checks": [
           {
@@ -190,22 +190,22 @@
           },
           "metrics": {
             "properCrossings": 0,
-            "resolvedCrossovers": 29,
+            "resolvedCrossovers": 13,
             "ambiguousCorridors": 0,
             "arrowheadCollisions": 0,
             "containerBorderRuns": 0,
             "labelRouteClearanceIssues": 0,
             "labelCanvasOverflowIssues": 0,
-            "minLabelRouteClearance": 4,
+            "minLabelRouteClearance": 5,
             "desktopReadabilityIssues": 0,
             "viewportHeightIssues": 0,
-            "minProjectedNodeTextPx": 6.83248730964467,
-            "maxBends": 4,
-            "routesOverSuggestedBends": 13,
-            "maxStretch": 1.92,
-            "routesOverSuggestedStretch": 1,
+            "minProjectedNodeTextPx": 6.397954271961493,
+            "maxBends": 6,
+            "routesOverSuggestedBends": 12,
+            "maxStretch": 1.562,
+            "routesOverSuggestedStretch": 3,
             "minSegmentPx": 24,
-            "minInteriorSegmentPx": 30,
+            "minInteriorSegmentPx": 28,
             "shortSegmentCount": 0,
             "shortEndpointSegmentCount": 0,
             "shortInteriorSegmentCount": 0,
@@ -244,24 +244,47 @@
               },
               {
                 "left": {
-                  "id": "conn-sensor-gw",
-                  "from": "sensor_guard",
+                  "id": "conn-agent-gw",
+                  "from": "agent_fleet",
                   "to": "api_gw",
-                  "label": "telemetry stream",
-                  "collectionIndex": 2,
-                  "artifactIndex": 3
+                  "label": "heartbeat &amp; port telemetry",
+                  "collectionIndex": 3,
+                  "artifactIndex": 4
+                },
+                "right": {
+                  "id": "conn-gw-auth",
+                  "from": "api_gw",
+                  "to": "auth_mw",
+                  "label": "verify JWT &amp; RBAC",
+                  "collectionIndex": 5,
+                  "artifactIndex": 6
+                },
+                "point": [
+                  397,
+                  298
+                ],
+                "sharedNode": "api_gw"
+              },
+              {
+                "left": {
+                  "id": "conn-agent-gw",
+                  "from": "agent_fleet",
+                  "to": "api_gw",
+                  "label": "heartbeat &amp; port telemetry",
+                  "collectionIndex": 3,
+                  "artifactIndex": 4
                 },
                 "right": {
                   "id": "conn-ws-mobile",
                   "from": "realtime_ws",
                   "to": "client_mobile",
-                  "label": "push &amp; Guardian alerts",
+                  "label": "Guardian alerts",
                   "collectionIndex": 22,
                   "artifactIndex": 23
                 },
                 "point": [
-                  259,
-                  377
+                  377.5,
+                  427
                 ]
               },
               {
@@ -269,20 +292,20 @@
                   "id": "conn-gw-mgmt",
                   "from": "api_gw",
                   "to": "ctrl_mgmt",
-                  "label": "resource routing",
-                  "collectionIndex": 6,
-                  "artifactIndex": 7
+                  "label": "surface &amp; DDoS routing",
+                  "collectionIndex": 7,
+                  "artifactIndex": 8
                 },
                 "right": {
                   "id": "conn-svc-ws",
                   "from": "svc_incident",
                   "to": "realtime_ws",
-                  "label": "incident:new event",
+                  "label": "incident:new",
                   "collectionIndex": 20,
                   "artifactIndex": 21
                 },
                 "point": [
-                  546,
+                  562,
                   377
                 ]
               },
@@ -291,489 +314,154 @@
                   "id": "conn-gw-mgmt",
                   "from": "api_gw",
                   "to": "ctrl_mgmt",
-                  "label": "resource routing",
-                  "collectionIndex": 6,
-                  "artifactIndex": 7
+                  "label": "surface &amp; DDoS routing",
+                  "collectionIndex": 7,
+                  "artifactIndex": 8
                 },
                 "right": {
-                  "id": "conn-incident-policy",
+                  "id": "conn-incident-soar",
                   "from": "svc_incident",
-                  "to": "eng_policy",
-                  "label": "policy rules",
-                  "collectionIndex": 27,
-                  "artifactIndex": 28
-                },
-                "point": [
-                  546,
-                  469
-                ]
-              },
-              {
-                "left": {
-                  "id": "conn-check-svc",
-                  "from": "ctrl_check",
-                  "to": "svc_incident",
-                  "label": "persist triage",
-                  "collectionIndex": 8,
-                  "artifactIndex": 9
-                },
-                "right": {
-                  "id": "conn-svc-mitre",
-                  "from": "svc_incident",
-                  "to": "ext_mitre",
-                  "label": "ATT&amp;CK taxonomy",
-                  "collectionIndex": 15,
-                  "artifactIndex": 16
-                },
-                "point": [
-                  657,
-                  326
-                ],
-                "sharedNode": "svc_incident"
-              },
-              {
-                "left": {
-                  "id": "conn-mlgw-media",
-                  "from": "ml_gw",
-                  "to": "eng_media",
-                  "label": "dispatch media",
-                  "collectionIndex": 12,
-                  "artifactIndex": 13
-                },
-                "right": {
-                  "id": "conn-svc-mitre",
-                  "from": "svc_incident",
-                  "to": "ext_mitre",
-                  "label": "ATT&amp;CK taxonomy",
-                  "collectionIndex": 15,
-                  "artifactIndex": 16
-                },
-                "point": [
-                  1080,
-                  326
-                ]
-              },
-              {
-                "left": {
-                  "id": "conn-mlgw-media",
-                  "from": "ml_gw",
-                  "to": "eng_media",
-                  "label": "dispatch media",
-                  "collectionIndex": 12,
-                  "artifactIndex": 13
-                },
-                "right": {
-                  "id": "conn-anomaly-db",
-                  "from": "eng_anomaly",
-                  "to": "db_postgres",
-                  "label": "read login history",
-                  "collectionIndex": 19,
-                  "artifactIndex": 20
-                },
-                "point": [
-                  1080,
-                  347
-                ]
-              },
-              {
-                "left": {
-                  "id": "conn-svc-mitre",
-                  "from": "svc_incident",
-                  "to": "ext_mitre",
-                  "label": "ATT&amp;CK taxonomy",
-                  "collectionIndex": 15,
-                  "artifactIndex": 16
-                },
-                "right": {
-                  "id": "conn-anomaly-db",
-                  "from": "eng_anomaly",
-                  "to": "db_postgres",
-                  "label": "read login history",
-                  "collectionIndex": 19,
-                  "artifactIndex": 20
-                },
-                "point": [
-                  1200,
-                  326
-                ]
-              },
-              {
-                "left": {
-                  "id": "conn-svc-mitre",
-                  "from": "svc_incident",
-                  "to": "ext_mitre",
-                  "label": "ATT&amp;CK taxonomy",
-                  "collectionIndex": 15,
-                  "artifactIndex": 16
-                },
-                "right": {
-                  "id": "conn-mlgw-secrets",
-                  "from": "ml_gw",
-                  "to": "eng_secrets",
-                  "label": "scan strings",
-                  "collectionIndex": 26,
-                  "artifactIndex": 27
-                },
-                "point": [
-                  960,
-                  326
-                ]
-              },
-              {
-                "left": {
-                  "id": "conn-svc-fcm",
-                  "from": "svc_incident",
-                  "to": "ext_fcm",
-                  "label": "push dispatch",
-                  "collectionIndex": 16,
-                  "artifactIndex": 17
-                },
-                "right": {
-                  "id": "conn-svc-db",
-                  "from": "svc_incident",
-                  "to": "db_postgres",
-                  "label": "atomic 4-table Tx",
-                  "collectionIndex": 17,
-                  "artifactIndex": 18
-                },
-                "point": [
-                  991.8000000000005,
-                  477
-                ],
-                "sharedNode": "svc_incident"
-              },
-              {
-                "left": {
-                  "id": "conn-svc-fcm",
-                  "from": "svc_incident",
-                  "to": "ext_fcm",
-                  "label": "push dispatch",
-                  "collectionIndex": 16,
-                  "artifactIndex": 17
-                },
-                "right": {
-                  "id": "conn-anomaly-db",
-                  "from": "eng_anomaly",
-                  "to": "db_postgres",
-                  "label": "read login history",
-                  "collectionIndex": 19,
-                  "artifactIndex": 20
-                },
-                "point": [
-                  1020,
-                  536.9999999999999
-                ]
-              },
-              {
-                "left": {
-                  "id": "conn-svc-fcm",
-                  "from": "svc_incident",
-                  "to": "ext_fcm",
-                  "label": "push dispatch",
-                  "collectionIndex": 16,
-                  "artifactIndex": 17
-                },
-                "right": {
-                  "id": "conn-media-store",
-                  "from": "eng_media",
-                  "to": "store_media",
-                  "label": "fetch media bytes",
-                  "collectionIndex": 24,
-                  "artifactIndex": 25
-                },
-                "point": [
-                  991.7333333333335,
-                  383.9999999999999
-                ]
-              },
-              {
-                "left": {
-                  "id": "conn-svc-fcm",
-                  "from": "svc_incident",
-                  "to": "ext_fcm",
-                  "label": "push dispatch",
-                  "collectionIndex": 16,
-                  "artifactIndex": 17
-                },
-                "right": {
-                  "id": "conn-mlgw-secrets",
-                  "from": "ml_gw",
-                  "to": "eng_secrets",
-                  "label": "scan strings",
-                  "collectionIndex": 26,
-                  "artifactIndex": 27
-                },
-                "point": [
-                  960.0000000000001,
-                  377.00000000000006
-                ]
-              },
-              {
-                "left": {
-                  "id": "conn-svc-db",
-                  "from": "svc_incident",
-                  "to": "db_postgres",
-                  "label": "atomic 4-table Tx",
-                  "collectionIndex": 17,
-                  "artifactIndex": 18
-                },
-                "right": {
-                  "id": "conn-anomaly-db",
-                  "from": "eng_anomaly",
-                  "to": "db_postgres",
-                  "label": "read login history",
-                  "collectionIndex": 19,
-                  "artifactIndex": 20
-                },
-                "point": [
-                  1020,
-                  477
-                ],
-                "sharedNode": "db_postgres"
-              },
-              {
-                "left": {
-                  "id": "conn-svc-db",
-                  "from": "svc_incident",
-                  "to": "db_postgres",
-                  "label": "atomic 4-table Tx",
-                  "collectionIndex": 17,
-                  "artifactIndex": 18
-                },
-                "right": {
-                  "id": "conn-media-store",
-                  "from": "eng_media",
-                  "to": "store_media",
-                  "label": "fetch media bytes",
-                  "collectionIndex": 24,
-                  "artifactIndex": 25
-                },
-                "point": [
-                  902.1000000000001,
-                  477
-                ]
-              },
-              {
-                "left": {
-                  "id": "conn-mgmt-db",
-                  "from": "ctrl_mgmt",
-                  "to": "db_postgres",
-                  "label": "scoped queries",
-                  "collectionIndex": 18,
-                  "artifactIndex": 19
-                },
-                "right": {
-                  "id": "conn-media-store",
-                  "from": "eng_media",
-                  "to": "store_media",
-                  "label": "fetch media bytes",
-                  "collectionIndex": 24,
-                  "artifactIndex": 25
-                },
-                "point": [
-                  844.2000000000002,
-                  562
-                ]
-              },
-              {
-                "left": {
-                  "id": "conn-mgmt-db",
-                  "from": "ctrl_mgmt",
-                  "to": "db_postgres",
-                  "label": "scoped queries",
-                  "collectionIndex": 18,
-                  "artifactIndex": 19
-                },
-                "right": {
-                  "id": "conn-db-rls",
-                  "from": "db_postgres",
-                  "to": "db_rls",
-                  "label": "tenant RLS policy",
+                  "to": "ctrl_actions",
+                  "label": "trigger playbooks",
                   "collectionIndex": 25,
                   "artifactIndex": 26
                 },
                 "point": [
-                  844.2000000000003,
-                  646
-                ],
-                "sharedNode": "db_postgres"
-              },
-              {
-                "left": {
-                  "id": "conn-anomaly-db",
-                  "from": "eng_anomaly",
-                  "to": "db_postgres",
-                  "label": "read login history",
-                  "collectionIndex": 19,
-                  "artifactIndex": 20
-                },
-                "right": {
-                  "id": "conn-media-store",
-                  "from": "eng_media",
-                  "to": "store_media",
-                  "label": "fetch media bytes",
-                  "collectionIndex": 24,
-                  "artifactIndex": 25
-                },
-                "point": [
-                  1020,
-                  383.99999999999994
+                  648,
+                  456.06666666666666
                 ]
               },
               {
                 "left": {
-                  "id": "conn-anomaly-db",
-                  "from": "eng_anomaly",
-                  "to": "db_postgres",
-                  "label": "read login history",
-                  "collectionIndex": 19,
-                  "artifactIndex": 20
-                },
-                "right": {
-                  "id": "conn-mlgw-secrets",
+                  "id": "conn-mlgw-media",
                   "from": "ml_gw",
-                  "to": "eng_secrets",
-                  "label": "scan strings",
-                  "collectionIndex": 26,
-                  "artifactIndex": 27
-                },
-                "point": [
-                  1020,
-                  456
-                ]
-              },
-              {
-                "left": {
-                  "id": "conn-svc-ws",
-                  "from": "svc_incident",
-                  "to": "realtime_ws",
-                  "label": "incident:new event",
-                  "collectionIndex": 20,
-                  "artifactIndex": 21
+                  "to": "eng_media",
+                  "label": "audio &amp; visual deepfake",
+                  "collectionIndex": 13,
+                  "artifactIndex": 14
                 },
                 "right": {
-                  "id": "conn-check-store",
-                  "from": "ctrl_check",
-                  "to": "store_media",
-                  "label": "upload media",
-                  "collectionIndex": 23,
-                  "artifactIndex": 24
-                },
-                "point": [
-                  545,
-                  377
-                ]
-              },
-              {
-                "left": {
-                  "id": "conn-ws-web",
-                  "from": "realtime_ws",
-                  "to": "client_web",
-                  "label": "live incident stream",
-                  "collectionIndex": 21,
-                  "artifactIndex": 22
-                },
-                "right": {
-                  "id": "conn-ws-mobile",
-                  "from": "realtime_ws",
-                  "to": "client_mobile",
-                  "label": "push &amp; Guardian alerts",
-                  "collectionIndex": 22,
-                  "artifactIndex": 23
-                },
-                "point": [
-                  380.9,
-                  456
-                ],
-                "sharedNode": "realtime_ws"
-              },
-              {
-                "left": {
-                  "id": "conn-check-store",
-                  "from": "ctrl_check",
-                  "to": "store_media",
-                  "label": "upload media",
-                  "collectionIndex": 23,
-                  "artifactIndex": 24
-                },
-                "right": {
-                  "id": "conn-media-store",
-                  "from": "eng_media",
-                  "to": "store_media",
-                  "label": "fetch media bytes",
-                  "collectionIndex": 24,
-                  "artifactIndex": 25
-                },
-                "point": [
-                  544.9999999999999,
-                  562
-                ],
-                "sharedNode": "store_media"
-              },
-              {
-                "left": {
-                  "id": "conn-check-store",
-                  "from": "ctrl_check",
-                  "to": "store_media",
-                  "label": "upload media",
-                  "collectionIndex": 23,
-                  "artifactIndex": 24
-                },
-                "right": {
-                  "id": "conn-incident-policy",
-                  "from": "svc_incident",
-                  "to": "eng_policy",
-                  "label": "policy rules",
-                  "collectionIndex": 27,
-                  "artifactIndex": 28
-                },
-                "point": [
-                  545,
-                  469
-                ]
-              },
-              {
-                "left": {
-                  "id": "conn-media-store",
-                  "from": "eng_media",
-                  "to": "store_media",
-                  "label": "fetch media bytes",
-                  "collectionIndex": 24,
-                  "artifactIndex": 25
-                },
-                "right": {
-                  "id": "conn-mlgw-secrets",
+                  "id": "conn-mlgw-adv",
                   "from": "ml_gw",
-                  "to": "eng_secrets",
-                  "label": "scan strings",
-                  "collectionIndex": 26,
-                  "artifactIndex": 27
+                  "to": "eng_advanced",
+                  "label": "EDR &amp; malware",
+                  "collectionIndex": 14,
+                  "artifactIndex": 15
                 },
                 "point": [
-                  959.9999999999999,
-                  383.99999999999994
+                  1080,
+                  298
+                ],
+                "sharedNode": "ml_gw"
+              },
+              {
+                "left": {
+                  "id": "conn-mlgw-media",
+                  "from": "ml_gw",
+                  "to": "eng_media",
+                  "label": "audio &amp; visual deepfake",
+                  "collectionIndex": 13,
+                  "artifactIndex": 14
+                },
+                "right": {
+                  "id": "conn-svc-mitre",
+                  "from": "svc_incident",
+                  "to": "ext_mitre",
+                  "label": "ATT&amp;CK taxonomy",
+                  "collectionIndex": 16,
+                  "artifactIndex": 17
+                },
+                "point": [
+                  1080,
+                  297
                 ]
               },
               {
                 "left": {
-                  "id": "conn-media-store",
-                  "from": "eng_media",
-                  "to": "store_media",
-                  "label": "fetch media bytes",
+                  "id": "conn-mlgw-media",
+                  "from": "ml_gw",
+                  "to": "eng_media",
+                  "label": "audio &amp; visual deepfake",
+                  "collectionIndex": 13,
+                  "artifactIndex": 14
+                },
+                "right": {
+                  "id": "conn-svc-fcm",
+                  "from": "svc_incident",
+                  "to": "ext_fcm",
+                  "label": "push alerts",
+                  "collectionIndex": 17,
+                  "artifactIndex": 18
+                },
+                "point": [
+                  1080,
+                  346.99999999999994
+                ]
+              },
+              {
+                "left": {
+                  "id": "conn-mlgw-adv",
+                  "from": "ml_gw",
+                  "to": "eng_advanced",
+                  "label": "EDR &amp; malware",
+                  "collectionIndex": 14,
+                  "artifactIndex": 15
+                },
+                "right": {
+                  "id": "conn-svc-mitre",
+                  "from": "svc_incident",
+                  "to": "ext_mitre",
+                  "label": "ATT&amp;CK taxonomy",
+                  "collectionIndex": 16,
+                  "artifactIndex": 17
+                },
+                "point": [
+                  958.4,
+                  297
+                ]
+              },
+              {
+                "left": {
+                  "id": "conn-mlgw-adv",
+                  "from": "ml_gw",
+                  "to": "eng_advanced",
+                  "label": "EDR &amp; malware",
+                  "collectionIndex": 14,
+                  "artifactIndex": 15
+                },
+                "right": {
+                  "id": "conn-svc-fcm",
+                  "from": "svc_incident",
+                  "to": "ext_fcm",
+                  "label": "push alerts",
+                  "collectionIndex": 17,
+                  "artifactIndex": 18
+                },
+                "point": [
+                  1096,
+                  346.99999999999994
+                ]
+              },
+              {
+                "left": {
+                  "id": "conn-db-rls",
+                  "from": "db_postgres",
+                  "to": "db_rls",
+                  "label": "tenant &amp; guardian RLS",
                   "collectionIndex": 24,
                   "artifactIndex": 25
                 },
                 "right": {
-                  "id": "conn-admin-approve",
-                  "from": "ctrl_mgmt",
+                  "id": "conn-incident-soar",
+                  "from": "svc_incident",
                   "to": "ctrl_actions",
-                  "label": "2. admin approve",
-                  "collectionIndex": 29,
-                  "artifactIndex": 30
+                  "label": "trigger playbooks",
+                  "collectionIndex": 25,
+                  "artifactIndex": 26
                 },
                 "point": [
-                  649.9999999999999,
-                  562
+                  609.5999999999997,
+                  665
                 ]
               },
               {
@@ -781,21 +469,21 @@
                   "id": "conn-exec-redis",
                   "from": "svc_execution",
                   "to": "db_redis",
-                  "label": "block / revoke",
-                  "collectionIndex": 31,
-                  "artifactIndex": 32
+                  "label": "revoke session / IP",
+                  "collectionIndex": 28,
+                  "artifactIndex": 29
                 },
                 "right": {
                   "id": "conn-audit-db",
                   "from": "svc_audit",
                   "to": "db_postgres",
-                  "label": "audit log",
-                  "collectionIndex": 34,
-                  "artifactIndex": 35
+                  "label": "immutable audit log",
+                  "collectionIndex": 31,
+                  "artifactIndex": 32
                 },
                 "point": [
-                  1130,
-                  736
+                  1034,
+                  710
                 ]
               },
               {
@@ -803,66 +491,21 @@
                   "id": "conn-exec-redis",
                   "from": "svc_execution",
                   "to": "db_redis",
-                  "label": "block / revoke",
-                  "collectionIndex": 31,
-                  "artifactIndex": 32
+                  "label": "revoke session / IP",
+                  "collectionIndex": 28,
+                  "artifactIndex": 29
                 },
                 "right": {
-                  "id": "conn-exec-firewall",
-                  "from": "svc_execution",
-                  "to": "ext_firewall",
-                  "label": "blocklist sync",
-                  "collectionIndex": 37,
-                  "artifactIndex": 38
-                },
-                "point": [
-                  1014,
-                  736
-                ],
-                "sharedNode": "svc_execution"
-              },
-              {
-                "left": {
-                  "id": "conn-audit-db",
+                  "id": "conn-audit-smtp",
                   "from": "svc_audit",
-                  "to": "db_postgres",
-                  "label": "audit log",
-                  "collectionIndex": 34,
-                  "artifactIndex": 35
-                },
-                "right": {
-                  "id": "conn-exec-firewall",
-                  "from": "svc_execution",
-                  "to": "ext_firewall",
-                  "label": "blocklist sync",
-                  "collectionIndex": 37,
-                  "artifactIndex": 38
+                  "to": "ext_smtp",
+                  "label": "escalation emails",
+                  "collectionIndex": 32,
+                  "artifactIndex": 33
                 },
                 "point": [
-                  1027,
-                  714
-                ]
-              },
-              {
-                "left": {
-                  "id": "conn-notify-email",
-                  "from": "svc_notification",
-                  "to": "ext_email",
-                  "label": "admin email",
-                  "collectionIndex": 36,
-                  "artifactIndex": 37
-                },
-                "right": {
-                  "id": "conn-audit-siem",
-                  "from": "svc_audit",
-                  "to": "ext_siem",
-                  "label": "syslog stream",
-                  "collectionIndex": 38,
-                  "artifactIndex": 39
-                },
-                "point": [
-                  1285,
-                  787
+                  1350,
+                  710
                 ]
               }
             ],
@@ -877,35 +520,11 @@
               },
               {
                 "node": "ml_gw",
-                "label": "FastAPI Engine",
+                "label": "FastAPI ML Gateway",
                 "side": "right",
                 "relationships": 3,
                 "sidePx": 54,
                 "neededPx": 60
-              },
-              {
-                "node": "svc_incident",
-                "label": "Incident Service",
-                "side": "right",
-                "relationships": 3,
-                "sidePx": 54,
-                "neededPx": 60
-              },
-              {
-                "node": "db_postgres",
-                "label": "PostgreSQL (Supabase)",
-                "side": "left",
-                "relationships": 3,
-                "sidePx": 56,
-                "neededPx": 60
-              },
-              {
-                "node": "svc_execution",
-                "label": "Execution Service",
-                "side": "right",
-                "relationships": 4,
-                "sidePx": 54,
-                "neededPx": 74
               }
             ],
             "detours": [
@@ -919,16 +538,28 @@
                   "artifactIndex": 2
                 },
                 "bends": 3,
-                "stretch": 1.25
+                "stretch": 1.274
+              },
+              {
+                "relationship": {
+                  "id": "conn-agent-gw",
+                  "from": "agent_fleet",
+                  "to": "api_gw",
+                  "label": "heartbeat &amp; port telemetry",
+                  "collectionIndex": 3,
+                  "artifactIndex": 4
+                },
+                "bends": 4,
+                "stretch": 1.494
               },
               {
                 "relationship": {
                   "id": "conn-gw-mgmt",
                   "from": "api_gw",
                   "to": "ctrl_mgmt",
-                  "label": "resource routing",
-                  "collectionIndex": 6,
-                  "artifactIndex": 7
+                  "label": "surface &amp; DDoS routing",
+                  "collectionIndex": 7,
+                  "artifactIndex": 8
                 },
                 "bends": 3,
                 "stretch": 1
@@ -938,12 +569,24 @@
                   "id": "conn-mlgw-anomaly",
                   "from": "ml_gw",
                   "to": "eng_anomaly",
-                  "label": "dispatch telemetry",
-                  "collectionIndex": 11,
-                  "artifactIndex": 12
+                  "label": "login &amp; traffic",
+                  "collectionIndex": 12,
+                  "artifactIndex": 13
                 },
                 "bends": 3,
-                "stretch": 1.257
+                "stretch": 1.25
+              },
+              {
+                "relationship": {
+                  "id": "conn-mlgw-adv",
+                  "from": "ml_gw",
+                  "to": "eng_advanced",
+                  "label": "EDR &amp; malware",
+                  "collectionIndex": 14,
+                  "artifactIndex": 15
+                },
+                "bends": 3,
+                "stretch": 1
               },
               {
                 "relationship": {
@@ -951,35 +594,35 @@
                   "from": "svc_incident",
                   "to": "ext_mitre",
                   "label": "ATT&amp;CK taxonomy",
-                  "collectionIndex": 15,
-                  "artifactIndex": 16
+                  "collectionIndex": 16,
+                  "artifactIndex": 17
                 },
                 "bends": 3,
-                "stretch": 1.065,
-                "directCorridorBlockers": [
-                  {
-                    "id": "eng_media",
-                    "label": "Deepfake &amp; Audio",
-                    "box": [
-                      1120,
-                      350,
-                      160,
-                      54
-                    ]
-                  }
-                ]
+                "stretch": 1
               },
               {
                 "relationship": {
                   "id": "conn-svc-fcm",
                   "from": "svc_incident",
                   "to": "ext_fcm",
-                  "label": "push dispatch",
-                  "collectionIndex": 16,
-                  "artifactIndex": 17
+                  "label": "push alerts",
+                  "collectionIndex": 17,
+                  "artifactIndex": 18
                 },
                 "bends": 4,
-                "stretch": 1.079
+                "stretch": 1.09,
+                "directCorridorBlockers": [
+                  {
+                    "id": "eng_media",
+                    "label": "Deepfake Visual &amp; Audio",
+                    "box": [
+                      1120,
+                      350,
+                      170,
+                      54
+                    ]
+                  }
+                ]
               },
               {
                 "relationship": {
@@ -990,103 +633,79 @@
                   "collectionIndex": 21,
                   "artifactIndex": 22
                 },
-                "bends": 4,
-                "stretch": 1.278
+                "bends": 3,
+                "stretch": 1.129
               },
               {
                 "relationship": {
                   "id": "conn-ws-mobile",
                   "from": "realtime_ws",
                   "to": "client_mobile",
-                  "label": "push &amp; Guardian alerts",
+                  "label": "Guardian alerts",
                   "collectionIndex": 22,
                   "artifactIndex": 23
                 },
                 "bends": 4,
-                "stretch": 1
+                "stretch": 1.394
               },
               {
                 "relationship": {
-                  "id": "conn-check-store",
-                  "from": "ctrl_check",
-                  "to": "store_media",
-                  "label": "upload media",
-                  "collectionIndex": 23,
-                  "artifactIndex": 24
-                },
-                "bends": 4,
-                "stretch": 1
-              },
-              {
-                "relationship": {
-                  "id": "conn-media-store",
-                  "from": "eng_media",
-                  "to": "store_media",
-                  "label": "fetch media bytes",
-                  "collectionIndex": 24,
-                  "artifactIndex": 25
-                },
-                "bends": 4,
-                "stretch": 1
-              },
-              {
-                "relationship": {
-                  "id": "conn-incident-policy",
+                  "id": "conn-incident-soar",
                   "from": "svc_incident",
-                  "to": "eng_policy",
-                  "label": "policy rules",
-                  "collectionIndex": 27,
-                  "artifactIndex": 28
-                },
-                "bends": 4,
-                "stretch": 1
-              },
-              {
-                "relationship": {
-                  "id": "conn-admin-approve",
-                  "from": "ctrl_mgmt",
                   "to": "ctrl_actions",
-                  "label": "2. admin approve",
-                  "collectionIndex": 29,
-                  "artifactIndex": 30
+                  "label": "trigger playbooks",
+                  "collectionIndex": 25,
+                  "artifactIndex": 26
                 },
-                "bends": 4,
-                "stretch": 1.92,
+                "bends": 6,
+                "stretch": 1.562,
                 "directCorridorBlockers": [
                   {
-                    "id": "db_rls",
-                    "label": "Row Level Security",
+                    "id": "ctrl_mgmt",
+                    "label": "Attack Surface &amp; DDoS",
                     "box": [
                       570,
-                      630,
-                      190,
-                      56
+                      480,
+                      170,
+                      54
                     ]
                   }
                 ]
               },
               {
                 "relationship": {
-                  "id": "conn-exec-audit",
-                  "from": "svc_execution",
-                  "to": "svc_audit",
-                  "label": "record action",
-                  "collectionIndex": 33,
-                  "artifactIndex": 34
+                  "id": "conn-firewall-exec",
+                  "from": "ctrl_firewall",
+                  "to": "svc_execution",
+                  "label": "approved policies",
+                  "collectionIndex": 26,
+                  "artifactIndex": 27
                 },
                 "bends": 3,
-                "stretch": 1.287
+                "stretch": 1.102,
+                "directCorridorBlockers": [
+                  {
+                    "id": "ctrl_actions",
+                    "label": "SOAR Playbook Engine",
+                    "box": [
+                      570,
+                      760,
+                      170,
+                      54
+                    ]
+                  }
+                ]
               },
               {
                 "relationship": {
-                  "id": "conn-exec-firewall",
-                  "from": "svc_execution",
-                  "to": "ext_firewall",
-                  "label": "blocklist sync",
-                  "collectionIndex": 37,
-                  "artifactIndex": 38
+                  "id": "conn-audit-db",
+                  "from": "svc_audit",
+                  "to": "db_postgres",
+                  "label": "immutable audit log",
+                  "collectionIndex": 31,
+                  "artifactIndex": 32
                 },
-                "bends": 4,
+                "bends": 3,
                 "stretch": 1
               }
             ]
@@ -1094,10 +713,10 @@
           "leadingSpace": {
             "measured": true,
             "emptyTopPx": 64,
-            "emptyTopRatio": 0.063,
+            "emptyTopRatio": 0.071,
             "occupiedTop": 64,
             "viewBoxTop": 0,
-            "canvasHeight": 1012,
+            "canvasHeight": 906,
             "typicalNodeHeight": 54,
             "reviewSuggested": false
           },
@@ -1107,7 +726,7 @@
             "availableDiagramWidth": 1346,
             "actualBudgetPx": 1346,
             "actualReaderWidth": 1376,
-            "desiredReaderWidth": 1507.5,
+            "desiredReaderWidth": 1607.8481012658226,
             "viewportCap": 1376,
             "limit": "viewport-cap",
             "requestedTargetPx": 7.5,
@@ -1115,25 +734,23 @@
             "hardFloorPx": 6,
             "hardFloorMet": true,
             "minimumOwner": {
-              "kind": "edge",
-              "id": "conn-web-gw",
-              "from": "client_web",
-              "to": "api_gw"
+              "kind": "node",
+              "id": "ext_threat_intel"
             },
-            "minimumSourceTextPx": 8,
-            "minimumProjectedTextPx": 6.83248730964467,
-            "semanticTextCount": 110
+            "minimumSourceTextPx": 7.9,
+            "minimumProjectedTextPx": 6.397954271961493,
+            "semanticTextCount": 98
           },
           "issues": []
         },
         "provenance": "current",
-        "deliveryReceiptId": "bc86f6fc-c725-4a37-90ad-f3889fcc50f4"
+        "deliveryReceiptId": "69f303be-8c59-4ae4-a16e-77b2974cf6ab"
       }
     },
     "browser-check": {
       "status": "pass",
       "exitCode": 0,
-      "durationMs": 3126,
+      "durationMs": 2718,
       "command": [
         "C:\\Program Files\\nodejs\\node.exe",
         "C:\\Users\\subha\\Downloads\\archify-tool\\archify\\bin\\archify.mjs",
@@ -1151,11 +768,11 @@
         "status": "pass",
         "visualReview": "not-requested",
         "provenance": "current",
-        "deliveryReceiptId": "bc86f6fc-c725-4a37-90ad-f3889fcc50f4",
+        "deliveryReceiptId": "69f303be-8c59-4ae4-a16e-77b2974cf6ab",
         "artifact": {
           "path": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.html",
-          "sha256": "1d03d3f81fd9b6b565c81782d3abcbb538903811d3817bb82e1907f08031fc30",
-          "bytes": 844285
+          "sha256": "df70438ef730503211194172133eabda6a7174ddde8906721c8a207b5327498c",
+          "bytes": 836071
         },
         "state": {
           "detail": "read",
@@ -1177,7 +794,7 @@
               "innerWidth": 1440,
               "innerHeight": 900,
               "scrollWidth": 1440,
-              "scrollHeight": 1032,
+              "scrollHeight": 923,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -1190,23 +807,21 @@
               "diagramWidth": 1346,
               "pageComposition": {
                 "bodyPaddingPx": 12,
-                "headerPx": 78,
+                "headerPx": 99,
                 "diagramChromePx": 78,
-                "svgPx": 864,
+                "svgPx": 734,
                 "cardsPx": 0,
-                "viewBoxHeight": 1012
+                "viewBoxHeight": 906
               },
-              "viewBoxWidth": 1576,
-              "minimumProjectedNodeTextPx": 6.83248730964467,
-              "minimumProjectedNonEdgeTextPx": 7.686548223350254,
-              "minimumProjectedEdgeTextPx": 6.83248730964467,
-              "minimumProjectedNodeText": "HTTPS / REST",
-              "minimumProjectedNodeTextDetail": "edge",
+              "viewBoxWidth": 1662,
+              "minimumProjectedNodeTextPx": 6.397954271961493,
+              "minimumProjectedNonEdgeTextPx": 6.397954271961493,
+              "minimumProjectedEdgeTextPx": 6.478941034897714,
+              "minimumProjectedNodeText": "VirusTotal, PhishTank, AbuseIPDB",
+              "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
-                "kind": "edge",
-                "id": "conn-web-gw",
-                "from": "client_web",
-                "to": "api_gw"
+                "kind": "node",
+                "id": "ext_threat_intel"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -1229,7 +844,7 @@
               "innerWidth": 1600,
               "innerHeight": 1000,
               "scrollWidth": 1600,
-              "scrollHeight": 1183,
+              "scrollHeight": 1055,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -1238,27 +853,25 @@
               "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1508,
-              "diagramWidth": 1478,
+              "readerWidth": 1536,
+              "diagramWidth": 1506,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 86,
                 "diagramChromePx": 84,
-                "svgPx": 949,
+                "svgPx": 821,
                 "cardsPx": 0,
-                "viewBoxHeight": 1012
+                "viewBoxHeight": 906
               },
-              "viewBoxWidth": 1576,
-              "minimumProjectedNodeTextPx": 7.50253807106599,
-              "minimumProjectedNonEdgeTextPx": 8.440355329949238,
-              "minimumProjectedEdgeTextPx": 7.50253807106599,
-              "minimumProjectedNodeText": "HTTPS / REST",
-              "minimumProjectedNodeTextDetail": "edge",
+              "viewBoxWidth": 1662,
+              "minimumProjectedNodeTextPx": 7.158483754512636,
+              "minimumProjectedNonEdgeTextPx": 7.158483754512636,
+              "minimumProjectedEdgeTextPx": 7.249097472924188,
+              "minimumProjectedNodeText": "VirusTotal, PhishTank, AbuseIPDB",
+              "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
-                "kind": "edge",
-                "id": "conn-web-gw",
-                "from": "client_web",
-                "to": "api_gw"
+                "kind": "node",
+                "id": "ext_threat_intel"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -1281,7 +894,7 @@
               "innerWidth": 1920,
               "innerHeight": 1080,
               "scrollWidth": 1920,
-              "scrollHeight": 1183,
+              "scrollHeight": 1095,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -1290,27 +903,25 @@
               "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1508,
-              "diagramWidth": 1478,
+              "readerWidth": 1608,
+              "diagramWidth": 1578,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 86,
                 "diagramChromePx": 84,
-                "svgPx": 949,
+                "svgPx": 860,
                 "cardsPx": 0,
-                "viewBoxHeight": 1012
+                "viewBoxHeight": 906
               },
-              "viewBoxWidth": 1576,
-              "minimumProjectedNodeTextPx": 7.50253807106599,
-              "minimumProjectedNonEdgeTextPx": 8.440355329949238,
-              "minimumProjectedEdgeTextPx": 7.50253807106599,
-              "minimumProjectedNodeText": "HTTPS / REST",
-              "minimumProjectedNodeTextDetail": "edge",
+              "viewBoxWidth": 1662,
+              "minimumProjectedNodeTextPx": 7.50072202166065,
+              "minimumProjectedNonEdgeTextPx": 7.50072202166065,
+              "minimumProjectedEdgeTextPx": 7.595667870036101,
+              "minimumProjectedNodeText": "VirusTotal, PhishTank, AbuseIPDB",
+              "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
-                "kind": "edge",
-                "id": "conn-web-gw",
-                "from": "client_web",
-                "to": "api_gw"
+                "kind": "node",
+                "id": "ext_threat_intel"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -1342,27 +953,25 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1695,
-              "diagramWidth": 1645,
+              "readerWidth": 1920,
+              "diagramWidth": 1870,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 94,
                 "diagramChromePx": 94,
-                "svgPx": 1056,
+                "svgPx": 1019,
                 "cardsPx": 0,
-                "viewBoxHeight": 1012
+                "viewBoxHeight": 906
               },
-              "viewBoxWidth": 1576,
-              "minimumProjectedNodeTextPx": 8,
-              "minimumProjectedNonEdgeTextPx": 9,
+              "viewBoxWidth": 1662,
+              "minimumProjectedNodeTextPx": 7.9,
+              "minimumProjectedNonEdgeTextPx": 7.9,
               "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "HTTPS / REST",
-              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeText": "VirusTotal, PhishTank, AbuseIPDB",
+              "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
-                "kind": "edge",
-                "id": "conn-web-gw",
-                "from": "client_web",
-                "to": "api_gw"
+                "kind": "node",
+                "id": "ext_threat_intel"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -1438,7 +1047,7 @@
               "innerWidth": 1440,
               "innerHeight": 900,
               "scrollWidth": 1440,
-              "scrollHeight": 1032,
+              "scrollHeight": 923,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -1451,23 +1060,21 @@
               "diagramWidth": 1346,
               "pageComposition": {
                 "bodyPaddingPx": 12,
-                "headerPx": 78,
+                "headerPx": 99,
                 "diagramChromePx": 78,
-                "svgPx": 864,
+                "svgPx": 734,
                 "cardsPx": 0,
-                "viewBoxHeight": 1012
+                "viewBoxHeight": 906
               },
-              "viewBoxWidth": 1576,
-              "minimumProjectedNodeTextPx": 6.83248730964467,
-              "minimumProjectedNonEdgeTextPx": 7.686548223350254,
-              "minimumProjectedEdgeTextPx": 6.83248730964467,
-              "minimumProjectedNodeText": "HTTPS / REST",
-              "minimumProjectedNodeTextDetail": "edge",
+              "viewBoxWidth": 1662,
+              "minimumProjectedNodeTextPx": 6.397954271961493,
+              "minimumProjectedNonEdgeTextPx": 6.397954271961493,
+              "minimumProjectedEdgeTextPx": 6.478941034897714,
+              "minimumProjectedNodeText": "VirusTotal, PhishTank, AbuseIPDB",
+              "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
-                "kind": "edge",
-                "id": "conn-web-gw",
-                "from": "client_web",
-                "to": "api_gw"
+                "kind": "node",
+                "id": "ext_threat_intel"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -1490,7 +1097,7 @@
               "innerWidth": 1600,
               "innerHeight": 1000,
               "scrollWidth": 1600,
-              "scrollHeight": 1183,
+              "scrollHeight": 1055,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -1499,27 +1106,25 @@
               "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1508,
-              "diagramWidth": 1478,
+              "readerWidth": 1536,
+              "diagramWidth": 1506,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 86,
                 "diagramChromePx": 84,
-                "svgPx": 949,
+                "svgPx": 821,
                 "cardsPx": 0,
-                "viewBoxHeight": 1012
+                "viewBoxHeight": 906
               },
-              "viewBoxWidth": 1576,
-              "minimumProjectedNodeTextPx": 7.50253807106599,
-              "minimumProjectedNonEdgeTextPx": 8.440355329949238,
-              "minimumProjectedEdgeTextPx": 7.50253807106599,
-              "minimumProjectedNodeText": "HTTPS / REST",
-              "minimumProjectedNodeTextDetail": "edge",
+              "viewBoxWidth": 1662,
+              "minimumProjectedNodeTextPx": 7.158483754512636,
+              "minimumProjectedNonEdgeTextPx": 7.158483754512636,
+              "minimumProjectedEdgeTextPx": 7.249097472924188,
+              "minimumProjectedNodeText": "VirusTotal, PhishTank, AbuseIPDB",
+              "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
-                "kind": "edge",
-                "id": "conn-web-gw",
-                "from": "client_web",
-                "to": "api_gw"
+                "kind": "node",
+                "id": "ext_threat_intel"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -1542,7 +1147,7 @@
               "innerWidth": 1920,
               "innerHeight": 1080,
               "scrollWidth": 1920,
-              "scrollHeight": 1183,
+              "scrollHeight": 1095,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -1551,27 +1156,25 @@
               "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1508,
-              "diagramWidth": 1478,
+              "readerWidth": 1608,
+              "diagramWidth": 1578,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 86,
                 "diagramChromePx": 84,
-                "svgPx": 949,
+                "svgPx": 860,
                 "cardsPx": 0,
-                "viewBoxHeight": 1012
+                "viewBoxHeight": 906
               },
-              "viewBoxWidth": 1576,
-              "minimumProjectedNodeTextPx": 7.50253807106599,
-              "minimumProjectedNonEdgeTextPx": 8.440355329949238,
-              "minimumProjectedEdgeTextPx": 7.50253807106599,
-              "minimumProjectedNodeText": "HTTPS / REST",
-              "minimumProjectedNodeTextDetail": "edge",
+              "viewBoxWidth": 1662,
+              "minimumProjectedNodeTextPx": 7.50072202166065,
+              "minimumProjectedNonEdgeTextPx": 7.50072202166065,
+              "minimumProjectedEdgeTextPx": 7.595667870036101,
+              "minimumProjectedNodeText": "VirusTotal, PhishTank, AbuseIPDB",
+              "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
-                "kind": "edge",
-                "id": "conn-web-gw",
-                "from": "client_web",
-                "to": "api_gw"
+                "kind": "node",
+                "id": "ext_threat_intel"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -1603,27 +1206,25 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1695,
-              "diagramWidth": 1645,
+              "readerWidth": 1920,
+              "diagramWidth": 1870,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 94,
                 "diagramChromePx": 94,
-                "svgPx": 1056,
+                "svgPx": 1019,
                 "cardsPx": 0,
-                "viewBoxHeight": 1012
+                "viewBoxHeight": 906
               },
-              "viewBoxWidth": 1576,
-              "minimumProjectedNodeTextPx": 8,
-              "minimumProjectedNonEdgeTextPx": 9,
+              "viewBoxWidth": 1662,
+              "minimumProjectedNodeTextPx": 7.9,
+              "minimumProjectedNonEdgeTextPx": 7.9,
               "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "HTTPS / REST",
-              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeText": "VirusTotal, PhishTank, AbuseIPDB",
+              "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
-                "kind": "edge",
-                "id": "conn-web-gw",
-                "from": "client_web",
-                "to": "api_gw"
+                "kind": "node",
+                "id": "ext_threat_intel"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -1651,7 +1252,7 @@
               "innerWidth": 1440,
               "innerHeight": 900,
               "scrollWidth": 1440,
-              "scrollHeight": 1032,
+              "scrollHeight": 923,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -1664,23 +1265,21 @@
               "diagramWidth": 1346,
               "pageComposition": {
                 "bodyPaddingPx": 12,
-                "headerPx": 78,
+                "headerPx": 99,
                 "diagramChromePx": 78,
-                "svgPx": 864,
+                "svgPx": 734,
                 "cardsPx": 0,
-                "viewBoxHeight": 1012
+                "viewBoxHeight": 906
               },
-              "viewBoxWidth": 1576,
-              "minimumProjectedNodeTextPx": 6.83248730964467,
-              "minimumProjectedNonEdgeTextPx": 7.686548223350254,
-              "minimumProjectedEdgeTextPx": 6.83248730964467,
-              "minimumProjectedNodeText": "HTTPS / REST",
-              "minimumProjectedNodeTextDetail": "edge",
+              "viewBoxWidth": 1662,
+              "minimumProjectedNodeTextPx": 6.397954271961493,
+              "minimumProjectedNonEdgeTextPx": 6.397954271961493,
+              "minimumProjectedEdgeTextPx": 6.478941034897714,
+              "minimumProjectedNodeText": "VirusTotal, PhishTank, AbuseIPDB",
+              "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
-                "kind": "edge",
-                "id": "conn-web-gw",
-                "from": "client_web",
-                "to": "api_gw"
+                "kind": "node",
+                "id": "ext_threat_intel"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -1703,7 +1302,7 @@
               "innerWidth": 1600,
               "innerHeight": 1000,
               "scrollWidth": 1600,
-              "scrollHeight": 1183,
+              "scrollHeight": 1055,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -1712,27 +1311,25 @@
               "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1508,
-              "diagramWidth": 1478,
+              "readerWidth": 1536,
+              "diagramWidth": 1506,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 86,
                 "diagramChromePx": 84,
-                "svgPx": 949,
+                "svgPx": 821,
                 "cardsPx": 0,
-                "viewBoxHeight": 1012
+                "viewBoxHeight": 906
               },
-              "viewBoxWidth": 1576,
-              "minimumProjectedNodeTextPx": 7.50253807106599,
-              "minimumProjectedNonEdgeTextPx": 8.440355329949238,
-              "minimumProjectedEdgeTextPx": 7.50253807106599,
-              "minimumProjectedNodeText": "HTTPS / REST",
-              "minimumProjectedNodeTextDetail": "edge",
+              "viewBoxWidth": 1662,
+              "minimumProjectedNodeTextPx": 7.158483754512636,
+              "minimumProjectedNonEdgeTextPx": 7.158483754512636,
+              "minimumProjectedEdgeTextPx": 7.249097472924188,
+              "minimumProjectedNodeText": "VirusTotal, PhishTank, AbuseIPDB",
+              "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
-                "kind": "edge",
-                "id": "conn-web-gw",
-                "from": "client_web",
-                "to": "api_gw"
+                "kind": "node",
+                "id": "ext_threat_intel"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -1755,7 +1352,7 @@
               "innerWidth": 1920,
               "innerHeight": 1080,
               "scrollWidth": 1920,
-              "scrollHeight": 1183,
+              "scrollHeight": 1095,
               "overflowX": false,
               "overflowY": true,
               "verticalScrollAccepted": true,
@@ -1764,27 +1361,25 @@
               "readerOverflow": "authored",
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1508,
-              "diagramWidth": 1478,
+              "readerWidth": 1608,
+              "diagramWidth": 1578,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 86,
                 "diagramChromePx": 84,
-                "svgPx": 949,
+                "svgPx": 860,
                 "cardsPx": 0,
-                "viewBoxHeight": 1012
+                "viewBoxHeight": 906
               },
-              "viewBoxWidth": 1576,
-              "minimumProjectedNodeTextPx": 7.50253807106599,
-              "minimumProjectedNonEdgeTextPx": 8.440355329949238,
-              "minimumProjectedEdgeTextPx": 7.50253807106599,
-              "minimumProjectedNodeText": "HTTPS / REST",
-              "minimumProjectedNodeTextDetail": "edge",
+              "viewBoxWidth": 1662,
+              "minimumProjectedNodeTextPx": 7.50072202166065,
+              "minimumProjectedNonEdgeTextPx": 7.50072202166065,
+              "minimumProjectedEdgeTextPx": 7.595667870036101,
+              "minimumProjectedNodeText": "VirusTotal, PhishTank, AbuseIPDB",
+              "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
-                "kind": "edge",
-                "id": "conn-web-gw",
-                "from": "client_web",
-                "to": "api_gw"
+                "kind": "node",
+                "id": "ext_threat_intel"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -1816,27 +1411,25 @@
               "readerOverflow": null,
               "readerFit": "intrinsic-height",
               "ok": true,
-              "readerWidth": 1695,
-              "diagramWidth": 1645,
+              "readerWidth": 1920,
+              "diagramWidth": 1870,
               "pageComposition": {
                 "bodyPaddingPx": 64,
                 "headerPx": 94,
                 "diagramChromePx": 94,
-                "svgPx": 1056,
+                "svgPx": 1019,
                 "cardsPx": 0,
-                "viewBoxHeight": 1012
+                "viewBoxHeight": 906
               },
-              "viewBoxWidth": 1576,
-              "minimumProjectedNodeTextPx": 8,
-              "minimumProjectedNonEdgeTextPx": 9,
+              "viewBoxWidth": 1662,
+              "minimumProjectedNodeTextPx": 7.9,
+              "minimumProjectedNonEdgeTextPx": 7.9,
               "minimumProjectedEdgeTextPx": 8,
-              "minimumProjectedNodeText": "HTTPS / REST",
-              "minimumProjectedNodeTextDetail": "edge",
+              "minimumProjectedNodeText": "VirusTotal, PhishTank, AbuseIPDB",
+              "minimumProjectedNodeTextDetail": "context",
               "minimumProjectedNodeTextOwner": {
-                "kind": "edge",
-                "id": "conn-web-gw",
-                "from": "client_web",
-                "to": "api_gw"
+                "kind": "node",
+                "id": "ext_threat_intel"
               },
               "minimumRequiredNodeTextPx": 6,
               "readabilityOk": true,
@@ -1873,14 +1466,14 @@
     "browserCheckReceipt": "C:\\Users\\subha\\Downloads\\CyberGuard\\.archify\\architecture-cyberguard-system-20260929-103100\\cyberguard-system.browser-check.json"
   },
   "visualReview": "not-requested",
-  "finishedAt": "2026-10-02T22:07:36.836Z",
-  "durationMs": 7402,
+  "finishedAt": "2026-10-09T17:48:31.792Z",
+  "durationMs": 6941,
   "update": {
     "status": "current",
     "installedVersion": "3.0.1",
     "availableVersion": "3.0.1",
     "releaseNotes": null,
-    "checkedAt": "2026-10-02T21:54:20.311Z",
+    "checkedAt": "2026-10-09T17:45:56.989Z",
     "source": "cache",
     "noticeRequired": false,
     "noticeText": null
