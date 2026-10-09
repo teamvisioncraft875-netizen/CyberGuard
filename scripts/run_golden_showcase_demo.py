@@ -59,7 +59,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
 
 # Production engine imports
 try:
-    from app.schemas.analyze import (
+    from app.schemas.analyze import (  # type: ignore
         MessageAnalyzeRequest,
         MessageSourceType,
         UrlAnalyzeRequest,
@@ -67,42 +67,25 @@ try:
         MediaType,
         LoginAnalyzeRequest,
         SystemAnalyzeRequest,
-        MalwareAnalyzeRequest,
-        UnifiedAnalysisResponse,
-        RiskLevel,
     )
-    from app.services.message_engine import analyze_message
-    from app.services.url_engine import analyze_url
-    from app.services.media_engine import analyze_media
-    from app.services.login_engine import analyze_login
-    from app.services.system_engine import analyze_system
-    from app.services.malware_engine import analyze_malware_bytes, _get_malware_model
-    from app.utils.ember_feature_extractor import PEFeatureExtractor
+    from app.services.message_engine import analyze_message  # type: ignore
+    from app.services.url_engine import analyze_url  # type: ignore
+    from app.services.media_engine import analyze_media  # type: ignore
+    from app.services.login_engine import analyze_login  # type: ignore
+    from app.services.system_engine import analyze_system  # type: ignore
+    from app.services.malware_engine import analyze_malware_bytes, _get_malware_model  # type: ignore
 
-    from app.schemas.edr_behavior import (
-        EDRBehaviorAnalysisRequest,
-        EDRBehaviorAnalysisResponse,
-    )
-    from app.services.edr_behavior_engine import EDRBehaviorEngine
+    from app.schemas.edr_behavior import EDRBehaviorAnalysisRequest  # type: ignore
+    from app.services.edr_behavior_engine import EDRBehaviorEngine  # type: ignore
 
-    from app.schemas.false_positive import (
-        FalsePositiveAnalysisRequest,
-        FalsePositiveAnalysisResponse,
-    )
-    from app.services.false_positive_engine import FalsePositiveEngine
+    from app.schemas.false_positive import FalsePositiveAnalysisRequest  # type: ignore
+    from app.services.false_positive_engine import FalsePositiveEngine  # type: ignore
 
-    from app.schemas.correlation import (
-        CorrelationRequest,
-        CorrelationResponse,
-        AlertEvent,
-    )
-    from app.services.correlation_engine import correlate_events
+    from app.schemas.correlation import CorrelationRequest  # type: ignore
+    from app.services.correlation_engine import correlate_events  # type: ignore
 
-    from app.schemas.recommendation import (
-        IncidentRecommendationRequest,
-        IncidentRecommendationResponse,
-    )
-    from app.services.recommendation_engine import recommend_actions
+    from app.schemas.recommendation import IncidentRecommendationRequest  # type: ignore
+    from app.services.recommendation_engine import recommend_actions  # type: ignore
 except ImportError as e:
     print(f"[FATAL] Failed to import production CYBERGUARD engine modules: {e}")
     sys.exit(2)
@@ -434,11 +417,15 @@ def run_showcase(
             stats["threat"] += 1
 
         t0 = time.perf_counter()
+        t_ms = 0.0
         err_msg = None
         verdict = "ERROR"
         score = -1.0
         explanation = ""
         signals = {}
+        status_str = "ERROR"
+        is_match = False
+        mismatch_reason: List[str] = []
 
         try:
             verdict, score, explanation, signals = dispatch_sample(sample)
@@ -448,7 +435,6 @@ def run_showcase(
 
             # Verification rule
             is_match = True
-            mismatch_reason = []
 
             # Exact or mapped verdict check
             if exp_verdict:
