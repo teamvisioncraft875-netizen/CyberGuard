@@ -1,0 +1,38 @@
+[
+  {
+    "id": "msg-eval-001",
+    "text": "Dear Customer, your bank account has been suspended. Please click https://statebank-verify-kyc-update.com to verify your PAN card immediately or your account will be blocked.",
+    "source_type": "sms",
+    "expected_decision": "threat",
+    "expected_risk": "high",
+    "description": "Urgent SMS phishing lure (Smishing) threatening bank suspension",
+    "tags": ["smishing", "banking", "urgency_lure"]
+  },
+  {
+    "id": "msg-eval-002",
+    "text": "URGENT: Executive Wire Transfer Authorization required. As discussed with CFO, transfer Rs. 4,500,000 to vendor vendor-pay.in before 5 PM today. Keep this strictly confidential.",
+    "source_type": "email",
+    "expected_decision": "threat",
+    "expected_risk": "high",
+    "description": "Business Email Compromise (BEC) wire fraud lure targeting finance teams",
+    "tags": ["bec", "wire_fraud", "social_engineering"]
+  },
+  {
+    "id": "msg-eval-003",
+    "text": "Your OTP for Aadhaar authentication is 849201. Valid for 10 minutes. Do not share this OTP with anyone, including bank representatives.",
+    "source_type": "sms",
+    "expected_decision": "benign",
+    "expected_risk": "safe",
+    "description": "Legitimate transactional OTP delivery with anti-fraud warning (True Negative)",
+    "tags": ["benign", "otp", "transactional"]
+  },
+  {
+    "id": "msg-eval-004",
+    "text": "The sprint retro meeting has been rescheduled to Thursday 3:30 PM IST on Google Meet. Please review the updated agenda doc.",
+    "source_type": "email",
+    "expected_decision": "benign",
+    "expected_risk": "safe",
+    "description": "Routine corporate internal communication (True Negative)",
+    "tags": ["benign", "workplace"]
+  }
+]

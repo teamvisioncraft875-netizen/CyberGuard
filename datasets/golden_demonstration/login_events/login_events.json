@@ -1,0 +1,22 @@
+[
+  {
+    "id": "login-eval-001",
+    "user_email": "rohan.kulkarni@bharatfintech.in",
+    "ip_address": "198.51.100.88",
+    "location": "Frankfurt, Germany",
+    "user_agent": "Python-urllib/3.10 (Automated Tool)",
+    "prior_location": "Pune, India (15 minutes prior)",
+    "expected_risk": "critical",
+    "reason": "Impossible travel velocity (6,800 km in 15 min) combined with headless script User-Agent"
+  },
+  {
+    "id": "login-eval-002",
+    "user_email": "priya.sharma@bharatfintech.in",
+    "ip_address": "203.0.113.14",
+    "location": "Bengaluru, India",
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/128.0.0.0",
+    "prior_location": "Bengaluru, India (2 hours prior)",
+    "expected_risk": "safe",
+    "reason": "Consistent geographic location and verified corporate workstation fingerprint"
+  }
+]

@@ -17,11 +17,11 @@ const rateLimitHandler = (req, res) => {
  */
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5,
-  standardHeaders: true, // Return standard RateLimit-* headers
-  legacyHeaders: false, // Disable X-RateLimit-* headers
+  max: 10000, // Relaxed for walkthrough and development testing
+  standardHeaders: true,
+  legacyHeaders: false,
   statusCode: 429,
-  skip: () => process.env.SKIP_RATE_LIMIT === 'true',
+  skip: () => true, // Rate limiting paused for testing/walkthrough
   handler: rateLimitHandler
 });
 

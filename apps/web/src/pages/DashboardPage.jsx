@@ -250,18 +250,17 @@ export function DashboardPage({ onSelectIncident }) {
   }, [mitreData]);
 
   return (
-    <div className="dashboard-page -m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-4rem)] flex-1 bg-[#FFFFFF]">
-      <div className="space-y-6 max-w-[1600px] mx-auto w-full pb-12 font-sans">
-        {/* 1. Header Bar: Plain, factual, calm Datadog/Sentry style */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
-          <div>
-            <h1 className="font-headline text-2xl lg:text-3xl font-bold tracking-tight text-slate-900">
-              Security Overview
-            </h1>
-            <p className="font-body text-xs text-slate-600 mt-1">
-              Real-time telemetry of active threats, incident trends, and severity distribution
-            </p>
-          </div>
+    <div className="space-y-6 max-w-[1600px] mx-auto w-full pb-12 font-sans">
+      {/* 1. Header Bar: Minimal, premium SaaS style */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
+        <div>
+          <h1 className="font-headline text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
+            Security Overview
+          </h1>
+          <p className="font-body text-xs text-muted-foreground mt-1">
+            Real-time telemetry of active threats, incident trends, and severity distribution
+          </p>
+        </div>
 
         {/* Timeframe Selector & Refresh Button */}
         <div className="flex items-center gap-3">
@@ -374,15 +373,15 @@ export function DashboardPage({ onSelectIncident }) {
         </div>
       ) : !apiError && overview.total_incidents === 0 && recentIncidents.length === 0 && mitreData.length === 0 ? (
         /* EMPTY STATE VIEW */
-        <div className="py-16 px-6 rounded-xl bg-card border border-border text-center flex flex-col items-center justify-center space-y-4">
-          <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-            <CheckCircle2 className="w-7 h-7 text-emerald-500" />
+        <div className="py-20 px-6 rounded-2xl bg-card border border-border text-center flex flex-col items-center justify-center space-y-4 shadow-sm">
+          <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500">
+            <CheckCircle2 className="w-7 h-7" />
           </div>
-          <h2 className="font-headline text-xl font-bold text-foreground">No Security Incidents</h2>
-          <p className="font-body text-xs text-muted-foreground max-w-sm">
+          <h2 className="font-headline text-xl font-bold text-foreground tracking-tight">No Security Incidents</h2>
+          <p className="font-body text-xs sm:text-sm text-muted-foreground max-w-md leading-relaxed">
             There are no recorded incidents matching the selected timeframe. All incoming telemetry feeds are clear.
           </p>
-          <Button variant="outline" size="sm" onClick={handleRefresh}>
+          <Button variant="outline" size="sm" onClick={handleRefresh} className="mt-2">
             Check Again
           </Button>
         </div>
@@ -1039,7 +1038,6 @@ export function DashboardPage({ onSelectIncident }) {
           </div>
         </>
       )}
-    </div>
     </div>
   );
 }

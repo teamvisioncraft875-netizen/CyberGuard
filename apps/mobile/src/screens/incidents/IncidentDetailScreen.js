@@ -9,6 +9,8 @@ import {
   SafeAreaView
 } from 'react-native';
 import { COLORS } from '../../constants/colors';
+import { useTheme } from '../../context/ThemeContext';
+import { AppHeader } from '../../components/AppHeader';
 import { incidentService } from '../../services/incidentService';
 import { RiskBadge } from '../../components/RiskBadge';
 import { formatThreatType, getRiskColor } from '../../utils/riskHelpers';
@@ -76,20 +78,11 @@ export function IncidentDetailScreen({ route, navigation }) {
   const signals = incident.detection_signals || incident.signals || {};
   const mitreList = incident.mitre_mappings || [];
 
+  const { colors } = useTheme();
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* Top Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backBtnText}>← Incidents</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerId} numberOfLines={1}>
-          ID: {incident.id}
-        </Text>
-      </View>
+    <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <AppHeader title="Incident Detail" showBack={true} navigation={navigation} />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Threat Overview Banner */}
@@ -201,7 +194,7 @@ export function IncidentDetailScreen({ route, navigation }) {
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

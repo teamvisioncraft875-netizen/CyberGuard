@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { COLORS } from '../../constants/colors';
+import { useTheme } from '../../context/ThemeContext';
+import { AppHeader } from '../../components/AppHeader';
 import {
   mediaService,
   MAX_MEDIA_SIZE_BYTES,
@@ -18,8 +20,8 @@ import {
 import { CyberButton } from '../../components/CyberButton';
 
 const MEDIA_TYPES = [
-  { id: 'image', label: 'Photo / Image', icon: '🖼️', subtitle: 'Face & visual manipulation' },
-  { id: 'audio', label: 'Voice / Audio', icon: '🎙️', subtitle: 'Voice cloning & speech synthesis' }
+  { id: 'image', label: 'Photo / Image', iconName: 'image', subtitle: 'Face & visual manipulation' },
+  { id: 'audio', label: 'Voice / Audio', iconName: 'audio', subtitle: 'Voice cloning & speech synthesis' }
 ];
 
 export function MediaScannerScreen({ navigation }) {
@@ -140,30 +142,19 @@ export function MediaScannerScreen({ navigation }) {
         targetSummary: selectedFile.name
       });
     } catch (err) {
-      console.warn('[MediaScannerScreen.handleScan Error]', err.message);
+      console.log('[MediaScannerScreen.handleScan Error]', err.message);
       setStage('idle');
       setUploadPercent(null);
       setError(err.message || 'Media analysis failed. Please verify your connection and retry.');
     }
   };
 
+  const { colors } = useTheme();
   const isProcessing = stage !== 'idle';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.goBack()}
-          disabled={isProcessing}
-        >
-          <Text style={styles.backBtnText}>← Scanners</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Media Deepfake Scanner</Text>
-        <Text style={styles.subtitle}>
-          Forensic analysis for AI-generated images and voice cloning
-        </Text>
-      </View>
+    <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <AppHeader title="Media Deepfake Scanner" showBack={true} navigation={navigation} />
 
       <ScrollView contentContainerStyle={styles.content}>
         {error ? (
@@ -321,7 +312,7 @@ export function MediaScannerScreen({ navigation }) {
           )}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

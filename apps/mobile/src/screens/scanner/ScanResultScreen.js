@@ -8,6 +8,8 @@ import {
   SafeAreaView
 } from 'react-native';
 import { COLORS } from '../../constants/colors';
+import { useTheme } from '../../context/ThemeContext';
+import { AppHeader } from '../../components/AppHeader';
 import { ScanResultCard } from '../../components/ScanResultCard';
 import { DetectedSecretList } from '../../components/DetectedSecretList';
 import { RecommendationList } from '../../components/RecommendationList';
@@ -38,23 +40,16 @@ export function ScanResultScreen({ route, navigation }) {
   const actions = result.recommended_actions || [];
   const signals = result.signals || {};
 
+  const { colors } = useTheme();
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* Top Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.navigate('ScannerHome')}
-        >
-          <Text style={styles.backBtnText}>← All Scanners</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>Threat Analysis</Text>
-        {targetSummary ? (
-          <Text style={styles.subtitle} numberOfLines={1}>
-            Target: {targetSummary}
-          </Text>
-        ) : null}
-      </View>
+    <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <AppHeader
+        title="Threat Analysis Report"
+        showBack={true}
+        onBack={() => navigation.navigate('ScannerHome')}
+        navigation={navigation}
+      />
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Main Verdict Card */}
@@ -97,7 +92,7 @@ export function ScanResultScreen({ route, navigation }) {
           />
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

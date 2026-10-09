@@ -7,16 +7,20 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
-  SafeAreaView
+  ScrollView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
+import { useTheme } from '../../context/ThemeContext';
 import { CyberButton } from '../../components/CyberButton';
+import { CyberLogo } from '../../components/CyberLogo';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import { getEffectiveApiUrl, setCustomApiUrl } from '../../services/apiClient';
 import { CONFIG } from '../../constants/config';
 
 export function LoginScreen({ navigation }) {
+  const { colors } = useTheme();
   const { login, error, clearError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -113,19 +117,16 @@ export function LoginScreen({ navigation }) {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Brand Header */}
-          <View style={styles.brandContainer}>
-            <View style={styles.logoBadge}>
-              <Text style={styles.logoIcon}>🛡️</Text>
-            </View>
-            <Text style={styles.appName}>CYBERGUARD</Text>
-            <Text style={styles.appTagline}>Personal & Enterprise Threat Defense</Text>
+          {/* Brand & Theme Header */}
+          <View style={styles.topBar}>
+            <CyberLogo size={36} showText={true} />
+            <ThemeToggle />
           </View>
 
           {/* Form Card */}
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Sign In</Text>
-            <Text style={styles.cardSubtitle}>
+          <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>Sign In</Text>
+            <Text style={[styles.cardSubtitle, { color: colors.textSecondary }]}>
               Authenticate with your credentials to access live incident monitoring
             </Text>
 
@@ -283,6 +284,13 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     padding: 20
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 4
   },
   brandContainer: {
     alignItems: 'center',

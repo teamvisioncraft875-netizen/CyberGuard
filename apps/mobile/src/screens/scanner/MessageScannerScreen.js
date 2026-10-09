@@ -11,6 +11,8 @@ import {
   SafeAreaView
 } from 'react-native';
 import { COLORS } from '../../constants/colors';
+import { useTheme } from '../../context/ThemeContext';
+import { AppHeader } from '../../components/AppHeader';
 import { scannerService } from '../../services/scannerService';
 import { CyberButton } from '../../components/CyberButton';
 
@@ -57,24 +59,15 @@ export function MessageScannerScreen({ navigation }) {
     setError('');
   };
 
+  const { colors } = useTheme();
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <AppHeader title="Message Threat Scanner" showBack={true} navigation={navigation} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}
       >
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={styles.backBtnText}>← Scanners</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Message Scanner</Text>
-          <Text style={styles.subtitle}>
-            Detect social engineering, phishing, smishing, and fraud
-          </Text>
-        </View>
 
         <ScrollView
           contentContainerStyle={styles.content}
@@ -192,7 +185,7 @@ export function MessageScannerScreen({ navigation }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

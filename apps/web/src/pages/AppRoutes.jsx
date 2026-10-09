@@ -14,11 +14,15 @@ import {
 } from './index';
 import { LoginPage } from './LoginPage';
 import { SignupPage } from './SignupPage';
+import LandingPage from './LandingPage';
 import { ProtectedRoute } from '../context/AuthContext';
 import { AppLayout } from '../layouts/AppLayout';
 
+
 export const ROUTES = Object.freeze({
-  DASHBOARD: '/',
+  HOME: '/',
+  LANDING: '/landing',
+  DASHBOARD: '/dashboard',
   SCAN_CENTER: '/scan-center',
   INCIDENTS: '/incidents',
   ATTACK_SURFACE: '/attack-surface',
@@ -46,12 +50,16 @@ export function AppRoutes({
 
   return (
     <Routes>
+      {/* 0. Public Landing Page at Root */}
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/landing" element={<LandingPage />} />
+
       {/* 1. Public Authentication Routes */}
       <Route
         path="/login"
         element={
           <LoginPage
-            onLoginSuccess={() => navigate('/')}
+            onLoginSuccess={() => navigate('/dashboard')}
             onNavigateSignup={() => navigate('/signup')}
           />
         }
@@ -60,15 +68,15 @@ export function AppRoutes({
         path="/signup"
         element={
           <SignupPage
-            onSignupSuccess={() => navigate('/')}
+            onSignupSuccess={() => navigate('/dashboard')}
             onNavigateLogin={() => navigate('/login')}
           />
         }
       />
 
-      {/* 2. Protected Application Routes (wrapped in ProtectedRoute and AppLayout) */}
+      {/* 2. Protected Dashboard Route */}
       <Route
-        path="/"
+        path="/dashboard"
         element={
           <ProtectedRoute>
             <AppLayout onSearchFocus={onSearchFocus}>

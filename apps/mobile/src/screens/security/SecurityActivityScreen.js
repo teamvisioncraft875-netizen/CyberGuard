@@ -5,15 +5,17 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
   ActivityIndicator,
   RefreshControl
 } from 'react-native';
 import { COLORS } from '../../constants/colors';
 import { useAuth } from '../../hooks/useAuth';
 import { useSocket } from '../../hooks/useSocket';
+import { useTheme } from '../../context/ThemeContext';
 import { securityActivityService } from '../../services/securityActivityService';
 import { RiskBadge } from '../../components/RiskBadge';
+import { AppHeader } from '../../components/AppHeader';
+import { BottomTabBar } from '../../components/BottomTabBar';
 
 export function SecurityActivityScreen({ navigation }) {
   const { user } = useAuth();
@@ -49,7 +51,7 @@ export function SecurityActivityScreen({ navigation }) {
         setOverview(overviewRes);
       }
     } catch (err) {
-      console.warn('[SecurityActivityScreen.fetchData error]', err.message);
+      console.log('[SecurityActivityScreen.fetchData error]', err.message);
       setError(err.message || 'Failed to load security activity telemetry.');
     } finally {
       setLoading(false);
@@ -108,28 +110,11 @@ export function SecurityActivityScreen({ navigation }) {
   const totalIncidentsCount = overview?.total_incidents ?? activity.length;
   const resolvedCount = overview?.resolved_threats ?? activity.filter((a) => a.status === 'resolved').length;
 
+  const { colors } = useTheme();
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backBtn}
-          onPress={() => navigation.goBack()}
-          accessibilityLabel="Back to Dashboard"
-          accessibilityRole="button"
-        >
-          <Text style={styles.backBtnText}>← Dashboard</Text>
-        </TouchableOpacity>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>Security Activity</Text>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>TELEMETRY</Text>
-          </View>
-        </View>
-        <Text style={styles.subtitle}>
-          Session telemetry, authentication audit, and account threat events
-        </Text>
-      </View>
+    <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <AppHeader title="Security Activity" navigation={navigation} />
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -137,8 +122,8 @@ export function SecurityActivityScreen({ navigation }) {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => fetchData(true)}
-            tintColor={COLORS.primary}
-            colors={[COLORS.primary]}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
           />
         }
       >
@@ -352,7 +337,7 @@ export function SecurityActivityScreen({ navigation }) {
         {/* Privacy & Architecture Note */}
         <View style={styles.archNoticeCard}>
           <Text style={styles.archNoticeHeading}>
-            🔒 TELEMETRY ARCHITECTURE & PRIVACY
+            TELEMETRY ARCHITECTURE & PRIVACY
           </Text>
           <Text style={styles.archNoticeText}>
             • Authentication telemetry is submitted via secure HTTPS (POST /telemetry/login-event).
@@ -362,7 +347,9 @@ export function SecurityActivityScreen({ navigation }) {
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+
+      <BottomTabBar activeRoute="SecurityActivity" navigation={navigation} />
+    </View>
   );
 }
 

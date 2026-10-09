@@ -18,7 +18,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 199 89% 44%;              /* #0284c7 restrained deep cyan/blue */
+    --primary: 199 89% 44%;              /* #0284c7 clean cyber blue */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 40% 96%;            /* #f1f5f9 subtle grey */
@@ -43,7 +43,7 @@
     /* Semantic Surface Tiers */
     --surface: 0 0% 100%;                /* #ffffff */
     --surface-elevated: 0 0% 100%;       /* #ffffff */
-    --surface-lowest: 0 0% 100%;         /* #ffffff */
+    --surface-lowest: 0 0% 100%;         /* #ffffff header & sidebar */
     --surface-low: 210 20% 98%;          /* #f8fafc */
     --surface-container: 0 0% 100%;      /* #ffffff */
     --surface-high: 210 40% 96%;         /* #f1f5f9 */
@@ -54,7 +54,7 @@
     --text-secondary: 215 16% 35%;       /* #334155 */
     --text-muted: 215 16% 55%;           /* #64748b */
 
-    /* Calibrated Risk Colors — Light Mode (Light background, deep readable text) */
+    /* Calibrated Risk Colors — Light Mode */
     --risk-safe-bg: 152 76% 94%;         /* #ecfdf5 */
     --risk-safe-text: 160 84% 24%;       /* #065f46 */
     --risk-safe-border: 158 64% 45%;     /* #10b981 */
@@ -82,64 +82,64 @@
   }
 
   /* =====================================================================
-   * DARK THEME (Enterprise SaaS Dark — Linear / Vercel style)
-   * Restrained slate/charcoal canvas (#0f131c), desaturated indigo-blue
-   * accent (non-neon), neutral secondary surfaces, clean hairline borders.
+   * DARK THEME (CYBERGUARD Brand SaaS Dark — Premium Minimal Charcoal/Cyan)
+   * Deep black canvas (#0F0F0F), signature cyan accent (#00D9FF),
+   * clean borders, elevated card surfaces, high-contrast readable text.
    * ===================================================================== */
   .dark {
-    --background: 224 30% 8%;            /* #0f131c void canvas */
-    --foreground: 228 30% 90%;           /* #dfe2ee crisp foreground */
+    --background: 0 0% 6%;               /* #0F0F0F signature deep background */
+    --foreground: 0 0% 98%;              /* #FAFAFA crisp heading/body text */
 
-    --card: 220 18% 14%;                 /* #1c2028 container surface */
-    --card-foreground: 228 30% 90%;
+    --card: 0 0% 9%;                     /* #171717 elevated card surface */
+    --card-foreground: 0 0% 98%;
 
-    --popover: 220 20% 12%;              /* #181c24 elevated surface */
-    --popover-foreground: 228 30% 90%;
+    --popover: 0 0% 8%;                  /* #141414 elevated popover */
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 217 70% 56%;              /* #4878d6 restrained enterprise indigo-blue */
-    --primary-foreground: 0 0% 100%;     /* crisp white text */
+    --primary: 189 100% 50%;             /* #00D9FF signature CYBERGUARD cyan */
+    --primary-foreground: 0 0% 6%;       /* dark text on cyan primary elements */
 
-    --secondary: 220 14% 18%;            /* #262a33 muted neutral */
-    --secondary-foreground: 228 30% 90%;
+    --secondary: 0 0% 12%;               /* #1F1F1F */
+    --secondary-foreground: 0 0% 95%;
 
-    --muted: 220 14% 18%;                /* #262a33 */
-    --muted-foreground: 215 16% 55%;      /* #64748b */
+    --muted: 0 0% 12%;                   /* #1F1F1F */
+    --muted-foreground: 215 16% 62%;     /* #94a3b8 */
 
-    --accent: 220 14% 18%;
-    --accent-foreground: 228 30% 90%;
+    --accent: 189 100% 50%;
+    --accent-foreground: 0 0% 6%;
 
     --destructive: 351 85% 54%;          /* #e11d48 solid red */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 20%;               /* #2b2f38 clean hairline */
-    --input: 220 13% 20%;
-    --ring: 217 70% 56%;
-    --focus-ring: 217 70% 56%;
+    --border: 0 0% 17%;                  /* #2B2B2B hairline border */
+    --input: 0 0% 17%;
+    --ring: 189 100% 50%;                /* #00D9FF cyan focus ring */
+    --focus-ring: 189 100% 50%;
 
     /* Semantic Surface Tiers */
-    --surface: 220 18% 14%;              /* #1c2028 */
-    --surface-elevated: 220 20% 16%;     /* #20242e */
-    --surface-lowest: 220 38% 6%;        /* #0a0e16 true void */
-    --surface-low: 220 20% 12%;          /* #181c24 */
-    --surface-container: 220 18% 14%;    /* #1c2028 */
-    --surface-high: 222 14% 18%;         /* #262a33 */
-    --surface-highest: 223 11% 22%;      /* #31353e */
+    --surface: 0 0% 9%;                  /* #171717 */
+    --surface-elevated: 0 0% 12%;        /* #1F1F1F */
+    --surface-lowest: 0 0% 5%;           /* #0D0D0D header & sidebar void */
+    --surface-low: 0 0% 8%;              /* #141414 */
+    --surface-container: 0 0% 9%;        /* #171717 */
+    --surface-high: 0 0% 13%;            /* #222222 */
+    --surface-highest: 0 0% 16%;         /* #292929 */
 
     /* Typography Tiers */
-    --text-primary: 228 30% 90%;         /* #dfe2ee */
-    --text-secondary: 215 16% 70%;       /* #94a3b8 */
-    --text-muted: 215 16% 55%;            /* #64748b */
+    --text-primary: 0 0% 98%;            /* #FAFAFA */
+    --text-secondary: 0 0% 88%;          /* #E0E0E0 */
+    --text-muted: 215 16% 62%;           /* #94a3b8 */
 
-    /* Calibrated Risk Colors — Dark Mode (High-contrast neon glow on dark) */
+    /* Calibrated Risk Colors — Dark Mode */
     --risk-safe-bg: 158 64% 12%;
     --risk-safe-text: 150 90% 65%;       /* #34d399 */
     --risk-safe-border: 158 64% 28%;     /* #059669 */
     --risk-safe-dot: 150 90% 65%;
 
     --risk-low-bg: 199 89% 14%;
-    --risk-low-text: 199 89% 65%;        /* #38bdf8 */
+    --risk-low-text: 189 100% 55%;       /* #1ae0ff cyan/blue */
     --risk-low-border: 199 89% 30%;      /* #0284c7 */
-    --risk-low-dot: 199 89% 65%;
+    --risk-low-dot: 189 100% 55%;
 
     --risk-medium-bg: 38 92% 14%;
     --risk-medium-text: 45 93% 60%;      /* #fbbf24 */

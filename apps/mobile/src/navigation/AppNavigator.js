@@ -1,5 +1,6 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useTheme } from '../context/ThemeContext';
 import { DashboardScreen } from '../screens/dashboard/DashboardScreen';
 import { IncidentListScreen } from '../screens/incidents/IncidentListScreen';
 import { IncidentDetailScreen } from '../screens/incidents/IncidentDetailScreen';
@@ -15,13 +16,15 @@ import { SecurityActivityScreen } from '../screens/security/SecurityActivityScre
 const Stack = createNativeStackNavigator();
 
 export function AppNavigator() {
+  const { colors } = useTheme();
+
   return (
     <Stack.Navigator
       initialRouteName="Dashboard"
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
-        contentStyle: { backgroundColor: '#0a0f1d' }
+        contentStyle: { backgroundColor: colors.background }
       }}
     >
       <Stack.Screen name="Dashboard" component={DashboardScreen} />

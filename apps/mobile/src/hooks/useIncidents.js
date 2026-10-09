@@ -31,7 +31,7 @@ export function useIncidents(filters = {}) {
         setIncidents(result.incidents);
         setTotal(result.total);
       } catch (err) {
-        console.warn('[useIncidents.fetchIncidents]', err.message);
+        console.log('[useIncidents.fetchIncidents]', err.message);
         setError(err.message || 'Failed to load incidents');
       } finally {
         setLoading(false);

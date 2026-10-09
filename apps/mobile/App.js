@@ -3,17 +3,33 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
 import { SocketProvider } from './src/context/SocketContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { RootNavigator } from './src/navigation/RootNavigator';
 
-export default function App() {
+function ThemedAppContainer() {
+  const { isDark, colors } = useTheme();
+
   return (
-    <SafeAreaProvider>
-      <StatusBar style="light" backgroundColor="#0a0f1d" />
+    <>
+      <StatusBar
+        style={isDark ? 'light' : 'dark'}
+        backgroundColor={colors.background}
+      />
       <AuthProvider>
         <SocketProvider>
           <RootNavigator />
         </SocketProvider>
       </AuthProvider>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <ThemedAppContainer />
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

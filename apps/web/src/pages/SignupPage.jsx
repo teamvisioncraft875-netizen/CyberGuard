@@ -114,7 +114,7 @@ export function SignupPage({ onSignupSuccess, onNavigateLogin }) {
         <Input
           label="Full Name"
           type="text"
-          placeholder="Jane Doe"
+          placeholder="Priya Sharma"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           iconLeft={User}
@@ -125,7 +125,7 @@ export function SignupPage({ onSignupSuccess, onNavigateLogin }) {
         <Input
           label="Email Address"
           type="email"
-          placeholder="analyst@cyberguard.com"
+          placeholder="priya.sharma@bharatfintech.in"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           iconLeft={Mail}
@@ -137,7 +137,7 @@ export function SignupPage({ onSignupSuccess, onNavigateLogin }) {
           <Input
             label="Organization Name"
             type="text"
-            placeholder="e.g. Acme Cyber Security Inc."
+            placeholder="Bharat FinTech Solutions"
             value={organizationName}
             onChange={(e) => setOrganizationName(e.target.value)}
             iconLeft={Building2}

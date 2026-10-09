@@ -11,6 +11,8 @@ import {
   SafeAreaView
 } from 'react-native';
 import { COLORS } from '../../constants/colors';
+import { useTheme } from '../../context/ThemeContext';
+import { AppHeader } from '../../components/AppHeader';
 import { secretService } from '../../services/secretService';
 import { CyberButton } from '../../components/CyberButton';
 
@@ -63,26 +65,15 @@ export function SecretScannerScreen({ navigation }) {
   const lineCount = input ? input.split('\n').length : 0;
   const charCount = input.length;
 
+  const { colors } = useTheme();
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <AppHeader title="Secret & Token Scanner" showBack={true} navigation={navigation} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardView}
       >
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backBtn}
-            onPress={() => navigation.goBack()}
-            accessibilityLabel="Back to Threat Scanners"
-            accessibilityRole="button"
-          >
-            <Text style={styles.backBtnText}>← Scanners</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Secret / Credential Scanner</Text>
-          <Text style={styles.subtitle}>
-            Detect leaked API keys, database URLs, private keys, and tokens
-          </Text>
-        </View>
 
         <ScrollView
           contentContainerStyle={styles.content}
@@ -179,7 +170,7 @@ export function SecretScannerScreen({ navigation }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 

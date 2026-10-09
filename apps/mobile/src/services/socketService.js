@@ -43,7 +43,10 @@ export const socketService = {
         reconnectionDelay: 2000
       });
 
+      let hasLoggedError = false;
+
       socketInstance.on('connect', () => {
+        hasLoggedError = false;
         notifyStatus(true);
       });
 
@@ -56,20 +59,23 @@ export const socketService = {
           try {
             listener(incident);
           } catch (err) {
-            console.warn('[socketService] Listener error:', err.message);
+            console.log('[socketService] Listener error:', err.message);
           }
         });
       });
 
       socketInstance.on('connect_error', (err) => {
         notifyStatus(false);
-        console.warn('[socketService] Real-time connection degraded (retrying):', err.message);
+        if (!hasLoggedError) {
+          hasLoggedError = true;
+          console.log('[socketService] Real-time connection offline (operating in local cache mode):', err.message);
+        }
       });
 
       return socketInstance;
     } catch (err) {
       notifyStatus(false);
-      console.warn('[socketService.connect Error]', err.message);
+      console.log('[socketService.connect Error]', err.message);
       return null;
     }
   },

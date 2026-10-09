@@ -194,7 +194,7 @@ export function DesignSystemPage() {
 
             <div>
               <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground mb-3 block">
-                String Normalization Demonstration (Handles any casing/input)
+                String Normalization Reference (Handles any casing/input)
               </span>
               <div className="flex flex-wrap items-center gap-3 font-mono text-xs">
                 <div className="flex items-center gap-1.5 p-2 rounded bg-muted">

@@ -110,7 +110,7 @@ export function AppLayout({
 
   const navigationItems = useMemo(() => {
     const items = [
-      { id: 'dashboard', path: '/', label: 'Dashboard', icon: LayoutDashboard },
+      { id: 'dashboard', path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       {
         id: 'attack-surface',
         path: '/attack-surface',
@@ -160,7 +160,7 @@ export function AppLayout({
   const handleNavClick = (itemOrId) => {
     let id = typeof itemOrId === 'string' ? itemOrId : itemOrId.id;
     let path = typeof itemOrId === 'string'
-      ? (navigationItems.find((i) => i.id === itemOrId)?.path || (itemOrId === 'dashboard' ? '/' : `/${itemOrId}`))
+      ? (navigationItems.find((i) => i.id === itemOrId)?.path || (itemOrId === 'dashboard' ? '/dashboard' : `/${itemOrId}`))
       : itemOrId.path;
 
     if ((id === 'attack-surface' || id === 'firewall' || id === 'agents' || id === 'ddos') && !isAdmin) {
@@ -178,8 +178,8 @@ export function AppLayout({
     if (activeNavProp && activeNavProp !== 'auto') {
       return activeNavProp === item.id;
     }
-    if (item.path === '/') {
-      return location.pathname === '/' || location.pathname === '';
+    if (item.path === '/dashboard') {
+      return location.pathname === '/dashboard';
     }
     return location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
   };
@@ -385,7 +385,7 @@ export function AppLayout({
                   className={cn(
                     'w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-150',
                     isActive
-                      ? 'bg-muted text-primary font-bold border-l-2 border-primary shadow-sm'
+                      ? 'bg-primary/10 text-primary font-bold border-l-2 border-primary shadow-sm'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
                   )}
                 >

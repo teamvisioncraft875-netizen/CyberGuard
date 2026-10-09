@@ -1,0 +1,34 @@
+{
+  "scenario_id": "SCENARIO-INDO-2026-ALPHA",
+  "organization": "Bharat FinTech Solutions",
+  "title": "Coordinated Spearphishing to Credential Stuffing & Internal C2 Beaconing",
+  "timeline": [
+    {
+      "step": 1,
+      "time": "T+00:00",
+      "stage": "Initial Access",
+      "event": "Spear-phishing email targeting Neha Mishra (Senior Software Engineer, BBSR-DEV-003)",
+      "technique": "T1566.001 Spearphishing Attachment",
+      "incident_id": "11000000-0000-4000-8000-000000000002",
+      "outcome": "Detected & Quarantined by ML Message Engine"
+    },
+    {
+      "step": 2,
+      "time": "T+00:45",
+      "stage": "Credential Access",
+      "event": "Distributed credential stuffing targeting Rohan Kulkarni on payments gateway",
+      "technique": "T1110 Brute Force: Credential Stuffing",
+      "incident_id": "11000000-0000-4000-8000-000000000001",
+      "outcome": "Flagged by Login Anomaly Heuristics, SOAR Playbook triggered session revocation"
+    },
+    {
+      "step": 3,
+      "time": "T+01:15",
+      "stage": "Command & Control",
+      "event": "Outbound HTTP beaconing from BLR-WS-014 to threat indicator IP 198.51.100.45",
+      "technique": "T1071.001 Application Layer Protocol: Web Protocols",
+      "incident_id": "11000000-0000-4000-8000-000000000003",
+      "outcome": "Automated Host Firewall rule FW-RULE-001 applied, connection dropped"
+    }
+  ]
+}

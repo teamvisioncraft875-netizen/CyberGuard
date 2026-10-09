@@ -1,0 +1,24 @@
+[
+  {
+    "id": "flow-eval-001",
+    "endpoint": "/api/v1/auth/login",
+    "requests_per_second": 3240,
+    "baseline_rps": 450,
+    "threshold_rps": 1200,
+    "unique_ips": 48,
+    "expected_decision": "threat",
+    "threat_type": "request_spike",
+    "mitigation": "Adaptive rate limit engagement & temporary IP tarpit"
+  },
+  {
+    "id": "flow-eval-002",
+    "endpoint": "/api/v1/check/url",
+    "requests_per_second": 280,
+    "baseline_rps": 250,
+    "threshold_rps": 1000,
+    "unique_ips": 120,
+    "expected_decision": "benign",
+    "threat_type": "none",
+    "mitigation": "None required - volume within operational variance"
+  }
+]

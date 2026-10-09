@@ -1,0 +1,42 @@
+[
+  {
+    "id": "url-eval-001",
+    "url": "https://statebank-verify-kyc-update.com",
+    "expected_decision": "malicious",
+    "expected_risk": "high",
+    "description": "Typosquatting credential harvesting portal targeting Indian banking customers",
+    "tags": ["phishing", "brand_impersonation", "banking"]
+  },
+  {
+    "id": "url-eval-002",
+    "url": "https://hdfcbank-netbanking-login-auth.net",
+    "expected_decision": "malicious",
+    "expected_risk": "high",
+    "description": "Deceptive subdomain structure targeting NetBanking credentials",
+    "tags": ["phishing", "credential_harvesting"]
+  },
+  {
+    "id": "url-eval-003",
+    "url": "https://www.incometax.gov.in/iec/foportal/",
+    "expected_decision": "benign",
+    "expected_risk": "safe",
+    "description": "Official Income Tax Department Government portal (True Negative)",
+    "tags": ["benign", "government", "official"]
+  },
+  {
+    "id": "url-eval-004",
+    "url": "https://github.com/organization/repo-audit",
+    "expected_decision": "benign",
+    "expected_risk": "safe",
+    "description": "Standard software repository URL (True Negative)",
+    "tags": ["benign", "developer"]
+  },
+  {
+    "id": "url-eval-005",
+    "url": "http://198.51.100.45:8080/payload.sh",
+    "expected_decision": "malicious",
+    "expected_risk": "high",
+    "description": "Direct IP connection with non-standard port serving executable script",
+    "tags": ["malicious_url", "direct_ip", "payload_delivery"]
+  }
+]

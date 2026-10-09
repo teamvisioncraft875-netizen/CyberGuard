@@ -60,7 +60,7 @@ export function LoginPage({ onLoginSuccess, onNavigateSignup }) {
         <Input
           label="Email Address"
           type="email"
-          placeholder="analyst@cyberguard.com"
+          placeholder="priya.sharma@bharatfintech.in"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           iconLeft={Mail}
