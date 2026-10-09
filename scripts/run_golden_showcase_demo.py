@@ -102,11 +102,11 @@ REGISTERED_ENGINES = {
 
 def compute_sha256(path: Path) -> str:
     """Computes canonical hex SHA-256 for a file on disk."""
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        while chunk := f.read(65536):
-            h.update(chunk)
-    return h.hexdigest()
+    raw = path.read_bytes()
+    # Canonicalize line endings for text formats so Windows git checkouts match manifest hashes
+    if path.suffix.lower() in (".json", ".txt", ".csv", ".yaml", ".yml", ".md"):
+        raw = raw.replace(b"\r\n", b"\n")
+    return hashlib.sha256(raw).hexdigest()
 
 
 class ManifestValidationError(Exception):
