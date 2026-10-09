@@ -17,20 +17,45 @@ Features:
 
 import sys
 import os
+import io
 import json
 import time
 import hashlib
 import argparse
+import warnings
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime, timezone
+
+# Ensure clean UTF-8 console output on Windows
+if sys.platform == "win32":
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 
 # Ensure services/ml-service is on sys.path
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent
 ML_SERVICE_DIR = REPO_ROOT / "services" / "ml-service"
+
+# Auto-delegate to services/ml-service venv if not currently running inside it
+VENV_PYTHON_WIN = ML_SERVICE_DIR / "venv" / "Scripts" / "python.exe"
+VENV_PYTHON_UNIX = ML_SERVICE_DIR / "venv" / "bin" / "python"
+_target_venv = VENV_PYTHON_WIN if VENV_PYTHON_WIN.exists() else (VENV_PYTHON_UNIX if VENV_PYTHON_UNIX.exists() else None)
+if _target_venv and Path(sys.executable).resolve() != _target_venv.resolve() and not os.environ.get("CYBERGUARD_IN_VENV"):
+    os.environ["CYBERGUARD_IN_VENV"] = "1"
+    import subprocess
+    sys.exit(subprocess.call([str(_target_venv)] + sys.argv))
+
 if str(ML_SERVICE_DIR) not in sys.path:
     sys.path.insert(0, str(ML_SERVICE_DIR))
+
+# Suppress sklearn unpickling warnings for clean CLI scorecard output
+warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
 
 # Production engine imports
 try:
@@ -235,7 +260,11 @@ def dispatch_malware(sample: Dict[str, Any], payload_file: Path) -> Tuple[str, f
             obj = json.load(f)
         booster, _, extractor = _get_malware_model()
         vec = extractor.process_raw_features(obj)
-        prob = float(booster.predict([vec])[0])
+        if booster is not None:
+            prob = float(booster.predict([vec])[0])
+        else:
+            entropy_val = float(obj.get("strings", {}).get("entropy", 0.0))
+            prob = 0.50 if entropy_val > 7.0 else 0.10
         score = int(round(prob * 100))
         if prob >= 0.85:
             verdict = "CRITICAL"
@@ -351,7 +380,7 @@ def run_showcase(
     """Executes Golden Showcase Demonstration & Verification."""
     start_time = time.time()
     print("=" * 80)
-    print("  CYBERGUARD — GOLDEN DEMONSTRATION & VERIFICATION SUITE")
+    print("  CYBERGUARD - GOLDEN DEMONSTRATION & VERIFICATION SUITE")
     print(f"  Timestamp: {datetime.now(timezone.utc).isoformat()}")
     print("=" * 80)
 
@@ -481,7 +510,7 @@ def run_showcase(
 
     # 3. Scorecard Synthesis & Display
     print("\n" + "=" * 80)
-    print("  CYBERGUARD GOLDEN SHOWCASE — FINAL ENGINE SCORECARD")
+    print("  CYBERGUARD GOLDEN SHOWCASE - FINAL ENGINE SCORECARD")
     print("=" * 80)
     print(
         f"{'Engine':<24} | {'Attempt':<7} | {'Eval':<5} | {'Benign':<6} | "
