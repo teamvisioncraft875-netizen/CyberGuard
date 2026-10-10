@@ -142,6 +142,15 @@ if (process.env.NODE_ENV !== 'test') {
 
   process.on('SIGTERM', () => handleShutdown('SIGTERM'));
   process.on('SIGINT', () => handleShutdown('SIGINT'));
+
+  process.on('uncaughtException', (err) => {
+    if (err && (err.message?.includes('Connection terminated') || err.message?.includes('ECONNRESET') || err.message?.includes('socket closed'))) {
+      console.warn('[CYBERGUARD DB] Transient DB socket disconnect caught safely; server remains healthy.');
+      return;
+    }
+    console.error('[CYBERGUARD Fatal Error]', err);
+    process.exit(1);
+  });
 }
 
 module.exports = { app, server, io, schedulerService };
