@@ -103,6 +103,13 @@ export function ScannerHomeScreen({ navigation, route }) {
         }
         // Upload & inspect media
         const uploadInfo = await mediaService.getUploadUrl(selectedAsset.name, selectedAsset.mimeType || `${mediaType}/*`);
+        if (uploadInfo && uploadInfo.upload_url) {
+          try {
+            await mediaService.uploadToSignedUrl(uploadInfo.upload_url, selectedAsset);
+          } catch (uploadErr) {
+            console.warn('[Media Upload Notice]', uploadErr.message);
+          }
+        }
         const res = await mediaService.analyzeMedia(uploadInfo.file_path, mediaType);
         result = {
           type: `Media (${mediaType.toUpperCase()})`,

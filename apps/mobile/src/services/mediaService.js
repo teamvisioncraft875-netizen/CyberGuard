@@ -160,5 +160,29 @@ export const mediaService = {
       file_path: filePath,
       media_type: mediaType
     });
+  },
+
+  /**
+   * Compatibility alias for getUploadUrl
+   */
+  async getUploadUrl(fileName, mimeType = 'image/jpeg') {
+    const isAudio = (typeof mimeType === 'string' && mimeType.startsWith('audio')) ||
+                    (typeof fileName === 'string' && /\.(wav|mp3|ogg|flac|m4a)$/i.test(fileName));
+    const mediaType = isAudio ? 'audio' : 'image';
+    return await this.requestUploadUrl({
+      mediaType,
+      fileSizeBytes: 1024 * 100,
+      fileName: fileName || `media_${Date.now()}`
+    });
+  },
+
+  /**
+   * Compatibility alias for analyzeMedia
+   */
+  async analyzeMedia(filePath, mediaType = 'image') {
+    return await this.scanMedia({
+      filePath,
+      mediaType: typeof mediaType === 'string' ? mediaType : 'image'
+    });
   }
 };

@@ -11,6 +11,7 @@
   "scripts": {
     "dev:web": "npm run dev --workspace=apps/web",
     "dev:backend": "npm run dev --workspace=services/backend",
+    "dev:ml": "uvicorn app.main:app --app-dir services/ml-service --host 127.0.0.1 --port 8000 --reload",
     "dev:mobile": "npm start --workspace=apps/mobile",
     "dev:mobile:tunnel": "npm run tunnel --workspace=apps/mobile",
     "dev:mobile:web": "npm run web --workspace=apps/mobile",
