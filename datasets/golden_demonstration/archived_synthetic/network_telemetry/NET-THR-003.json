@@ -1,0 +1,13 @@
+{
+  "user_id": "usr_botnet_03",
+  "timestamp": "2026-09-25T12:00:00Z",
+  "event_type": "network_flow",
+  "details": {
+    "dur": 0.1,
+    "tot_pkts": 800.0,
+    "tot_bytes": 950000.0,
+    "src_bytes": 920000.0,
+    "proto": "udp",
+    "dport": 5353
+  }
+}

@@ -1,0 +1,2241 @@
+{
+  "manifest_version": "1.0.0",
+  "suite_name": "CYBERGUARD Golden Demonstration & Verification Suite",
+  "created_at": "2026-10-10T02:20:46.870101+00:00",
+  "total_samples": 102,
+  "engines_covered": [
+    "false_positive",
+    "malicious_url",
+    "incident_recommendation",
+    "incident_correlation",
+    "malware",
+    "phishing",
+    "edr_behavior",
+    "login_anomaly",
+    "deepfake_audio",
+    "network_threat",
+    "deepfake_visual"
+  ],
+  "samples": [
+    {
+      "sample_id": "AUD-REAL-001",
+      "engine": "deepfake_audio",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "datasets/deepfake-audio-detection",
+      "provenance": "deepfake-audio-detection/manifest.csv [raw/real/yt_0003_part_001.flac]",
+      "ground_truth": "genuine",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        20
+      ],
+      "mitre_context": "None",
+      "rationale": "Natural human pitch variation, authentic spectral decay, non-cloned voice.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/audio_deepfake/yt_0003_part_001.flac",
+      "sha256": "b2687aa1d1e7bb7d392715d7288d42289787e11d5346cdcab6c7aa386b4cd917",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Acoustic audio file; offline forensic evaluation only."
+    },
+    {
+      "sample_id": "AUD-REAL-002",
+      "engine": "deepfake_audio",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "datasets/deepfake-audio-detection",
+      "provenance": "deepfake-audio-detection/manifest.csv [raw/real/yt_0003_part_002.flac]",
+      "ground_truth": "genuine",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        25
+      ],
+      "mitre_context": "None",
+      "rationale": "Genuine speaker acoustics without vocoder phase artifacts.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/audio_deepfake/yt_0003_part_002.flac",
+      "sha256": "f63dd51818a2e5c8159693332725c5ada28d980e2e07cbb537f1f68260eaf48f",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Acoustic audio file; offline forensic evaluation only."
+    },
+    {
+      "sample_id": "AUD-REAL-003",
+      "engine": "deepfake_audio",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "datasets/deepfake-audio-detection",
+      "provenance": "deepfake-audio-detection/manifest.csv [raw/real/yt_0003_part_003.flac]",
+      "ground_truth": "genuine",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        20
+      ],
+      "mitre_context": "None",
+      "rationale": "Consistent pitch harmonics and natural phoneme duration.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/audio_deepfake/yt_0003_part_003.flac",
+      "sha256": "ae3abe3aab6e24162c688c65a711cc705b18bf9c9fed47a6f1eef87893f0a825",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Acoustic audio file; offline forensic evaluation only."
+    },
+    {
+      "sample_id": "AUD-REAL-004",
+      "engine": "deepfake_audio",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "datasets/deepfake-audio-detection",
+      "provenance": "deepfake-audio-detection/manifest.csv [raw/real/yt_0003_part_004.flac]",
+      "ground_truth": "genuine",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        20
+      ],
+      "mitre_context": "None",
+      "rationale": "Real microphone acoustic capture from YouTube genuine corpus.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/audio_deepfake/yt_0003_part_004.flac",
+      "sha256": "f49ddf215fe202a79db48a7bb0af906bd42b6db239e011316688644a1a683c32",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Acoustic audio file; offline forensic evaluation only."
+    },
+    {
+      "sample_id": "AUD-REAL-005",
+      "engine": "deepfake_audio",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "datasets/deepfake-audio-detection",
+      "provenance": "deepfake-audio-detection/manifest.csv [raw/real/yt_0003_part_006.flac]",
+      "ground_truth": "genuine",
+      "expected_verdict": "LOW",
+      "expected_risk_range": [
+        0,
+        30
+      ],
+      "mitre_context": "None",
+      "rationale": "Natural speech jitter and authentic human vocal tract resonances.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/audio_deepfake/yt_0003_part_006.flac",
+      "sha256": "7af5386b20190f1ddc42d71ef3b48b2276d3bbfb2ae170c769114edc9860361c",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Acoustic audio file; offline forensic evaluation only."
+    },
+    {
+      "sample_id": "AUD-FAKE-001",
+      "engine": "deepfake_audio",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "datasets/deepfake-audio-detection",
+      "provenance": "deepfake-audio-detection/manifest.csv [raw/fake/hg_0001_c_part_005.flac]",
+      "ground_truth": "manipulated",
+      "expected_verdict": "CRITICAL",
+      "expected_risk_range": [
+        70,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566"
+      },
+      "rationale": "Synthetic speech generated by Kokoro TTS displaying neural vocoder phase regularity.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/audio_deepfake/hg_0001_c_part_005.flac",
+      "sha256": "83b30af15e34632525039e53fdcc9097efb89ce07d8cdd2a3d50609957f38798",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Acoustic audio file; offline forensic evaluation only."
+    },
+    {
+      "sample_id": "AUD-FAKE-002",
+      "engine": "deepfake_audio",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "datasets/deepfake-audio-detection",
+      "provenance": "deepfake-audio-detection/manifest.csv [raw/fake/hg_0002_c_part_006.flac]",
+      "ground_truth": "manipulated",
+      "expected_verdict": "CRITICAL",
+      "expected_risk_range": [
+        70,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566"
+      },
+      "rationale": "Artificial pitch contour flatness and unnatural spectral envelope from neural speech model.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/audio_deepfake/hg_0002_c_part_006.flac",
+      "sha256": "d6ad0ba74cdd83b172407e9d1889c78f0b77514485708198ee90cf97fe78f038",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Acoustic audio file; offline forensic evaluation only."
+    },
+    {
+      "sample_id": "AUD-FAKE-003",
+      "engine": "deepfake_audio",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "datasets/deepfake-audio-detection",
+      "provenance": "deepfake-audio-detection/manifest.csv [raw/fake/hg_0003_c_part_004.flac]",
+      "ground_truth": "manipulated",
+      "expected_verdict": "CRITICAL",
+      "expected_risk_range": [
+        70,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566"
+      },
+      "rationale": "Kokoro TTS cloned vocal tract signature with low pitch jitter anomaly.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/audio_deepfake/hg_0003_c_part_004.flac",
+      "sha256": "d2503a724188d4d74a0a98cfc464d5137d4794a7f894b8be08d7b93680115735",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Acoustic audio file; offline forensic evaluation only."
+    },
+    {
+      "sample_id": "AUD-FAKE-004",
+      "engine": "deepfake_audio",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "datasets/deepfake-audio-detection",
+      "provenance": "deepfake-audio-detection/manifest.csv [raw/fake/hg_0004_c_part_004.flac]",
+      "ground_truth": "manipulated",
+      "expected_verdict": "CRITICAL",
+      "expected_risk_range": [
+        70,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566"
+      },
+      "rationale": "Elevated spectral centroid and unnatural zero-crossing continuity indicative of deepfake synthesis.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/audio_deepfake/hg_0004_c_part_004.flac",
+      "sha256": "35b9d8af78d90a0f3a452750e1816890cb903fbca3e9009e94a27f0942681458",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Acoustic audio file; offline forensic evaluation only."
+    },
+    {
+      "sample_id": "AUD-FAKE-005",
+      "engine": "deepfake_audio",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "datasets/deepfake-audio-detection",
+      "provenance": "deepfake-audio-detection/manifest.csv [raw/fake/hg_0005_c_part_006.flac]",
+      "ground_truth": "manipulated",
+      "expected_verdict": "CRITICAL",
+      "expected_risk_range": [
+        70,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566"
+      },
+      "rationale": "Synthetic voice clone exhibiting high-frequency over-smoothing and neural generation markers.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/audio_deepfake/hg_0005_c_part_006.flac",
+      "sha256": "c3e7069aa3893be32994b81b3660c2360e516d2faf94e78b9723ced013e3d2a6",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Acoustic audio file; offline forensic evaluation only."
+    },
+    {
+      "sample_id": "VIS-REAL-001",
+      "engine": "deepfake_visual",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "FaceForensics++",
+      "provenance": "datasets/FaceForensics/images/ex_original.png",
+      "ground_truth": "genuine",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        25
+      ],
+      "mitre_context": "None",
+      "rationale": "Authentic optical face capture from FaceForensics++ original partition without upsampling artifacts.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/visual_deepfake/ex_original.png",
+      "sha256": "1a6d475a1871e9086b006f9bf791ad6bd76c9b541cdc186389029231b7575924",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static image asset; no active content; inert local forensic evaluation."
+    },
+    {
+      "sample_id": "VIS-REAL-002",
+      "engine": "deepfake_visual",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "FaceForensics++",
+      "provenance": "datasets/FaceForensics/images/ex_original_actors.png",
+      "ground_truth": "genuine",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        25
+      ],
+      "mitre_context": "None",
+      "rationale": "Genuine actor footage frame preserving 1/f natural power law spectral decay.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/visual_deepfake/ex_original_actors.png",
+      "sha256": "b2dc2df954c1d826ff5f2da5f5c13252c254b9691f3bee1c871afb1740872db7",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static image asset; no active content; inert local forensic evaluation."
+    },
+    {
+      "sample_id": "VIS-BENIGN-003",
+      "engine": "deepfake_visual",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "FaceForensics++",
+      "provenance": "datasets/FaceForensics/images/table4_faceshifter.png",
+      "ground_truth": "genuine",
+      "expected_verdict": "MEDIUM",
+      "expected_risk_range": [
+        20,
+        60
+      ],
+      "mitre_context": "None",
+      "rationale": "Authentic non-manipulated document table frame exhibiting high text-edge frequencies.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/visual_deepfake/table4_faceshifter.png",
+      "sha256": "6d4feee5afb70f551badd2bf8903b5c12e6497d4ae13bd26b67fe33b473d2f54",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static image asset; no active content; inert local forensic evaluation."
+    },
+    {
+      "sample_id": "VIS-FAKE-001",
+      "engine": "deepfake_visual",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "FaceForensics++",
+      "provenance": "datasets/FaceForensics/images/ex_deepfakes.png",
+      "ground_truth": "manipulated",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        25
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566"
+      },
+      "rationale": "Deepfakes manipulation face swap from FaceForensics++. Evaluated under 2D FFT forensic pipeline.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/visual_deepfake/ex_deepfakes.png",
+      "sha256": "9facb90a6814903d615e1faa0ced0c2267e8ba306373f29b0672504ba1352048",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static image asset; no active content; inert local forensic evaluation."
+    },
+    {
+      "sample_id": "VIS-FAKE-002",
+      "engine": "deepfake_visual",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "FaceForensics++",
+      "provenance": "datasets/FaceForensics/images/ex_deepfakedetection.png",
+      "ground_truth": "manipulated",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        25
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566"
+      },
+      "rationale": "DeepFakeDetection manipulated frame showing subtle boundary blurring.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/visual_deepfake/ex_deepfakedetection.png",
+      "sha256": "86670687b41451def9d0c72703f0f64b914a1b7efa4e37d67addeef84f306fe8",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static image asset; no active content; inert local forensic evaluation."
+    },
+    {
+      "sample_id": "VIS-FAKE-003",
+      "engine": "deepfake_visual",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "FaceForensics++",
+      "provenance": "datasets/FaceForensics/images/ex_neuraltextures.png",
+      "ground_truth": "manipulated",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        25
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566"
+      },
+      "rationale": "NeuralTextures facial re-enactment frame from FaceForensics++.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/visual_deepfake/ex_neuraltextures.png",
+      "sha256": "9260ee4ce1325184e64dd642fadd4acbdf3371937c6e8bd21ddf46756a92a6c2",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static image asset; no active content; inert local forensic evaluation."
+    },
+    {
+      "sample_id": "VIS-COMPOSITE-004",
+      "engine": "deepfake_visual",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "FaceForensics++",
+      "provenance": "datasets/FaceForensics/images/teaser.png",
+      "ground_truth": "manipulated",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        25
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566"
+      },
+      "rationale": "Multi-method facial manipulation teaser composite.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/visual_deepfake/teaser.png",
+      "sha256": "51f00f2e66563072300197849298f403b9210b82577fd7c237b214c281623402",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static image asset; no active content; inert local forensic evaluation."
+    },
+    {
+      "sample_id": "VIS-FAKE-005",
+      "engine": "deepfake_visual",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "FaceForensics++",
+      "provenance": "datasets/FaceForensics/images/ex_deepfakes_mask.png",
+      "ground_truth": "manipulated",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        25
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566"
+      },
+      "rationale": "FaceForensics++ manipulation boundary binary mask indicating manipulated facial pixels.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/visual_deepfake/ex_deepfakes_mask.png",
+      "sha256": "c8adf153ddadd570ad9dbec1d9a570454f73a69f8eab60c411c9b8ed8445860e",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static image asset; no active content; inert local forensic evaluation."
+    },
+    {
+      "sample_id": "VIS-FAKE-006",
+      "engine": "deepfake_visual",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "FaceForensics++",
+      "provenance": "datasets/FaceForensics/images/ex_deepfakedetection_mask.png",
+      "ground_truth": "manipulated",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        25
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566"
+      },
+      "rationale": "DeepFakeDetection synthesized facial boundary mask from Google/TUM benchmark.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/visual_deepfake/ex_deepfakedetection_mask.png",
+      "sha256": "903205b9edd9c8f4f38633db83b67da734132d55bb1603af7e92d502af340f78",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static image asset; no active content; inert local forensic evaluation."
+    },
+    {
+      "sample_id": "VIS-FAKE-007",
+      "engine": "deepfake_visual",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "FaceForensics++",
+      "provenance": "datasets/FaceForensics/images/ex_neuraltextures_mask.png",
+      "ground_truth": "manipulated",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        25
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566"
+      },
+      "rationale": "NeuralTextures mouth and expression re-enactment spatial manipulation mask.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/visual_deepfake/ex_neuraltextures_mask.png",
+      "sha256": "bad322f18ba543cef94f624203811f856c351875eb93ced51a42a783e192b757",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static image asset; no active content; inert local forensic evaluation."
+    },
+    {
+      "sample_id": "URL-BEN-001",
+      "engine": "malicious_url",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "PhishTank / Verified Online & Verified Benign Corpora",
+      "provenance": "datasets/golden_demonstration/url_threat/URL-BEN-001.json",
+      "ground_truth": "safe",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        20
+      ],
+      "mitre_context": "None",
+      "rationale": "Legitimate enterprise documentation endpoint with reputable domain and standard path hierarchy.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/url_threat/URL-BEN-001.json",
+      "sha256": "065716109ff9c538ce78022ed227654304a9f9551b53ebb5a9e4dc9d1f0d408f",
+      "fixture_kind": "approved_fixture",
+      "safety_notes": "Defanged lexical URL record; never resolve, crawl, or fetch over live network."
+    },
+    {
+      "sample_id": "URL-BEN-002",
+      "engine": "malicious_url",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "PhishTank / Verified Online & Verified Benign Corpora",
+      "provenance": "datasets/golden_demonstration/url_threat/URL-BEN-002.json",
+      "ground_truth": "safe",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        20
+      ],
+      "mitre_context": "None",
+      "rationale": "Legitimate public search engine query with reputable domain and benign query arguments.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/url_threat/URL-BEN-002.json",
+      "sha256": "b2debe087a19d56d6bf58af818f10b183a93bea8492b6d01a0b5b81377745c7b",
+      "fixture_kind": "approved_fixture",
+      "safety_notes": "Defanged lexical URL record; never resolve, crawl, or fetch over live network."
+    },
+    {
+      "sample_id": "URL-BEN-003",
+      "engine": "malicious_url",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "PhishTank / Verified Online & Verified Benign Corpora",
+      "provenance": "datasets/golden_demonstration/url_threat/URL-BEN-003.json",
+      "ground_truth": "safe",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        20
+      ],
+      "mitre_context": "None",
+      "rationale": "Standard developer portal repository path on high-reputation domain.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/url_threat/URL-BEN-003.json",
+      "sha256": "965e4d19d3b81e5000e9aa139bad252af9cce3404cde0ec10960b2c74b865596",
+      "fixture_kind": "approved_fixture",
+      "safety_notes": "Defanged lexical URL record; never resolve, crawl, or fetch over live network."
+    },
+    {
+      "sample_id": "URL-BEN-004",
+      "engine": "malicious_url",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "PhishTank / Verified Online & Verified Benign Corpora",
+      "provenance": "datasets/golden_demonstration/url_threat/URL-BEN-004.json",
+      "ground_truth": "safe",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        20
+      ],
+      "mitre_context": "None",
+      "rationale": "Informational encyclopedia resource with clean lexical structure.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/url_threat/URL-BEN-004.json",
+      "sha256": "8db2a7172573cef86527237567153f924ed350ab19b5c36338a7794950b5e19f",
+      "fixture_kind": "approved_fixture",
+      "safety_notes": "Defanged lexical URL record; never resolve, crawl, or fetch over live network."
+    },
+    {
+      "sample_id": "URL-BEN-005",
+      "engine": "malicious_url",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "PhishTank / Verified Online & Verified Benign Corpora",
+      "provenance": "datasets/golden_demonstration/url_threat/URL-BEN-005.json",
+      "ground_truth": "safe",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        20
+      ],
+      "mitre_context": "None",
+      "rationale": "Verified corporate vendor enterprise security landing page.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/url_threat/URL-BEN-005.json",
+      "sha256": "3b0c277278332a91173ac84ce0cdc7cb8884198f5523bcbb5cd07ed9150b9fb8",
+      "fixture_kind": "approved_fixture",
+      "safety_notes": "Defanged lexical URL record; never resolve, crawl, or fetch over live network."
+    },
+    {
+      "sample_id": "URL-BEN-006",
+      "engine": "malicious_url",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "PhishTank / Verified Online & Verified Benign Corpora",
+      "provenance": "datasets/golden_demonstration/url_threat/URL-BEN-006.json",
+      "ground_truth": "safe",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        20
+      ],
+      "mitre_context": "None",
+      "rationale": "Legitimate cloud provider compliance portal with authentic domain.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/url_threat/URL-BEN-006.json",
+      "sha256": "cac4d5415f6b5633e679f54777f164c835668b11386fb0e4b7a731251faab735",
+      "fixture_kind": "approved_fixture",
+      "safety_notes": "Defanged lexical URL record; never resolve, crawl, or fetch over live network."
+    },
+    {
+      "sample_id": "URL-THR-001",
+      "engine": "malicious_url",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "PhishTank / Verified Online & Verified Benign Corpora",
+      "provenance": "datasets/golden_demonstration/url_threat/URL-THR-001.json",
+      "ground_truth": "malicious",
+      "expected_verdict": "CRITICAL",
+      "expected_risk_range": [
+        90,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566.002"
+      },
+      "rationale": "Suspicious TLD (.pro) with Amazon credential update lure query parameters and unknown host reputation.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/url_threat/URL-THR-001.json",
+      "sha256": "0b5e92bb329998ac0ae5b64bb4e66f6dafb507810a531db6f4acc516e7b0ac7f",
+      "fixture_kind": "approved_fixture",
+      "safety_notes": "Defanged lexical URL record; never resolve, crawl, or fetch over live network."
+    },
+    {
+      "sample_id": "URL-THR-002",
+      "engine": "malicious_url",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "PhishTank / Verified Online & Verified Benign Corpora",
+      "provenance": "datasets/golden_demonstration/url_threat/URL-THR-002.json",
+      "ground_truth": "malicious",
+      "expected_verdict": "CRITICAL",
+      "expected_risk_range": [
+        85,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566.002"
+      },
+      "rationale": "High-risk TLD (.top) combined with brand squatting on PayPal and urgent credential solicitation.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/url_threat/URL-THR-002.json",
+      "sha256": "a769f7c437e0eae8c098d3e41b9c7299fe9b10b6d7d064499e866afda32e8a5a",
+      "fixture_kind": "approved_fixture",
+      "safety_notes": "Defanged lexical URL record; never resolve, crawl, or fetch over live network."
+    },
+    {
+      "sample_id": "URL-THR-003",
+      "engine": "malicious_url",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "PhishTank / Verified Online & Verified Benign Corpora",
+      "provenance": "datasets/golden_demonstration/url_threat/URL-THR-003.json",
+      "ground_truth": "malicious",
+      "expected_verdict": "CRITICAL",
+      "expected_risk_range": [
+        85,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566.002"
+      },
+      "rationale": "Domain brand spoofing targeting Apple ID with credential lure keywords and untrusted TLD.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/url_threat/URL-THR-003.json",
+      "sha256": "e3f5d96c93e4c595bee854d6303a3f93dad64dda07b7b8773f0c4c2d14bb70b8",
+      "fixture_kind": "approved_fixture",
+      "safety_notes": "Defanged lexical URL record; never resolve, crawl, or fetch over live network."
+    },
+    {
+      "sample_id": "URL-THR-004",
+      "engine": "malicious_url",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "PhishTank / Verified Online & Verified Benign Corpora",
+      "provenance": "datasets/golden_demonstration/url_threat/URL-THR-004.json",
+      "ground_truth": "malicious",
+      "expected_verdict": "HIGH",
+      "expected_risk_range": [
+        70,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566.002"
+      },
+      "rationale": "Financial institution brand impersonation on unverified registration host with security alert keyword lure.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/url_threat/URL-THR-004.json",
+      "sha256": "8344ef0f21066fbbd23a4a94529965f2938a0192287716d6b507b4367e454caa",
+      "fixture_kind": "approved_fixture",
+      "safety_notes": "Defanged lexical URL record; never resolve, crawl, or fetch over live network."
+    },
+    {
+      "sample_id": "URL-THR-005",
+      "engine": "malicious_url",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "PhishTank / Verified Online & Verified Benign Corpora",
+      "provenance": "datasets/golden_demonstration/url_threat/URL-THR-005.json",
+      "ground_truth": "malicious",
+      "expected_verdict": "HIGH",
+      "expected_risk_range": [
+        70,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566.002"
+      },
+      "rationale": "Chase brand targeted phishing URL on .info registrar with update keyword trigger.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/url_threat/URL-THR-005.json",
+      "sha256": "748caf0628ca2aa15b2a462843cbaf59c39b897562a65f63cf924824dd59f40f",
+      "fixture_kind": "approved_fixture",
+      "safety_notes": "Defanged lexical URL record; never resolve, crawl, or fetch over live network."
+    },
+    {
+      "sample_id": "URL-THR-006",
+      "engine": "malicious_url",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "PhishTank / Verified Online & Verified Benign Corpora",
+      "provenance": "datasets/golden_demonstration/url_threat/URL-THR-006.json",
+      "ground_truth": "malicious",
+      "expected_verdict": "HIGH",
+      "expected_risk_range": [
+        70,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566.002"
+      },
+      "rationale": "Streaming provider billing failure lure designed to collect payment card details on .biz TLD.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/url_threat/URL-THR-006.json",
+      "sha256": "c5b4987304c0fefc26951dad0f58dad45f1d0161422281d86d7a851d753b8891",
+      "fixture_kind": "approved_fixture",
+      "safety_notes": "Defanged lexical URL record; never resolve, crawl, or fetch over live network."
+    },
+    {
+      "sample_id": "MSG-BEN-001",
+      "engine": "phishing",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "Nazario Phishing Corpus / CEAS_08 / Enron Corpora",
+      "provenance": "datasets/golden_demonstration/message_phishing/MSG-BEN-001.json",
+      "ground_truth": "benign",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        35
+      ],
+      "mitre_context": "None",
+      "rationale": "Routine corporate internal operational schedule update without urgency cues or credential requests.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/message_phishing/MSG-BEN-001.json",
+      "sha256": "b6358f76ac7c55fa67874f9e2e6244e2f6326914a073cdbcbc20c45b12149e15",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized email text fixture; harmless lexical evaluation."
+    },
+    {
+      "sample_id": "MSG-BEN-002",
+      "engine": "phishing",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "Nazario Phishing Corpus / CEAS_08 / Enron Corpora",
+      "provenance": "datasets/golden_demonstration/message_phishing/MSG-BEN-002.json",
+      "ground_truth": "benign",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        30
+      ],
+      "mitre_context": "None",
+      "rationale": "Internal facilities maintenance announcement with normal corporate vocabulary.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/message_phishing/MSG-BEN-002.json",
+      "sha256": "b99c8978873dde18b6a442a9ce80357b562c961f1602ec02684ac5fe80191e2d",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized email text fixture; harmless lexical evaluation."
+    },
+    {
+      "sample_id": "MSG-BEN-003",
+      "engine": "phishing",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "Nazario Phishing Corpus / CEAS_08 / Enron Corpora",
+      "provenance": "datasets/golden_demonstration/message_phishing/MSG-BEN-003.json",
+      "ground_truth": "benign",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        30
+      ],
+      "mitre_context": "None",
+      "rationale": "Standard agile engineering management memo.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/message_phishing/MSG-BEN-003.json",
+      "sha256": "c014ed844a69faccf70b1131c0bbbafd8a51ce01d4479d0c877844e8fe719b0d",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized email text fixture; harmless lexical evaluation."
+    },
+    {
+      "sample_id": "MSG-BEN-004",
+      "engine": "phishing",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "Nazario Phishing Corpus / CEAS_08 / Enron Corpora",
+      "provenance": "datasets/golden_demonstration/message_phishing/MSG-BEN-004.json",
+      "ground_truth": "benign",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        35
+      ],
+      "mitre_context": "None",
+      "rationale": "Routine financial notification regarding cloud spend.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/message_phishing/MSG-BEN-004.json",
+      "sha256": "2766293e4e53ab85786efd3f301a6bb159f91d4d9cdafdd81a962eb80072bd91",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized email text fixture; harmless lexical evaluation."
+    },
+    {
+      "sample_id": "MSG-BEN-005",
+      "engine": "phishing",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "Nazario Phishing Corpus / CEAS_08 / Enron Corpora",
+      "provenance": "datasets/golden_demonstration/message_phishing/MSG-BEN-005.json",
+      "ground_truth": "benign",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        30
+      ],
+      "mitre_context": "None",
+      "rationale": "Standard human resources administrative announcement.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/message_phishing/MSG-BEN-005.json",
+      "sha256": "f0b79e64ee2a734d5e6c38d5257e4068f56df761f154ce08a2d17fec330db0ef",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized email text fixture; harmless lexical evaluation."
+    },
+    {
+      "sample_id": "MSG-THR-001",
+      "engine": "phishing",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "Nazario Phishing Corpus / CEAS_08 / Enron Corpora",
+      "provenance": "datasets/golden_demonstration/message_phishing/MSG-THR-001.json",
+      "ground_truth": "threat",
+      "expected_verdict": "CRITICAL",
+      "expected_risk_range": [
+        80,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566.001"
+      },
+      "rationale": "High-urgency account suspension lure with brand targeting (PayPal) and explicit credential solicitation.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/message_phishing/MSG-THR-001.json",
+      "sha256": "538ce3da49dc754f6a2d5a26a91d076830eb758d8e74b396274b12c04bec8a36",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized email text fixture; harmless lexical evaluation."
+    },
+    {
+      "sample_id": "MSG-THR-002",
+      "engine": "phishing",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "Nazario Phishing Corpus / CEAS_08 / Enron Corpora",
+      "provenance": "datasets/golden_demonstration/message_phishing/MSG-THR-002.json",
+      "ground_truth": "threat",
+      "expected_verdict": "HIGH",
+      "expected_risk_range": [
+        70,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566.001"
+      },
+      "rationale": "Classic advance fee fraud / pretexting social engineering solicitation from Nazario corpus.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/message_phishing/MSG-THR-002.json",
+      "sha256": "c1cf4a6e343de2953930436325e37da1176b10072dbec9dac54e54b0cdfec65a",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized email text fixture; harmless lexical evaluation."
+    },
+    {
+      "sample_id": "MSG-THR-003",
+      "engine": "phishing",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "Nazario Phishing Corpus / CEAS_08 / Enron Corpora",
+      "provenance": "datasets/golden_demonstration/message_phishing/MSG-THR-003.json",
+      "ground_truth": "threat",
+      "expected_verdict": "CRITICAL",
+      "expected_risk_range": [
+        80,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566.001"
+      },
+      "rationale": "Credential harvesting attack masquerading as Microsoft 365 identity expiration.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/message_phishing/MSG-THR-003.json",
+      "sha256": "98b79685dec8f857ec1886aa4f684295c20db628bd9bb1cb772fad05e43426ad",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized email text fixture; harmless lexical evaluation."
+    },
+    {
+      "sample_id": "MSG-THR-004",
+      "engine": "phishing",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "Nazario Phishing Corpus / CEAS_08 / Enron Corpora",
+      "provenance": "datasets/golden_demonstration/message_phishing/MSG-THR-004.json",
+      "ground_truth": "threat",
+      "expected_verdict": "HIGH",
+      "expected_risk_range": [
+        70,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566.001"
+      },
+      "rationale": "E-commerce invoice fraud pretext with urgency to trigger victim panic response.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/message_phishing/MSG-THR-004.json",
+      "sha256": "135fd99c9f9afbbb2dcf47ca988982e04098543f3cf665a945b882e104e0ca5b",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized email text fixture; harmless lexical evaluation."
+    },
+    {
+      "sample_id": "MSG-THR-005",
+      "engine": "phishing",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "Nazario Phishing Corpus / CEAS_08 / Enron Corpora",
+      "provenance": "datasets/golden_demonstration/message_phishing/MSG-THR-005.json",
+      "ground_truth": "threat",
+      "expected_verdict": "HIGH",
+      "expected_risk_range": [
+        70,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566.001"
+      },
+      "rationale": "Business email compromise (BEC) payroll diversion lure targeting sensitive banking data.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/message_phishing/MSG-THR-005.json",
+      "sha256": "6861401ca17e0845364b20975c6e41e100f65a681d434d0ebfafe5c794985bb3",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized email text fixture; harmless lexical evaluation."
+    },
+    {
+      "sample_id": "MSG-ADV-006",
+      "engine": "phishing",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "Nazario Phishing Corpus / CEAS_08 / Enron Corpora",
+      "provenance": "datasets/golden_demonstration/message_phishing/MSG-ADV-006.json",
+      "ground_truth": "threat",
+      "expected_verdict": "HIGH",
+      "expected_risk_range": [
+        85,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566.001"
+      },
+      "rationale": "Adversarial prompt injection attempt intercepted by security guardrail layer.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/message_phishing/MSG-ADV-006.json",
+      "sha256": "3f3c1485672fe48f477b03f9848e63b88e78a0eba078b07122c52a5efde7a599",
+      "fixture_kind": "approved_fixture",
+      "safety_notes": "Sanitized email text fixture; harmless lexical evaluation."
+    },
+    {
+      "sample_id": "LOG-BEN-001",
+      "engine": "login_anomaly",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "Cowrie Honeypot & Corporate Baseline Authentication Logs",
+      "provenance": "datasets/golden_demonstration/login_anomaly/LOG-BEN-001.json",
+      "ground_truth": "normal",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        25
+      ],
+      "mitre_context": "None",
+      "rationale": "Standard afternoon employee login from habitual Frankfurt corporate IP with zero failed attempts.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/login_anomaly/LOG-BEN-001.json",
+      "sha256": "e2f9c169c8acfcb44969394d2135cd0d223f86f5814d313a554df18d3e88b0e1",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized metadata event; no real credentials contained."
+    },
+    {
+      "sample_id": "LOG-BEN-002",
+      "engine": "login_anomaly",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "Cowrie Honeypot & Corporate Baseline Authentication Logs",
+      "provenance": "datasets/golden_demonstration/login_anomaly/LOG-BEN-002.json",
+      "ground_truth": "normal",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        25
+      ],
+      "mitre_context": "None",
+      "rationale": "Routine morning workstation authentication from established office location.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/login_anomaly/LOG-BEN-002.json",
+      "sha256": "b16e6e521616f2d21eb8ba17988074cec037be564a0afe62e49895323a6f4732",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized metadata event; no real credentials contained."
+    },
+    {
+      "sample_id": "LOG-BEN-003",
+      "engine": "login_anomaly",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "Cowrie Honeypot & Corporate Baseline Authentication Logs",
+      "provenance": "datasets/golden_demonstration/login_anomaly/LOG-BEN-003.json",
+      "ground_truth": "normal",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        25
+      ],
+      "mitre_context": "None",
+      "rationale": "Authorized user single sign-on event from verified corporate workstation.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/login_anomaly/LOG-BEN-003.json",
+      "sha256": "3bdb4bac9adbec4b1a8af50cf91e0c4fd51647b7ec77c8ca16c6803fd5b4b456",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized metadata event; no real credentials contained."
+    },
+    {
+      "sample_id": "LOG-BEN-004",
+      "engine": "login_anomaly",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "Cowrie Honeypot & Corporate Baseline Authentication Logs",
+      "provenance": "datasets/golden_demonstration/login_anomaly/LOG-BEN-004.json",
+      "ground_truth": "normal",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        30
+      ],
+      "mitre_context": "None",
+      "rationale": "Single typo password retry followed by successful authentication during business hours.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/login_anomaly/LOG-BEN-004.json",
+      "sha256": "537c7db1bf97c6bd5663ff680226113b17cc5368f33ef5ef582f4b9f4aad4055",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized metadata event; no real credentials contained."
+    },
+    {
+      "sample_id": "LOG-BEN-005",
+      "engine": "login_anomaly",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "Cowrie Honeypot & Corporate Baseline Authentication Logs",
+      "provenance": "datasets/golden_demonstration/login_anomaly/LOG-BEN-005.json",
+      "ground_truth": "normal",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        25
+      ],
+      "mitre_context": "None",
+      "rationale": "Routine end-of-day analytics portal login from expected regional branch.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/login_anomaly/LOG-BEN-005.json",
+      "sha256": "12807ae42c4e5343b748841e356e276dafd9cc8cb9eb4cb479ca2cfc4a494f28",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized metadata event; no real credentials contained."
+    },
+    {
+      "sample_id": "LOG-THR-001",
+      "engine": "login_anomaly",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "Cowrie Honeypot & Corporate Baseline Authentication Logs",
+      "provenance": "datasets/golden_demonstration/login_anomaly/LOG-THR-001.json",
+      "ground_truth": "anomalous",
+      "expected_verdict": "MEDIUM",
+      "expected_risk_range": [
+        40,
+        80
+      ],
+      "mitre_context": {
+        "tactic": "TA0006",
+        "technique": "T1110.001"
+      },
+      "rationale": "High-volume credential brute force surge (25 failed attempts) during early morning hours from anomalous location.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/login_anomaly/LOG-THR-001.json",
+      "sha256": "4fd2f69893f4c314c4ac169f444657fc8b3b5a57fc906c4a72dad2d2cda72a42",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized metadata event; no real credentials contained."
+    },
+    {
+      "sample_id": "LOG-THR-002",
+      "engine": "login_anomaly",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "Cowrie Honeypot & Corporate Baseline Authentication Logs",
+      "provenance": "datasets/golden_demonstration/login_anomaly/LOG-THR-002.json",
+      "ground_truth": "anomalous",
+      "expected_verdict": "MEDIUM",
+      "expected_risk_range": [
+        40,
+        80
+      ],
+      "mitre_context": {
+        "tactic": "TA0006",
+        "technique": "T1110.001"
+      },
+      "rationale": "Repeated credential failures (12 attempts) from novel mobile device outside normal working hours.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/login_anomaly/LOG-THR-002.json",
+      "sha256": "ce2135906698d24d9e3e9291304f3dafbac95a6571221b9f45483681a702d5f1",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized metadata event; no real credentials contained."
+    },
+    {
+      "sample_id": "LOG-THR-003",
+      "engine": "login_anomaly",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "Cowrie Honeypot & Corporate Baseline Authentication Logs",
+      "provenance": "datasets/golden_demonstration/login_anomaly/LOG-THR-003.json",
+      "ground_truth": "anomalous",
+      "expected_verdict": "MEDIUM",
+      "expected_risk_range": [
+        40,
+        80
+      ],
+      "mitre_context": {
+        "tactic": "TA0006",
+        "technique": "T1110.001"
+      },
+      "rationale": "Automated script agent login attempts on executive account with elevated failures.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/login_anomaly/LOG-THR-003.json",
+      "sha256": "ee402f9ea1bfce8ef129ce4f1dc69c088e8c45567cb1e9ae685b04157734004d",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized metadata event; no real credentials contained."
+    },
+    {
+      "sample_id": "LOG-THR-004",
+      "engine": "login_anomaly",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "Cowrie Honeypot & Corporate Baseline Authentication Logs",
+      "provenance": "datasets/golden_demonstration/login_anomaly/LOG-THR-004.json",
+      "ground_truth": "anomalous",
+      "expected_verdict": "MEDIUM",
+      "expected_risk_range": [
+        40,
+        80
+      ],
+      "mitre_context": {
+        "tactic": "TA0006",
+        "technique": "T1110.001"
+      },
+      "rationale": "Cowrie honeypot documented dictionary credential stuffing attack against privileged user.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/login_anomaly/LOG-THR-004.json",
+      "sha256": "4ab8ee353d80ccfd25f277b72e675afd0bd1db9dc936054e80c4ca3c265b2c43",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized metadata event; no real credentials contained."
+    },
+    {
+      "sample_id": "LOG-THR-005",
+      "engine": "login_anomaly",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "Cowrie Honeypot & Corporate Baseline Authentication Logs",
+      "provenance": "datasets/golden_demonstration/login_anomaly/LOG-THR-005.json",
+      "ground_truth": "anomalous",
+      "expected_verdict": "MEDIUM",
+      "expected_risk_range": [
+        40,
+        80
+      ],
+      "mitre_context": {
+        "tactic": "TA0006",
+        "technique": "T1110.001"
+      },
+      "rationale": "Off-hours authentication burst with 20 consecutive failed attempts indicating credential assault.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/login_anomaly/LOG-THR-005.json",
+      "sha256": "442b3ec470fc811cfff4b6573f546b6f6bc7b81103c2866185084fedf1ddb067",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Sanitized metadata event; no real credentials contained."
+    },
+    {
+      "sample_id": "NET-BEN-001",
+      "engine": "network_threat",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "CTU-13 Dataset (Scenarios 42-45)",
+      "provenance": "datasets/ctu13/capture20110810_botnet_42.binetflow.txt [NET-BEN-001]",
+      "ground_truth": "benign",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        30
+      ],
+      "mitre_context": "None",
+      "rationale": "Standard TLS HTTPS session flow with balanced bidirectional packet exchange.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/network_telemetry/NET-BEN-001.json",
+      "sha256": "e52e602d3e93242e05817498110372286573a6e8388e2a50e898e9b89802416b",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Network flow telemetry record; no actual network packets transmitted."
+    },
+    {
+      "sample_id": "NET-BEN-002",
+      "engine": "network_threat",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "CTU-13 Dataset (Scenarios 42-45)",
+      "provenance": "datasets/ctu13/capture20110810_botnet_42.binetflow.txt [NET-BEN-002]",
+      "ground_truth": "benign",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        25
+      ],
+      "mitre_context": "None",
+      "rationale": "Routine DNS resolution query flow with fast turnaround and low packet volume.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/network_telemetry/NET-BEN-002.json",
+      "sha256": "d8c1b54384baef147895231c0d3240626f3410906fd43ed7b7dc69b6b6db4fd6",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Network flow telemetry record; no actual network packets transmitted."
+    },
+    {
+      "sample_id": "NET-BEN-003",
+      "engine": "network_threat",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "CTU-13 Dataset (Scenarios 42-45)",
+      "provenance": "datasets/ctu13/capture20110810_botnet_42.binetflow.txt [NET-BEN-003]",
+      "ground_truth": "benign",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        30
+      ],
+      "mitre_context": "None",
+      "rationale": "Standard HTTP web traffic flow conforming to normal client behavior.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/network_telemetry/NET-BEN-003.json",
+      "sha256": "ff31b490052e80ff2c74db48a08683479f39cfaf32431055431a2a5ea07c86b5",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Network flow telemetry record; no actual network packets transmitted."
+    },
+    {
+      "sample_id": "NET-BEN-004",
+      "engine": "network_threat",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "CTU-13 Dataset (Scenarios 42-45)",
+      "provenance": "datasets/ctu13/capture20110810_botnet_42.binetflow.txt [NET-BEN-004]",
+      "ground_truth": "benign",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        25
+      ],
+      "mitre_context": "None",
+      "rationale": "Standard network time protocol (NTP) synchronization telemetry flow.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/network_telemetry/NET-BEN-004.json",
+      "sha256": "d97755e94ebece35013a83e533f8c74765974ff828489b4a4752ed2b86b900e0",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Network flow telemetry record; no actual network packets transmitted."
+    },
+    {
+      "sample_id": "NET-BEN-005",
+      "engine": "network_threat",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "CTU-13 Dataset (Scenarios 42-45)",
+      "provenance": "datasets/ctu13/capture20110810_botnet_42.binetflow.txt [NET-BEN-005]",
+      "ground_truth": "benign",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        30
+      ],
+      "mitre_context": "None",
+      "rationale": "Interactive web application telemetry session with normal payload size distribution.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/network_telemetry/NET-BEN-005.json",
+      "sha256": "846a497ef852ddf0c989d1d4cc94a9cf42f2af59ce97cb0a85806599efd9b54d",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Network flow telemetry record; no actual network packets transmitted."
+    },
+    {
+      "sample_id": "NET-THR-001",
+      "engine": "network_threat",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "CTU-13 Dataset (Scenarios 42-45)",
+      "provenance": "datasets/ctu13/capture20110810_botnet_42.binetflow.txt [NET-THR-001]",
+      "ground_truth": "threat",
+      "expected_verdict": "HIGH",
+      "expected_risk_range": [
+        60,
+        90
+      ],
+      "mitre_context": {
+        "tactic": "TA0040",
+        "technique": "T1498"
+      },
+      "rationale": "CTU-13 Scenario 42 botnet DDoS flood surge: extreme packet rate (10,000 pkts/s) and massive byte volume in 50ms.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/network_telemetry/NET-THR-001.json",
+      "sha256": "7884de34cf7b7d0609a46ec5f0909979d494f3d31fc74e8509f87379aed1f3fb",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Network flow telemetry record; no actual network packets transmitted."
+    },
+    {
+      "sample_id": "NET-THR-002",
+      "engine": "network_threat",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "CTU-13 Dataset (Scenarios 42-45)",
+      "provenance": "datasets/ctu13/capture20110810_botnet_42.binetflow.txt [NET-THR-002]",
+      "ground_truth": "threat",
+      "expected_verdict": "MEDIUM",
+      "expected_risk_range": [
+        40,
+        80
+      ],
+      "mitre_context": {
+        "tactic": "TA0040",
+        "technique": "T1498"
+      },
+      "rationale": "Low-and-slow persistent C2 IRC beacon flow with uniform heartbeat intervals over 120 seconds.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/network_telemetry/NET-THR-002.json",
+      "sha256": "82aed0eee538dfb69b2c2a064cb168296f7e22314b93c7e1b08fe9f5e89e1c65",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Network flow telemetry record; no actual network packets transmitted."
+    },
+    {
+      "sample_id": "NET-THR-003",
+      "engine": "network_threat",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "CTU-13 Dataset (Scenarios 42-45)",
+      "provenance": "datasets/ctu13/capture20110810_botnet_42.binetflow.txt [NET-THR-003]",
+      "ground_truth": "threat",
+      "expected_verdict": "HIGH",
+      "expected_risk_range": [
+        60,
+        90
+      ],
+      "mitre_context": {
+        "tactic": "TA0040",
+        "technique": "T1498"
+      },
+      "rationale": "High-bandwidth UDP flood reflection attack signature from CTU-13 botnet capture.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/network_telemetry/NET-THR-003.json",
+      "sha256": "f4987aff09906fb40a0006ef01f565c1ef32507c1c5eb26f19bc677922af8991",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Network flow telemetry record; no actual network packets transmitted."
+    },
+    {
+      "sample_id": "NET-THR-004",
+      "engine": "network_threat",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "CTU-13 Dataset (Scenarios 42-45)",
+      "provenance": "datasets/ctu13/capture20110810_botnet_42.binetflow.txt [NET-THR-004]",
+      "ground_truth": "threat",
+      "expected_verdict": "HIGH",
+      "expected_risk_range": [
+        60,
+        90
+      ],
+      "mitre_context": {
+        "tactic": "TA0040",
+        "technique": "T1498"
+      },
+      "rationale": "Rapid SMB worm propagation connection flood attempting lateral infection.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/network_telemetry/NET-THR-004.json",
+      "sha256": "0d25dea833388f7378c5a3ec59dc9242897b0db18a59df1f444d359dc1ad5827",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Network flow telemetry record; no actual network packets transmitted."
+    },
+    {
+      "sample_id": "NET-THR-005",
+      "engine": "network_threat",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "CTU-13 Dataset (Scenarios 42-45)",
+      "provenance": "datasets/ctu13/capture20110810_botnet_42.binetflow.txt [NET-THR-005]",
+      "ground_truth": "threat",
+      "expected_verdict": "HIGH",
+      "expected_risk_range": [
+        60,
+        90
+      ],
+      "mitre_context": {
+        "tactic": "TA0040",
+        "technique": "T1498"
+      },
+      "rationale": "Volumetric HTTP GET flood burst originating from automated compromised node.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/network_telemetry/NET-THR-005.json",
+      "sha256": "dec80a0aed2362c4457805ed09d5c5a2fcba7b565fb326dacde6a8c0dca7b234",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Network flow telemetry record; no actual network packets transmitted."
+    },
+    {
+      "sample_id": "EDR-BEN-001",
+      "engine": "edr_behavior",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "BETH Dataset (Host Kernel & Process Telemetry)",
+      "provenance": "datasets/BETH/labelled_testing_data.csv [EDR-BEN-001]",
+      "ground_truth": "benign_behavior",
+      "expected_verdict": "benign_behavior",
+      "expected_risk_range": null,
+      "mitre_context": "None",
+      "rationale": "Routine Linux system logging daemon initialized by init PID 1.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/edr_behavior/EDR-BEN-001.json",
+      "sha256": "a033ffea31db65a121fe1cd793154be06be3fb96429b77e461e114fc29364530",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Kernel syscall metadata record; safe advisory inference without host interaction."
+    },
+    {
+      "sample_id": "EDR-BEN-002",
+      "engine": "edr_behavior",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "BETH Dataset (Host Kernel & Process Telemetry)",
+      "provenance": "datasets/BETH/labelled_testing_data.csv [EDR-BEN-002]",
+      "ground_truth": "benign_behavior",
+      "expected_verdict": "benign_behavior",
+      "expected_risk_range": null,
+      "mitre_context": "None",
+      "rationale": "Standard root cron execution daemon scheduling routine maintenance.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/edr_behavior/EDR-BEN-002.json",
+      "sha256": "3498c74e30a50c8f6411c07f31c9ba7e12996bf2c20367affd6e60d556a4c172",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Kernel syscall metadata record; safe advisory inference without host interaction."
+    },
+    {
+      "sample_id": "EDR-BEN-003",
+      "engine": "edr_behavior",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "BETH Dataset (Host Kernel & Process Telemetry)",
+      "provenance": "datasets/BETH/labelled_testing_data.csv [EDR-BEN-003]",
+      "ground_truth": "benign_behavior",
+      "expected_verdict": "benign_behavior",
+      "expected_risk_range": null,
+      "mitre_context": "None",
+      "rationale": "Linux auditing framework daemon tracking system security policies.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/edr_behavior/EDR-BEN-003.json",
+      "sha256": "45de097bf25bb9159f69589395f9a29543be72f3dd478e9240bb8fd5f2bc19fd",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Kernel syscall metadata record; safe advisory inference without host interaction."
+    },
+    {
+      "sample_id": "EDR-BEN-004",
+      "engine": "edr_behavior",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "BETH Dataset (Host Kernel & Process Telemetry)",
+      "provenance": "datasets/BETH/labelled_testing_data.csv [EDR-BEN-004]",
+      "ground_truth": "benign_behavior",
+      "expected_verdict": "benign_behavior",
+      "expected_risk_range": null,
+      "mitre_context": "None",
+      "rationale": "SSH daemon listening for incoming secure administrative connections.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/edr_behavior/EDR-BEN-004.json",
+      "sha256": "dcb22f667f2e00be0aaf8c629a3080ed311edd14e5c6f2dd9fc715ef0f344757",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Kernel syscall metadata record; safe advisory inference without host interaction."
+    },
+    {
+      "sample_id": "EDR-BEN-005",
+      "engine": "edr_behavior",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "BETH Dataset (Host Kernel & Process Telemetry)",
+      "provenance": "datasets/BETH/labelled_testing_data.csv [EDR-BEN-005]",
+      "ground_truth": "benign_behavior",
+      "expected_verdict": "benign_behavior",
+      "expected_risk_range": null,
+      "mitre_context": "None",
+      "rationale": "Local hostname resolution service querying network configuration sockets.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/edr_behavior/EDR-BEN-005.json",
+      "sha256": "fe833218c35afd0b021ea716ad17ff425ef49b644636479f04b7e9ba3558bc04",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Kernel syscall metadata record; safe advisory inference without host interaction."
+    },
+    {
+      "sample_id": "EDR-THR-001",
+      "engine": "edr_behavior",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "BETH Dataset (Host Kernel & Process Telemetry)",
+      "provenance": "datasets/BETH/labelled_testing_data.csv [EDR-THR-001]",
+      "ground_truth": "malicious_behavior",
+      "expected_verdict": "malicious_behavior",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0002",
+        "technique": "T1059.004"
+      },
+      "rationale": "Known BETH dataset attack executable (tsm) invoked from user bash shell session.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/edr_behavior/EDR-THR-001.json",
+      "sha256": "abba62c1f1dd1364837d53543c798ddc7d1e23726ef2cade2111eea6128b4239",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Kernel syscall metadata record; safe advisory inference without host interaction."
+    },
+    {
+      "sample_id": "EDR-THR-002",
+      "engine": "edr_behavior",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "BETH Dataset (Host Kernel & Process Telemetry)",
+      "provenance": "datasets/BETH/labelled_testing_data.csv [EDR-THR-002]",
+      "ground_truth": "malicious_behavior",
+      "expected_verdict": "malicious_behavior",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0002",
+        "technique": "T1059.004"
+      },
+      "rationale": "Suspicious binary invocation from non-privileged interactive user terminal.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/edr_behavior/EDR-THR-002.json",
+      "sha256": "88da55248675cbfb02918c8b278323bab40def35edbd9a73aedb20ea91f66ded",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Kernel syscall metadata record; safe advisory inference without host interaction."
+    },
+    {
+      "sample_id": "EDR-THR-003",
+      "engine": "edr_behavior",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "BETH Dataset (Host Kernel & Process Telemetry)",
+      "provenance": "datasets/BETH/labelled_testing_data.csv [EDR-THR-003]",
+      "ground_truth": "malicious_behavior",
+      "expected_verdict": "malicious_behavior",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0002",
+        "technique": "T1059.004"
+      },
+      "rationale": "Netcat interactive utility spawned with reverse-shell command line arguments.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/edr_behavior/EDR-THR-003.json",
+      "sha256": "278b3dc659457fe1d40ab6808937fc540a9c7bd07eb302ebac6fea64ba6c6e5c",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Kernel syscall metadata record; safe advisory inference without host interaction."
+    },
+    {
+      "sample_id": "EDR-THR-004",
+      "engine": "edr_behavior",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "BETH Dataset (Host Kernel & Process Telemetry)",
+      "provenance": "datasets/BETH/labelled_testing_data.csv [EDR-THR-004]",
+      "ground_truth": "malicious_behavior",
+      "expected_verdict": "malicious_behavior",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0002",
+        "technique": "T1059.004"
+      },
+      "rationale": "Interactive user shell spawning Python script interpreter executing non-standard child payload.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/edr_behavior/EDR-THR-004.json",
+      "sha256": "6640bf126b5f689794156953d52db8e3d6133d05caeb3ed0334d49a390780071",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Kernel syscall metadata record; safe advisory inference without host interaction."
+    },
+    {
+      "sample_id": "EDR-THR-005",
+      "engine": "edr_behavior",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "BETH Dataset (Host Kernel & Process Telemetry)",
+      "provenance": "datasets/BETH/labelled_testing_data.csv [EDR-THR-005]",
+      "ground_truth": "malicious_behavior",
+      "expected_verdict": "malicious_behavior",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0002",
+        "technique": "T1059.004"
+      },
+      "rationale": "Attempted privilege tamper: modifying sensitive system file permissions via shell script.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/edr_behavior/EDR-THR-005.json",
+      "sha256": "3e26d0864a7bd62df9a97c6f98f1761d31126add9696166031a9d46cf9b17a28",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Kernel syscall metadata record; safe advisory inference without host interaction."
+    },
+    {
+      "sample_id": "FP-DISP-001",
+      "engine": "false_positive",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "BETH Dataset Security Telemetry",
+      "provenance": "datasets/golden_demonstration/false_positive/FP-DISP-001.json",
+      "ground_truth": "false_positive",
+      "expected_verdict": "likely_false_positive",
+      "expected_risk_range": null,
+      "mitre_context": "None",
+      "rationale": "Routine Ubuntu Landscape system management daemon reading hardware stats; benign telemetry false alarm.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/false_positive/FP-DISP-001.json",
+      "sha256": "29793b900d0d1b6df62af85c03ce6dab00a2786a9f4befbbd0f6b6c8b417a85b",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Security alert triage payload; evaluates false alarm disposition probability."
+    },
+    {
+      "sample_id": "FP-DISP-002",
+      "engine": "false_positive",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "BETH Dataset Security Telemetry",
+      "provenance": "datasets/golden_demonstration/false_positive/FP-DISP-002.json",
+      "ground_truth": "false_positive",
+      "expected_verdict": "likely_false_positive",
+      "expected_risk_range": null,
+      "mitre_context": "None",
+      "rationale": "Journal daemon standard log file rotation falsely triggering access threshold.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/false_positive/FP-DISP-002.json",
+      "sha256": "97db6b7128525e011a1540b59b3ac0962eb3bd99f73d308e60016c28fe37411b",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Security alert triage payload; evaluates false alarm disposition probability."
+    },
+    {
+      "sample_id": "FP-DISP-003",
+      "engine": "false_positive",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "BETH Dataset Security Telemetry",
+      "provenance": "datasets/golden_demonstration/false_positive/FP-DISP-003.json",
+      "ground_truth": "false_positive",
+      "expected_verdict": "likely_false_positive",
+      "expected_risk_range": null,
+      "mitre_context": "None",
+      "rationale": "Standard log rotation daemon accessing system log archives during scheduled maintenance.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/false_positive/FP-DISP-003.json",
+      "sha256": "e89b9b2dfb0fe041a30b063d10c7abc459ed3b0cd27705ceba226eb781c96468",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Security alert triage payload; evaluates false alarm disposition probability."
+    },
+    {
+      "sample_id": "FP-DISP-004",
+      "engine": "false_positive",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "BETH Dataset Security Telemetry",
+      "provenance": "datasets/golden_demonstration/false_positive/FP-DISP-004.json",
+      "ground_truth": "false_positive",
+      "expected_verdict": "likely_false_positive",
+      "expected_risk_range": null,
+      "mitre_context": "None",
+      "rationale": "Desktop update notifier checking for package updates in regular user session.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/false_positive/FP-DISP-004.json",
+      "sha256": "df061a181024d41d40737dfd5ff96a1e23f829242d6cd96e6793cdb9d2717dbe",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Security alert triage payload; evaluates false alarm disposition probability."
+    },
+    {
+      "sample_id": "FP-DISP-005",
+      "engine": "false_positive",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "BETH Dataset Security Telemetry",
+      "provenance": "datasets/golden_demonstration/false_positive/FP-DISP-005.json",
+      "ground_truth": "false_positive",
+      "expected_verdict": "likely_false_positive",
+      "expected_risk_range": null,
+      "mitre_context": "None",
+      "rationale": "Crash report submission daemon reading kernel diagnostics; standard host telemetry.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/false_positive/FP-DISP-005.json",
+      "sha256": "a56304a320bc8b93479bb094a3637f493d95c8cbfa108af4d95bfa6971c79ee1",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Security alert triage payload; evaluates false alarm disposition probability."
+    },
+    {
+      "sample_id": "FP-TRUE-001",
+      "engine": "false_positive",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "BETH Dataset Security Telemetry",
+      "provenance": "datasets/golden_demonstration/false_positive/FP-TRUE-001.json",
+      "ground_truth": "true_positive",
+      "expected_verdict": "likely_true_positive",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0005",
+        "technique": "T1036"
+      },
+      "rationale": "BETH dataset confirmed attack tool (tsm) execution; must be flagged for immediate triage.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/false_positive/FP-TRUE-001.json",
+      "sha256": "298fc7eb85eb7f56da3bfd9d2df2632f9d694c25eb96f1f2b785c550308010b4",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Security alert triage payload; evaluates false alarm disposition probability."
+    },
+    {
+      "sample_id": "FP-TRUE-002",
+      "engine": "false_positive",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "BETH Dataset Security Telemetry",
+      "provenance": "datasets/golden_demonstration/false_positive/FP-TRUE-002.json",
+      "ground_truth": "true_positive",
+      "expected_verdict": "likely_true_positive",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0005",
+        "technique": "T1036"
+      },
+      "rationale": "High-confidence interactive shell creation over network pipe; legitimate security threat.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/false_positive/FP-TRUE-002.json",
+      "sha256": "ae9d70b649976b0942523bcacbb9c7748cdbc7830aa35cdd9a2ab18e8defa173",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Security alert triage payload; evaluates false alarm disposition probability."
+    },
+    {
+      "sample_id": "FP-TRUE-003",
+      "engine": "false_positive",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "BETH Dataset Security Telemetry",
+      "provenance": "datasets/golden_demonstration/false_positive/FP-TRUE-003.json",
+      "ground_truth": "true_positive",
+      "expected_verdict": "likely_true_positive",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0005",
+        "technique": "T1036"
+      },
+      "rationale": "Active credential dumping utility accessing LSASS memory space.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/false_positive/FP-TRUE-003.json",
+      "sha256": "1672ac7d076b52d99d67a35f810b201c56df0ea0d6bc41b9d296bbed50a1aa05",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Security alert triage payload; evaluates false alarm disposition probability."
+    },
+    {
+      "sample_id": "FP-TRUE-004",
+      "engine": "false_positive",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "BETH Dataset Security Telemetry",
+      "provenance": "datasets/golden_demonstration/false_positive/FP-TRUE-004.json",
+      "ground_truth": "true_positive",
+      "expected_verdict": "likely_true_positive",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0005",
+        "technique": "T1036"
+      },
+      "rationale": "Ransomware canary file modification alarm; genuine incident requiring automated response.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/false_positive/FP-TRUE-004.json",
+      "sha256": "f3d035f2b791024399b5122e5f4594d4231fb7e78d9bea0d3786cb289d1bfec8",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Security alert triage payload; evaluates false alarm disposition probability."
+    },
+    {
+      "sample_id": "FP-TRUE-005",
+      "engine": "false_positive",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "BETH Dataset Security Telemetry",
+      "provenance": "datasets/golden_demonstration/false_positive/FP-TRUE-005.json",
+      "ground_truth": "true_positive",
+      "expected_verdict": "likely_true_positive",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0005",
+        "technique": "T1036"
+      },
+      "rationale": "Automated SSH credential feeding utility used for lateral movement across internal subnet.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/false_positive/FP-TRUE-005.json",
+      "sha256": "81aa69c461b1e3cc5306beb8e26ba84038e55eda817c4b6a5a5d74982309a7bd",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Security alert triage payload; evaluates false alarm disposition probability."
+    },
+    {
+      "sample_id": "CORR-CLUSTER-001",
+      "engine": "incident_correlation",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "CTU-13 Scenario 42 Botnet Alert Corpus",
+      "provenance": "datasets/golden_demonstration/correlation/CORR-CLUSTER-001.json",
+      "ground_truth": "correlated",
+      "expected_verdict": "cluster_created",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0011",
+        "technique": "T1071"
+      },
+      "rationale": "Multi-stage botnet attack chain (DNS -> C2 -> Exfiltration) sharing entity host WS-165 and temporal proximity.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/correlation/CORR-CLUSTER-001.json",
+      "sha256": "e5bdca3888a09e386a040a6a8da73d622edf3338283d3275f9d0646c99edb65c",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Security alert graph payload; performs incident clustering without active network queries."
+    },
+    {
+      "sample_id": "CORR-DISPERSED-002",
+      "engine": "incident_correlation",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "CTU-13 Scenario 42 Botnet Alert Corpus",
+      "provenance": "datasets/golden_demonstration/correlation/CORR-DISPERSED-002.json",
+      "ground_truth": "uncorrelated",
+      "expected_verdict": "unclustered",
+      "expected_risk_range": null,
+      "mitre_context": "None",
+      "rationale": "Unrelated background alerts separated by hours and distinct host IP entities correctly isolated without false clustering.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/correlation/CORR-DISPERSED-002.json",
+      "sha256": "b077fa1fbec94fb42aabed249e9396ef35ffdc16e62d14f53bcc37fc054c46e8",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Security alert graph payload; performs incident clustering without active network queries."
+    },
+    {
+      "sample_id": "CORR-LATERAL-003",
+      "engine": "incident_correlation",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "CTU-13 Scenario 42 Botnet Alert Corpus",
+      "provenance": "datasets/golden_demonstration/correlation/CORR-LATERAL-003.json",
+      "ground_truth": "correlated",
+      "expected_verdict": "cluster_created",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0011",
+        "technique": "T1071"
+      },
+      "rationale": "Correlated lateral movement sequence from internal workstation CORP-AUTH-01 targeting SMB administrative shares.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/correlation/CORR-LATERAL-003.json",
+      "sha256": "9d0962a4cea731f94792c5fe859e0f7e62342a05b8f3230348ec8cb9e37152d9",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Security alert graph payload; performs incident clustering without active network queries."
+    },
+    {
+      "sample_id": "CORR-ISOLATED-004",
+      "engine": "incident_correlation",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "CTU-13 Scenario 42 Botnet Alert Corpus",
+      "provenance": "datasets/golden_demonstration/correlation/CORR-ISOLATED-004.json",
+      "ground_truth": "uncorrelated",
+      "expected_verdict": "unclustered",
+      "expected_risk_range": null,
+      "mitre_context": "None",
+      "rationale": "Independent infrastructure monitoring events separated by days across DMZ and internal NOC networks.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/correlation/CORR-ISOLATED-004.json",
+      "sha256": "0a8466fff4f6956cacb927e5db93073498baecf19c484743c5fc95d3542034a3",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Security alert graph payload; performs incident clustering without active network queries."
+    },
+    {
+      "sample_id": "REC-INC-001",
+      "engine": "incident_recommendation",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "Incident Response Playbook Dataset",
+      "provenance": "datasets/Recommendation/incident_response_playbook_dataset.jsonl [REC-INC-001]",
+      "ground_truth": "threat",
+      "expected_verdict": "kill_process",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0002",
+        "technique": "T1204"
+      },
+      "rationale": "Critical ransomware incident on endpoint requiring malicious process termination and forensic evidence collection under human approval safeguards.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/recommendation/REC-INC-001.json",
+      "sha256": "cb7f85ef70cbb7527d79b945fa459c9628a14a5c2cc41b5f0549af276586053a",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Playbook recommendation schema; ranked action advisory without automatic execution."
+    },
+    {
+      "sample_id": "REC-INC-002",
+      "engine": "incident_recommendation",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "Incident Response Playbook Dataset",
+      "provenance": "datasets/Recommendation/incident_response_playbook_dataset.jsonl [REC-INC-002]",
+      "ground_truth": "threat",
+      "expected_verdict": "force_password_reset",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0001",
+        "technique": "T1566.002"
+      },
+      "rationale": "High-severity credential phishing breach advising forced password reset and active session termination.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/recommendation/REC-INC-002.json",
+      "sha256": "98c1694c642446c70e11cbc31c6fe39e46e3dd11d985547e1e10a230d978a5b2",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Playbook recommendation schema; ranked action advisory without automatic execution."
+    },
+    {
+      "sample_id": "REC-INC-003",
+      "engine": "incident_recommendation",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "Incident Response Playbook Dataset",
+      "provenance": "datasets/Recommendation/incident_response_playbook_dataset.jsonl [REC-INC-003]",
+      "ground_truth": "threat",
+      "expected_verdict": "isolate_device",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0011",
+        "technique": "T1071.001"
+      },
+      "rationale": "Active C2 channel incident prescribing endpoint isolation and perimeter firewall IP blockage.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/recommendation/REC-INC-003.json",
+      "sha256": "f12b365ac2df23e3261b128ee420d86a70cd0276b76b71425a68509efb5ddb5b",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Playbook recommendation schema; ranked action advisory without automatic execution."
+    },
+    {
+      "sample_id": "REC-INC-004",
+      "engine": "incident_recommendation",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "Incident Response Playbook Dataset",
+      "provenance": "datasets/Recommendation/incident_response_playbook_dataset.jsonl [REC-INC-004]",
+      "ground_truth": "threat",
+      "expected_verdict": "isolate_device",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0004",
+        "technique": "T1068"
+      },
+      "rationale": "Privilege escalation incident requiring immediate worker process termination and node cordon.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/recommendation/REC-INC-004.json",
+      "sha256": "5d1aaf09a6c9e9957ed87bfccabc55977d6f0b5e4521fb4b2599ad7ff6a9bf9f",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Playbook recommendation schema; ranked action advisory without automatic execution."
+    },
+    {
+      "sample_id": "REC-INC-005",
+      "engine": "incident_recommendation",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "Incident Response Playbook Dataset",
+      "provenance": "datasets/Recommendation/incident_response_playbook_dataset.jsonl [REC-INC-005]",
+      "ground_truth": "threat",
+      "expected_verdict": "collect_process_tree",
+      "expected_risk_range": null,
+      "mitre_context": {
+        "tactic": "TA0007",
+        "technique": "T1046"
+      },
+      "rationale": "Low-severity external reconnaissance probe; advises process tree collection and routine traffic monitoring.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/recommendation/REC-INC-005.json",
+      "sha256": "f7a733284deed9bf5dac2c6bed24f9b6c8477672e8d06917598901fb63a0ec22",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Playbook recommendation schema; ranked action advisory without automatic execution."
+    },
+    {
+      "sample_id": "MAL-BEN-001",
+      "engine": "malware",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "EMBER 2018 Benchmark / Windows PE System Repository",
+      "provenance": "datasets/golden_demonstration/malware/notepad_clean_sample.exe",
+      "ground_truth": "safe",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        20
+      ],
+      "mitre_context": "None",
+      "rationale": "Legitimate Microsoft Windows notepad.exe signed system executable evaluated by EMBER LightGBM static analysis.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/malware/notepad_clean_sample.exe",
+      "sha256": "468ffe129c395abf6b21a09efdf261910a95fb98aa982ead73caa7b2b684577e",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static feature vector and non-hazardous PE analysis fixture; never executed."
+    },
+    {
+      "sample_id": "MAL-BEN-002",
+      "engine": "malware",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "EMBER 2018 Benchmark / Windows PE System Repository",
+      "provenance": "datasets/golden_demonstration/malware/clean_telemetry.txt",
+      "ground_truth": "safe",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        10
+      ],
+      "mitre_context": "None",
+      "rationale": "Plain text log file handled safely without crashing PE feature extractor and marked Safe.",
+      "payload_type": "file_path",
+      "payload_path": "datasets/golden_demonstration/malware/clean_telemetry.txt",
+      "sha256": "305ec31fb5ab881acebeb672d07ee33a3110c78e17029a0078d6640fbc0a7739",
+      "fixture_kind": "approved_fixture",
+      "safety_notes": "Static feature vector and non-hazardous PE analysis fixture; never executed."
+    },
+    {
+      "sample_id": "MAL-THR-001",
+      "engine": "malware",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "EMBER 2018 Benchmark / Windows PE System Repository",
+      "provenance": "datasets/golden_demonstration/malware/ember_malware_sample_1.json",
+      "ground_truth": "malware",
+      "expected_verdict": "CRITICAL",
+      "expected_risk_range": [
+        80,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0002",
+        "technique": "T1204.002"
+      },
+      "rationale": "Verified malware sample #1 (label: 1) from EMBER 2018 benchmark test partition evaluated across 2,381 feature dimensions.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/malware/ember_malware_sample_1.json",
+      "sha256": "f1bb774251179b9bc3d866113c40a537416270274ae77d53edea13ef0d679552",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static feature vector and non-hazardous PE analysis fixture; never executed."
+    },
+    {
+      "sample_id": "MAL-THR-002",
+      "engine": "malware",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "EMBER 2018 Benchmark / Windows PE System Repository",
+      "provenance": "datasets/golden_demonstration/malware/ember_malware_sample_2.json",
+      "ground_truth": "malware",
+      "expected_verdict": "CRITICAL",
+      "expected_risk_range": [
+        80,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0002",
+        "technique": "T1204.002"
+      },
+      "rationale": "Verified malware sample #2 (label: 1) from EMBER 2018 benchmark test partition evaluated across 2,381 feature dimensions.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/malware/ember_malware_sample_2.json",
+      "sha256": "cba960a9380a16fe4484e09eb0524d7ac82f60365e337d8c845a6bc166ff10a5",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static feature vector and non-hazardous PE analysis fixture; never executed."
+    },
+    {
+      "sample_id": "MAL-THR-003",
+      "engine": "malware",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "EMBER 2018 Benchmark / Windows PE System Repository",
+      "provenance": "datasets/golden_demonstration/malware/ember_malware_sample_3.json",
+      "ground_truth": "malware",
+      "expected_verdict": "CRITICAL",
+      "expected_risk_range": [
+        80,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0002",
+        "technique": "T1204.002"
+      },
+      "rationale": "Verified malware sample #3 (label: 1) from EMBER 2018 benchmark test partition evaluated across 2,381 feature dimensions.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/malware/ember_malware_sample_3.json",
+      "sha256": "915fc961d1cb1a01ca75f164ff12f3770ee3e2a47421ac11e0df4988aef13872",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static feature vector and non-hazardous PE analysis fixture; never executed."
+    },
+    {
+      "sample_id": "MAL-THR-004",
+      "engine": "malware",
+      "engine_version": "v1.0.0",
+      "sample_type": "threat",
+      "source": "EMBER 2018 Benchmark / Windows PE System Repository",
+      "provenance": "datasets/golden_demonstration/malware/ember_malware_sample_4.json",
+      "ground_truth": "malware",
+      "expected_verdict": "CRITICAL",
+      "expected_risk_range": [
+        80,
+        100
+      ],
+      "mitre_context": {
+        "tactic": "TA0002",
+        "technique": "T1204.002"
+      },
+      "rationale": "Verified malware sample #4 (label: 1) from EMBER 2018 benchmark test partition evaluated across 2,381 feature dimensions.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/malware/ember_malware_sample_4.json",
+      "sha256": "34b63afa03f2f17e770c41391662a5e756f50b58c50c4c55d47ce68530f0b859",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static feature vector and non-hazardous PE analysis fixture; never executed."
+    },
+    {
+      "sample_id": "MAL-BEN-003",
+      "engine": "malware",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "EMBER 2018 Benchmark / Windows PE System Repository",
+      "provenance": "datasets/golden_demonstration/malware/ember_benign_sample_1.json",
+      "ground_truth": "safe",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        30
+      ],
+      "mitre_context": "None",
+      "rationale": "Verified benign sample #1 (label: 0) from EMBER 2018 benchmark test partition evaluated across 2,381 feature dimensions.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/malware/ember_benign_sample_1.json",
+      "sha256": "eb2a6997b1138e7484bfe16c54ee4993ab26df0762c3621c532ea28bda305ecf",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static feature vector and non-hazardous PE analysis fixture; never executed."
+    },
+    {
+      "sample_id": "MAL-BEN-004",
+      "engine": "malware",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "EMBER 2018 Benchmark / Windows PE System Repository",
+      "provenance": "datasets/golden_demonstration/malware/ember_benign_sample_2.json",
+      "ground_truth": "safe",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        30
+      ],
+      "mitre_context": "None",
+      "rationale": "Verified benign sample #2 (label: 0) from EMBER 2018 benchmark test partition evaluated across 2,381 feature dimensions.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/malware/ember_benign_sample_2.json",
+      "sha256": "74cb06bad7421127652635780df2a5a2a3dcf58dce28a939d03f87a9b7efda93",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static feature vector and non-hazardous PE analysis fixture; never executed."
+    },
+    {
+      "sample_id": "MAL-BEN-005",
+      "engine": "malware",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "EMBER 2018 Benchmark / Windows PE System Repository",
+      "provenance": "datasets/golden_demonstration/malware/ember_benign_sample_3.json",
+      "ground_truth": "safe",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        30
+      ],
+      "mitre_context": "None",
+      "rationale": "Verified benign sample #3 (label: 0) from EMBER 2018 benchmark test partition evaluated across 2,381 feature dimensions.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/malware/ember_benign_sample_3.json",
+      "sha256": "cdd64be1c4fcfd19b321532b7a5bf04de8b05f5cd26f7f9ac740636786f4adf3",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static feature vector and non-hazardous PE analysis fixture; never executed."
+    },
+    {
+      "sample_id": "MAL-BEN-006",
+      "engine": "malware",
+      "engine_version": "v1.0.0",
+      "sample_type": "benign",
+      "source": "EMBER 2018 Benchmark / Windows PE System Repository",
+      "provenance": "datasets/golden_demonstration/malware/ember_benign_sample_4.json",
+      "ground_truth": "safe",
+      "expected_verdict": "SAFE",
+      "expected_risk_range": [
+        0,
+        30
+      ],
+      "mitre_context": "None",
+      "rationale": "Verified benign sample #4 (label: 0) from EMBER 2018 benchmark test partition evaluated across 2,381 feature dimensions.",
+      "payload_type": "structured_json",
+      "payload_path": "datasets/golden_demonstration/malware/ember_benign_sample_4.json",
+      "sha256": "0aee47415946c8fdfe8b4e08a3556c3fba8ce8b1eced9e12b0ab46aa9e608c48",
+      "fixture_kind": "real_benchmark",
+      "safety_notes": "Static feature vector and non-hazardous PE analysis fixture; never executed."
+    }
+  ]
+}

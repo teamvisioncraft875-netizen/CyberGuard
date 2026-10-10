@@ -1,0 +1,7 @@
+{
+  "user_id": "usr_sec_audit",
+  "timestamp": "2026-09-26T03:55:00Z",
+  "location": "Bucharest, RO",
+  "device_id": "dev_suspicious_vm",
+  "failed_attempts": 20
+}

@@ -1,0 +1,10 @@
+{
+  "process_name": "auditd",
+  "event_name": "openat",
+  "user_id": 0,
+  "parent_process_name": "systemd",
+  "parent_process_id": 1,
+  "process_id": 490,
+  "return_value": 0,
+  "args_num": 2
+}

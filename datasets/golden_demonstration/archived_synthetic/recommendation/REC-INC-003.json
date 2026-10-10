@@ -1,0 +1,46 @@
+{
+  "incident_id": "inc-c2-003",
+  "title": "Command and control beaconing channel established",
+  "severity": "high",
+  "risk_score": 88,
+  "threat_type": "network_anomaly",
+  "entities": {
+    "hosts": [
+      "DEV-SRV-01"
+    ],
+    "users": [
+      "svc_worker"
+    ],
+    "ips": [
+      "194.85.105.17"
+    ],
+    "devices": [
+      "dev-112233"
+    ]
+  },
+  "timeline": {
+    "first_seen": "2026-10-06T15:00:00Z",
+    "last_seen": "2026-10-06T15:20:00Z",
+    "alert_count": 5,
+    "alerts_per_minute": 0.25
+  },
+  "alert_count": 5,
+  "source_engines": [
+    "network_threat"
+  ],
+  "alert_types": [
+    "c2_beacon",
+    "periodic_heartbeat"
+  ],
+  "mitre_techniques": [
+    "T1071.001"
+  ],
+  "mitre_tactics": [
+    "TA0011"
+  ],
+  "host_context": {
+    "os": "Linux Ubuntu",
+    "isolated": false
+  },
+  "false_positive_score": 0.05
+}

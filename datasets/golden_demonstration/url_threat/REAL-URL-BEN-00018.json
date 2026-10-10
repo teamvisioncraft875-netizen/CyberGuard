@@ -1,0 +1,8 @@
+{
+  "url": "cloudwaysapps.com",
+  "source_dataset": "URL threat",
+  "row_index": 18,
+  "original_label": 0,
+  "source_name": "tranco",
+  "defanged_url": "cloudwaysapps[.]com"
+}

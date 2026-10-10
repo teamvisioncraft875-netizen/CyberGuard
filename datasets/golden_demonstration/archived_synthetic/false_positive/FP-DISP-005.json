@@ -1,0 +1,11 @@
+{
+  "alert_id": "ALT-2026-005",
+  "event_name": "openat",
+  "process_name": "whoopsie",
+  "user_id": 104,
+  "args_num": 2,
+  "return_value": 0,
+  "parent_process_id": 1,
+  "alert_type": "file_access_anomaly",
+  "severity": "low"
+}

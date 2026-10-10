@@ -1,0 +1,13 @@
+{
+  "user_id": "usr_net_02",
+  "timestamp": "2026-09-25T12:00:00Z",
+  "event_type": "network_flow",
+  "details": {
+    "dur": 0.02,
+    "tot_pkts": 2.0,
+    "tot_bytes": 150.0,
+    "src_bytes": 60.0,
+    "proto": "udp",
+    "dport": 53
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "incident_id": "inc-scan-005",
+  "title": "External network port sweep detected on DMZ edge",
+  "severity": "low",
+  "risk_score": 25,
+  "threat_type": "reconnaissance",
+  "entities": {
+    "hosts": [
+      "DMZ-EDG-FW"
+    ],
+    "users": [
+      "anonymous"
+    ],
+    "ips": [
+      "198.51.100.99"
+    ],
+    "devices": [
+      "fw-edge-01"
+    ]
+  },
+  "timeline": {
+    "first_seen": "2026-10-06T17:00:00Z",
+    "last_seen": "2026-10-06T17:01:00Z",
+    "alert_count": 2,
+    "alerts_per_minute": 2.0
+  },
+  "alert_count": 2,
+  "source_engines": [
+    "network_threat"
+  ],
+  "alert_types": [
+    "port_scan",
+    "syn_sweep"
+  ],
+  "mitre_techniques": [
+    "T1046"
+  ],
+  "mitre_tactics": [
+    "TA0007"
+  ],
+  "host_context": {
+    "os": "FirewallOS",
+    "isolated": false
+  },
+  "false_positive_score": 0.85
+}

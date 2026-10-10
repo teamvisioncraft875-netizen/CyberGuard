@@ -1,0 +1,8 @@
+{
+  "url": "custhelp.com",
+  "source_dataset": "URL threat",
+  "row_index": 13,
+  "original_label": 0,
+  "source_name": "tranco",
+  "defanged_url": "custhelp[.]com"
+}

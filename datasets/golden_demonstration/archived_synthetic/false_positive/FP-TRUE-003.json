@@ -1,0 +1,11 @@
+{
+  "alert_id": "ALT-2026-997",
+  "event_name": "openat",
+  "process_name": "mimikatz",
+  "user_id": 1001,
+  "args_num": 2,
+  "return_value": 0,
+  "parent_process_id": 7307,
+  "alert_type": "credential_dumping",
+  "severity": "critical"
+}

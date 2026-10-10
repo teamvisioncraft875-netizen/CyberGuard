@@ -1,0 +1,46 @@
+{
+  "incident_id": "inc-priv-004",
+  "title": "Privilege escalation via dirty pipe kernel exploit",
+  "severity": "critical",
+  "risk_score": 95,
+  "threat_type": "host_anomaly",
+  "entities": {
+    "hosts": [
+      "PROD-K8S-NODE-03"
+    ],
+    "users": [
+      "app_worker"
+    ],
+    "ips": [
+      "10.244.2.15"
+    ],
+    "devices": [
+      "srv-k8s-node3"
+    ]
+  },
+  "timeline": {
+    "first_seen": "2026-10-06T16:00:00Z",
+    "last_seen": "2026-10-06T16:02:00Z",
+    "alert_count": 4,
+    "alerts_per_minute": 2.0
+  },
+  "alert_count": 4,
+  "source_engines": [
+    "edr_behavior"
+  ],
+  "alert_types": [
+    "privilege_escalation",
+    "kernel_patch_tamper"
+  ],
+  "mitre_techniques": [
+    "T1068"
+  ],
+  "mitre_tactics": [
+    "TA0004"
+  ],
+  "host_context": {
+    "os": "Linux Ubuntu 20.04",
+    "isolated": false
+  },
+  "false_positive_score": null
+}

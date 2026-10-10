@@ -1,0 +1,11 @@
+{
+  "alert_id": "ALT-2026-999",
+  "event_name": "access",
+  "process_name": "tsm",
+  "user_id": 1001,
+  "args_num": 2,
+  "return_value": -2,
+  "parent_process_id": 7534,
+  "alert_type": "malicious_binary_execution",
+  "severity": "critical"
+}

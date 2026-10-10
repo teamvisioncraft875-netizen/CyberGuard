@@ -1,0 +1,72 @@
+{
+  "model_name": "Candidate URL Threat Classifier v1.0.0",
+  "created_at": "2026-10-10T04:45:41.400560+00:00",
+  "dataset": "datasets/URL threat/train-00000-of-00001.parquet",
+  "train_samples": 8000,
+  "test_samples": 2000,
+  "features": [
+    "url_length",
+    "hostname_length",
+    "path_length",
+    "query_length",
+    "num_dots",
+    "num_hyphens",
+    "num_at",
+    "num_question",
+    "num_equals",
+    "num_underscore",
+    "num_ampersand",
+    "num_tilde",
+    "num_percent",
+    "num_slash",
+    "num_digits",
+    "digit_letter_ratio",
+    "num_subdomains",
+    "longest_token_length",
+    "avg_token_length",
+    "hostname_entropy",
+    "has_https",
+    "has_port",
+    "has_ip_in_hostname",
+    "has_punycode",
+    "has_at_symbol",
+    "has_double_slash_in_path",
+    "tld_length",
+    "is_suspicious_tld",
+    "num_suspicious_keywords",
+    "brand_in_subdomain",
+    "brand_in_path"
+  ],
+  "metrics": {
+    "accuracy": 0.93,
+    "accuracy_95ci": [
+      0.918,
+      0.9404
+    ],
+    "confusion_matrix": [
+      [
+        960,
+        40
+      ],
+      [
+        100,
+        900
+      ]
+    ],
+    "per_class": {
+      "benign": {
+        "precision": 0.9057,
+        "recall": 0.96,
+        "f1": 0.932
+      },
+      "malicious": {
+        "precision": 0.9574,
+        "recall": 0.9,
+        "f1": 0.9278
+      }
+    }
+  },
+  "sha256": {
+    "model": "a9f4267e342210dd9a358a009b25e863aa4f02bcead0da663f3612b9562fc67e"
+  }
+}
